@@ -3,7 +3,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import AppMockup from './components/AppMockup';
 import News from './components/News';
-import Footer from './components/Footer';
+import Footer from '../components/Footer';
 // Updated import path
 import AuthModal from '../auth/components/AuthModal';
 

@@ -1,59 +1,55 @@
 import Navbar from '../home/components/Navbar';
-import Footer from '../home/components/Footer';
+import Footer from '../components/Footer';
 
 export default function Privacy() {
   return (
-    // Main wrapper matching the dark aesthetic
     <div className="min-h-screen bg-black selection:bg-white/20 selection:text-white font-sans flex flex-col">
-      {/* Reusing the Navbar from the home module */}
       <Navbar />
       
-      {/* Main content area with strict max-width for optimal reading experience */}
+      {/* Main Content */}
       <main className="pt-32 md:pt-40 flex-grow max-w-3xl mx-auto px-6 pb-32 w-full">
         
-        {/* Page Header */}
         <div className="mb-16">
           <h1 className="text-4xl md:text-5xl font-serif text-white tracking-tight mb-4">
-            Gizlilik Politikası
+            Privacy Policy
           </h1>
           <p className="text-white/40 text-sm font-mono tracking-widest uppercase">
-            Son Güncelleme: 30 Mart 2026
+            Last Updated: March 30, 2026
           </p>
         </div>
 
-        {/* Content Typography Strategy: High line-height, text-white/70 for body, white for headings */}
         <div className="space-y-12 text-white/70 leading-relaxed">
           
           <section>
-            <h2 className="text-2xl font-serif text-white mb-4">1. Topladığımız Veriler</h2>
+            <h2 className="text-2xl font-serif text-white mb-4">1. Data We Collect</h2>
             <p className="mb-4">
-              The Developer Network (TDN) olarak gizliliğinize büyük önem veriyoruz. Platformumuzu kullandığınızda aşağıdaki bilgileri toplarız:
+              At The Developer Network (TDN), we take your privacy seriously. When you use our platform, we collect the following information:
             </p>
             <ul className="list-disc pl-5 space-y-2 text-white/60">
-              <li>Kayıt aşamasında sağladığınız e-posta adresi, kullanıcı adı ve parola.</li>
-              <li>Platforma bağladığınız takdirde GitHub, X veya diğer sosyal medya hesap profilleriniz.</li>
-              <li>Platform üzerindeki gönderileriniz, yorumlarınız ve etkileşim verileriniz.</li>
+              <li>Your email address, username, and password provided during registration.</li>
+              <li>Your GitHub, X, or other social media account profiles if you choose to connect them.</li>
+              <li>Your posts, comments, and interaction data on the platform.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-2xl font-serif text-white mb-4">2. Verilerin Kullanımı</h2>
+            <h2 className="text-2xl font-serif text-white mb-4">2. How We Use Your Data</h2>
             <p>
-              Topladığımız bu verileri yalnızca platformun sağlıklı çalışmasını sağlamak, topluluk deneyiminizi kişiselleştirmek ve güvenliğinizi artırmak amacıyla kullanıyoruz. Verileriniz kesinlikle reklam amacıyla üçüncü şahıslara satılmaz.
+              We use the data we collect solely to ensure the platform operates smoothly, to personalize your community experience, and to enhance your security. Your data is never sold to third parties for advertising purposes.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-serif text-white mb-4">3. Çerezler (Cookies)</h2>
+            <h2 className="text-2xl font-serif text-white mb-4">3. Cookies</h2>
             <p>
-              Oturumunuzu açık tutmak, karanlık/aydınlık tema tercihlerinizi hatırlamak ve platform performansını analiz etmek için temel çerezler kullanmaktayız. Tarayıcı ayarlarınızdan çerezleri dilediğiniz zaman silebilirsiniz.
+              We use essential cookies to keep your session active, remember your dark/light theme preferences, and analyze platform performance. You can delete cookies at any time through your browser settings.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-serif text-white mb-4">4. İletişim</h2>
+            <h2 className="text-2xl font-serif text-white mb-4">4. Contact</h2>
             <p>
-              Gizlilik politikamız ile ilgili tüm sorularınız, veri silme talepleriniz veya önerileriniz için bizimle iletişime geçebilirsiniz: 
+              For any questions regarding our privacy policy, data deletion requests, or suggestions, feel free to reach out:
               <a href="mailto:contact@developernetwork.net" className="text-white hover:underline ml-2">
                 contact@developernetwork.net
               </a>
@@ -63,7 +59,7 @@ export default function Privacy() {
         </div>
       </main>
 
-      {/* Reusing the Footer from the home module */}
+      {/* Footer */}
       <Footer />
     </div>
   );
