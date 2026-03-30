@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import {
   checkUserExists,
@@ -26,7 +25,6 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const navigate = useNavigate();
 
   const [step, setStep]               = useState<AuthStep>('INITIAL');
   const [identifier, setIdentifier]   = useState('');
@@ -59,11 +57,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   useEffect(() => { setErrorMsg(''); }, [identifier, username, password, otp]);
 
-  // Auth başarılı → modal kapat + feed'e git
   const handleSuccess = () => {
-    console.log('[AuthModal] Auth successful, navigating to feed');
     onClose();
-    navigate('/');
   };
 
   const handleIdentifierSubmit = async () => {
