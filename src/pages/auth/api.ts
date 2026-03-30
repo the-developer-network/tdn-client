@@ -1,6 +1,5 @@
 const BASE_URL = 'https://api.developernetwork.net/api/v1';
 
-// Using 'unknown' instead of 'any' for strict ESLint rules
 export interface ApiResponse<T = unknown> {
   data: T;
   meta: {
@@ -10,15 +9,26 @@ export interface ApiResponse<T = unknown> {
 
 export async function checkUserExists(identifier: string): Promise<boolean> {
   try {
-    // Mock logic until backend implements /auth/check
-    return !identifier.includes('@');
+    const res = await fetch(`${BASE_URL}/auth/check`, {
+      method: "POST",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier })
+    })
+    
+    if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Check failed.');
+  }
+
+    const data = await res.json();
+   
+    return data.data.check;
   } catch {
-    // Removed unused (err) parameter
     return false; 
   }
 }
 
-export async function loginApi(identifier: string, password: string): Promise<ApiResponse<{ accessToken: string }>> {
+export async function loginApi(identifier: string, password: string): Promise<ApiResponse<{ accessToken: string, user: { isEmailVerified: boolean }  }>> {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -29,7 +39,10 @@ export async function loginApi(identifier: string, password: string): Promise<Ap
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || 'Login failed. Please check your credentials.');
   }
-  return res.json();
+
+  const data = await res.json();
+
+  return data
 }
 
 export async function registerApi(email: string, username: string, password: string): Promise<ApiResponse> {
@@ -43,13 +56,39 @@ export async function registerApi(email: string, username: string, password: str
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || 'Registration failed.');
   }
+  
+  return res.json();
+}
+
+export async function sendVerificationEmail(email: string) {
+  const token = localStorage.getItem('access_token');
+
+  const res = await fetch(`${BASE_URL}/auth/send-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Send verification failed.');
+  }
+
   return res.json();
 }
 
 export async function verifyEmailApi(otp: string): Promise<ApiResponse> {
+   const token = localStorage.getItem('access_token');
+
   const res = await fetch(`${BASE_URL}/auth/verify-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
     body: JSON.stringify({ otp }), 
   });
 
@@ -71,6 +110,21 @@ export async function forgotPasswordApi(email: string): Promise<void> {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to send reset link.');
   }
+}
+
+export async function resetPasswordApi(email: string, otp: string, newPassword: string) {
+  const res = await fetch(`${BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otp, newPassword }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to reset password.');
+  }
+
+  return res.json();
 }
 
 export function initiateOAuth(provider: 'google' | 'github'): void {

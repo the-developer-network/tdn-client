@@ -7,9 +7,10 @@ import './index.css';
 import Home from './pages/home/Home';
 import Privacy from './pages/privacy/Privacy';
 import Terms from './pages/terms/Terms';
+import FeedPage from './pages/feed/Feed';
 
 const router = createBrowserRouter([
-  { path: '/', element: <Home /> }, 
+  { path: '/', element: <FeedPage /> }, 
   { path: '/home', element: <Home /> },
   { path: '/privacy', element: <Privacy /> },
   { path: '/terms', element: <Terms /> },

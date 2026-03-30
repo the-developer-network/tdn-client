@@ -5,7 +5,7 @@ import AppMockup from './components/AppMockup';
 import News from './components/News';
 import Footer from '../components/Footer';
 // Updated import path
-import AuthModal from '../auth/components/AuthModal';
+import AuthModal from '../auth/AuthModal';
 
 export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
