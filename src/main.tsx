@@ -14,7 +14,7 @@ const router = createBrowserRouter([
   { path: '/home', element: <Home /> },
   { path: '/privacy', element: <Privacy /> },
   { path: '/terms', element: <Terms /> },
-  { path: '/oauth-success', element: <Feed /> }
+  { path: '/oauth-success/', element: <Feed /> }
 ]);
 
 createRoot(document.getElementById('root')!).render(
