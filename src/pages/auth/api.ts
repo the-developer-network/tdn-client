@@ -1,4 +1,5 @@
-const BASE_URL = 'https://api.developernetwork.net/api/v1';
+const BASE_URL = `https://api.developernetwork.net/api/v1`;
+
 
 export interface ApiResponse<T = unknown> {
   data: T;

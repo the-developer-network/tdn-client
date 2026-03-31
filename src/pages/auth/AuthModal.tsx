@@ -18,14 +18,16 @@ import RegisterOtpStep from './steps/RegisterOtpStep';
 import VerifyEmailStep from './steps/VerifyEmailStep';
 import ForgotPasswordStep from './steps/ForgotPasswordStep';
 import ResetPasswordStep from './steps/ResetPasswordStep';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void; // BAŞARILI DURUMDA ÇALIŞACAK PROP EKLENDİ
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-
+export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+  const navigate = useNavigate();
   const [step, setStep]               = useState<AuthStep>('INITIAL');
   const [identifier, setIdentifier]   = useState('');
   const [username, setUsername]       = useState('');
@@ -57,8 +59,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   useEffect(() => { setErrorMsg(''); }, [identifier, username, password, otp]);
 
+  // BU FONKSİYON KRİTİK: Başarılı işlemlerde Feed'i tetikler
   const handleSuccess = () => {
+    if (onSuccess) onSuccess(); // Prop olarak gelen fonksiyonu çalıştır
     onClose();
+    navigate("/");
   };
 
   const handleIdentifierSubmit = async () => {
@@ -97,7 +102,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           await sendVerificationEmail(identifier);
           setStep('VERIFY_EMAIL');
         } else {
-          handleSuccess();
+          handleSuccess(); // Burada başarıyı tetikliyoruz
         }
       }
     } catch (error) {
@@ -113,15 +118,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
     try {
       await registerApi(identifier, username, password);
-      
       const loginRes = await loginApi(identifier, password);
-
       if (loginRes.data?.accessToken) {
-  
         localStorage.setItem('access_token', loginRes.data.accessToken);
-      
         setStep('REGISTER_OTP');
-    }
+      }
     } catch (error) {
       console.error('[AuthModal] registerApi error:', error);
       setErrorMsg(error instanceof Error ? error.message : 'Registration failed.');
@@ -136,7 +137,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       const res = await verifyEmailApi(otp);
       console.log('[AuthModal] verifyEmailApi response:', res);
-      handleSuccess();
+      handleSuccess(); // Doğrulama bittiğinde başarıyı tetikle
     } catch (error) {
       console.error('[AuthModal] verifyEmailApi error:', error);
       setErrorMsg(error instanceof Error ? error.message : 'Verification failed.');
@@ -208,14 +209,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
         )}
 
-        {step === 'INITIAL'            && <InitialStep identifier={identifier} isLoading={isLoading} onChange={setIdentifier} onSubmit={handleIdentifierSubmit} />}
-        {step === 'LOGIN'              && <LoginStep identifier={identifier} password={password} isLoading={isLoading} onChange={setPassword} onSubmit={handleLogin} onForgotPassword={() => setStep('FORGOT_PASSWORD')} />}
-        {step === 'REGISTER_USERNAME'  && <RegisterUsernameStep identifier={identifier} username={username} isLoading={isLoading} onChange={setUsername} onNext={() => setStep('REGISTER_PASSWORD')} />}
-        {step === 'REGISTER_PASSWORD'  && <RegisterPasswordStep username={username} password={password} isLoading={isLoading} onChange={setPassword} onSubmit={handleRegisterFlow} />}
-        {step === 'REGISTER_OTP'       && <RegisterOtpStep identifier={identifier} otp={otp} isLoading={isLoading} onChange={setOtp} onSubmit={handleVerifyOtp} onSkip={handleSuccess} />}
-        {step === 'VERIFY_EMAIL'       && <VerifyEmailStep identifier={identifier} otp={otp} isLoading={isLoading} onChange={setOtp} onSubmit={handleVerifyOtp} onSkip={handleSuccess} />}
-        {step === 'FORGOT_PASSWORD'    && <ForgotPasswordStep identifier={identifier} isLoading={isLoading} onChange={setIdentifier} onSubmit={handleForgotPassword} />}
-        {step === 'RESET_PASSWORD'     && <ResetPasswordStep identifier={identifier} otp={otp} newPassword={newPassword} isLoading={isLoading} onOtpChange={setOtp} onPasswordChange={setNewPassword} onSubmit={handleResetPassword} />}
+        {step === 'INITIAL'             && <InitialStep identifier={identifier} isLoading={isLoading} onChange={setIdentifier} onSubmit={handleIdentifierSubmit} />}
+        {step === 'LOGIN'               && <LoginStep identifier={identifier} password={password} isLoading={isLoading} onChange={setPassword} onSubmit={handleLogin} onForgotPassword={() => setStep('FORGOT_PASSWORD')} />}
+        {step === 'REGISTER_USERNAME'   && <RegisterUsernameStep identifier={identifier} username={username} isLoading={isLoading} onChange={setUsername} onNext={() => setStep('REGISTER_PASSWORD')} />}
+        {step === 'REGISTER_PASSWORD'   && <RegisterPasswordStep username={username} password={password} isLoading={isLoading} onChange={setPassword} onSubmit={handleRegisterFlow} />}
+        {step === 'REGISTER_OTP'        && <RegisterOtpStep identifier={identifier} otp={otp} isLoading={isLoading} onChange={setOtp} onSubmit={handleVerifyOtp} onSkip={handleSuccess} />}
+        {step === 'VERIFY_EMAIL'        && <VerifyEmailStep identifier={identifier} otp={otp} isLoading={isLoading} onChange={setOtp} onSubmit={handleVerifyOtp} onSkip={handleSuccess} />}
+        {step === 'FORGOT_PASSWORD'     && <ForgotPasswordStep identifier={identifier} isLoading={isLoading} onChange={setIdentifier} onSubmit={handleForgotPassword} />}
+        {step === 'RESET_PASSWORD'      && <ResetPasswordStep identifier={identifier} otp={otp} newPassword={newPassword} isLoading={isLoading} onOtpChange={setOtp} onPasswordChange={setNewPassword} onSubmit={handleResetPassword} />}
       </div>
     </div>
   );

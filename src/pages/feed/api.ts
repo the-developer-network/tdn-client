@@ -1,11 +1,12 @@
+import type { MediaUploadResponse, Post, ProfileData } from "./api-types";
+
 const BASE_URL = `https://api.developernetwork.net/api/v1`;
 
 
-export async function getProfile() {
+export async function getProfile(): Promise<ProfileData> {
     const token = localStorage.getItem("access_token");
 
-    if(!token) throw new Error("Failed Access Todo") // TODO REFRESH TOKEN
-
+    if(!token) throw new Error("Failed Access Token")
 
     const userRes = await fetch(`${BASE_URL}/users/me`, {
         method: "GET",
@@ -25,7 +26,71 @@ export async function getProfile() {
 
     if(!res.ok) throw new Error("Failed profile");
 
-    const data = await res.json();
+    const result = await res.json();
+
+    return result.data;
+}
+export async function getPosts(page: number = 1, limit: number = 10, type?: string): Promise<Post[]> {
+   
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
     
-    return data.data;
+
+    if (type) {
+        params.append("type", type);
+    }
+
+    const res = await fetch(`${BASE_URL}/posts?${params.toString()}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+    });
+
+    if (!res.ok) throw new Error("Failed Posts Data");
+
+    const result = await res.json();
+    return result.data; 
+}
+
+export async function createPost(content: string, type: string, mediaUrls: string[] = []): Promise<Post> {
+    const token = localStorage.getItem("access_token");
+    
+    const res = await fetch(`${BASE_URL}/posts`, {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({ content, type, mediaUrls })
+    });
+
+    if (!res.ok) throw new Error("Post created failed.");
+    const result = await res.json();
+    return result.data;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function uploadMedia(files: File[]): Promise<MediaUploadResponse> {
+    const token = localStorage.getItem("access_token");
+    const formData = new FormData();
+    
+
+    files.forEach((file) => {
+        formData.append("files", file); 
+    });
+
+    const res = await fetch(`${BASE_URL}/media`, {
+        method: "POST",
+        headers: { 
+            "Authorization": `Bearer ${token}` 
+        },
+        body: formData
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Medya yükleme başarısız.");
+    }
+
+    return await res.json();
 }
