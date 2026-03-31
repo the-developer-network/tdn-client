@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { authApi } from "../../features/auth/api/auth-api";
 
 interface AuthPayload {
     id: string;
     username: string;
+    isEmailVerified: boolean;
 }
 
 interface User extends AuthPayload {
@@ -38,9 +40,15 @@ export const useAuthStore = create<AuthState>()(
                 }));
             },
 
-            logout: () => {
-                localStorage.removeItem("access_token");
-                set({ user: null, token: null, isAuthenticated: false });
+            logout: async () => {
+                try {
+                    await authApi.logout();
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    localStorage.removeItem("access_token");
+                    set({ user: null, token: null, isAuthenticated: false });
+                }
             },
         }),
         {

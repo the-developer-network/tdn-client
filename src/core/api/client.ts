@@ -5,6 +5,7 @@ const BASE_URL = "https://api.developernetwork.net/api/v1";
 interface ApiOptions extends RequestInit {
     isPublic?: boolean;
     _retry?: boolean;
+    contentType?: boolean;
 }
 
 let isRefreshing = false;
@@ -25,11 +26,19 @@ export const apiClient = async <T>(
     endpoint: string,
     options: ApiOptions = {},
 ): Promise<T> => {
-    const { isPublic = false, _retry = false, ...fetchOptions } = options;
+    const {
+        isPublic = false,
+        _retry = false,
+        contentType = true,
+        ...fetchOptions
+    } = options;
     const token = localStorage.getItem("access_token");
 
     const headers = new Headers(fetchOptions.headers);
-    headers.set("Content-Type", "application/json");
+
+    if (contentType && !(fetchOptions.body instanceof FormData)) {
+        headers.set("Content-Type", "application/json");
+    }
 
     if (!isPublic && token) {
         headers.set("Authorization", `Bearer ${token}`);
@@ -86,7 +95,7 @@ export const apiClient = async <T>(
 export const api = {
     get: <T>(url: string, options?: ApiOptions) =>
         apiClient<T>(url, { ...options, method: "GET" }),
-    post: <T>(url: string, body: unknown, options?: ApiOptions) =>
+    post: <T>(url: string, body?: unknown, options?: ApiOptions) =>
         apiClient<T>(url, {
             ...options,
             method: "POST",
