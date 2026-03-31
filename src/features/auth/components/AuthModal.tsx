@@ -11,6 +11,11 @@ export function AuthModal() {
             "https://api.developernetwork.net/api/v1/oauth/github";
     };
 
+    const handleGoogleLogin = () => {
+        window.location.href =
+            "https://api.developernetwork.net/api/v1/oauth/google";
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={closeModal}>
             <div className="flex flex-col items-center px-8 md:px-12 py-10">
@@ -25,7 +30,10 @@ export function AuthModal() {
 
                         <div className="space-y-3.5">
                             {/* Google Sign In */}
-                            <button className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3 rounded-full hover:bg-zinc-200 transition-all duration-200">
+                            <button
+                                className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3 rounded-full hover:bg-zinc-200 transition-all duration-200"
+                                onClick={handleGoogleLogin}
+                            >
                                 <GoogleIcon />
                                 <span>Sign up with Google</span>
                             </button>
