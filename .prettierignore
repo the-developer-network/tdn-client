@@ -1,0 +1,22 @@
+# Build & Dependencies
+node_modules
+dist
+build
+out
+
+# Configs & Logs
+.git
+.cache
+.env
+*.log
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Public Assets
+public
+src/assets
+
+# IDEs
+.vscode
+.idea

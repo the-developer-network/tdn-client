@@ -1,9 +1,0 @@
-export type AuthStep =
-  | 'INITIAL'
-  | 'LOGIN'
-  | 'REGISTER_USERNAME'
-  | 'REGISTER_PASSWORD'
-  | 'REGISTER_OTP'
-  | 'VERIFY_EMAIL'
-  | 'FORGOT_PASSWORD'
-  | 'RESET_PASSWORD';
