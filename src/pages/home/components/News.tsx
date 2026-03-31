@@ -15,7 +15,6 @@ export default function News() {
           </h2>
         </div>
 
-        {/* Feature 1: Integrations */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center mb-40">
           <div className="order-2 lg:order-1 flex flex-col items-start">
             <span className="text-white/40 text-[10px] font-bold tracking-[0.2em] uppercase mb-4">
@@ -65,7 +64,6 @@ export default function News() {
           </div>
         </div>
 
-        {/* Feature 2: Job Board */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           <div className="order-2 lg:order-1 w-full flex justify-start relative">
             <div className="absolute top-12 left-12 w-full max-w-sm bg-[#050505] rounded-2xl border border-white/5 p-6 shadow-2xl opacity-50 scale-95 blur-[2px] pointer-events-none">

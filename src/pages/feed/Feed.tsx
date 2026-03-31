@@ -25,7 +25,6 @@ export default function Feed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Profil ve Auth Durumunu Kontrol Etme (Tekrar çağrılabilir yapıldı)
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem("access_token");
     if (token) {
@@ -44,7 +43,6 @@ export default function Feed() {
     }
   }, []);
 
-  // 2. Postları Yükleme Fonksiyonu
   const loadPosts = useCallback(async (category: FeedCategory) => {
     setIsLoading(true);
     try {
@@ -58,22 +56,19 @@ export default function Feed() {
     }
   }, []);
 
-  // 3. İlk Yükleme (Sayfa açıldığında)
   useEffect(() => {
     checkAuth();
-    loadPosts('HEPSI'); // 'ALL' hatası düzeltildi
+    loadPosts('HEPSI');
   }, [checkAuth, loadPosts]);
 
-  // 4. Kategori Değiştiğinde Akışı Yenile
   useEffect(() => {
     loadPosts(activeCategory);
   }, [activeCategory, loadPosts]);
 
-  // 5. Giriş Başarılı Olduğunda Çalışacak Callback
   const handleAuthSuccess = () => {
-    checkAuth(); // Bilgileri anlık getir
-    setIsAuthOpen(false); // Modalı kapat
-    loadPosts(activeCategory); // Akışı tazele
+    checkAuth(); 
+    setIsAuthOpen(false); 
+    loadPosts(activeCategory); 
   };
 
   const formatTime = (dateStr: string) => {
@@ -122,7 +117,6 @@ export default function Feed() {
             </div>
           </header>
 
-          {/* PostBox'a onPostCreated prop'u eklendi */}
           {isLoggedIn && (
             <PostBox 
               avatarUrl={profileData?.avatarUrl} 
@@ -169,7 +163,6 @@ export default function Feed() {
         </aside>
       </div>
 
-      {/* AuthModal'a onSuccess prop'u eklendi */}
       <AuthModal 
         isOpen={isAuthOpen} 
         onClose={() => setIsAuthOpen(false)} 

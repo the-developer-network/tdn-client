@@ -23,7 +23,7 @@ import { useNavigate } from 'react-router-dom';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void; // BAŞARILI DURUMDA ÇALIŞACAK PROP EKLENDİ
+  onSuccess?: () => void; 
 }
 
 export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
@@ -59,9 +59,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   useEffect(() => { setErrorMsg(''); }, [identifier, username, password, otp]);
 
-  // BU FONKSİYON KRİTİK: Başarılı işlemlerde Feed'i tetikler
+ 
   const handleSuccess = () => {
-    if (onSuccess) onSuccess(); // Prop olarak gelen fonksiyonu çalıştır
+    if (onSuccess) onSuccess();
     onClose();
     navigate("/");
   };
@@ -102,7 +102,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           await sendVerificationEmail(identifier);
           setStep('VERIFY_EMAIL');
         } else {
-          handleSuccess(); // Burada başarıyı tetikliyoruz
+          handleSuccess();
         }
       }
     } catch (error) {
@@ -137,7 +137,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     try {
       const res = await verifyEmailApi(otp);
       console.log('[AuthModal] verifyEmailApi response:', res);
-      handleSuccess(); // Doğrulama bittiğinde başarıyı tetikle
+      handleSuccess(); 
     } catch (error) {
       console.error('[AuthModal] verifyEmailApi error:', error);
       setErrorMsg(error instanceof Error ? error.message : 'Verification failed.');

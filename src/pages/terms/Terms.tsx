@@ -6,7 +6,6 @@ export default function Terms() {
     <div className="min-h-screen bg-black selection:bg-white/20 selection:text-white font-sans flex flex-col">
       <Navbar />
       
-      {/* Main Content */}
       <main className="pt-32 md:pt-40 flex-grow max-w-3xl mx-auto px-6 pb-32 w-full">
         
         <div className="mb-16">
@@ -57,7 +56,6 @@ export default function Terms() {
         </div>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

@@ -20,7 +20,6 @@ export function LeftBarSide({
 
   return (
     <aside className="fixed w-[275px] h-screen flex flex-col justify-between py-6 px-4 border-r border-white/10 bg-black">
-      {/* Top Section: Logo & Nav */}
       <div className="flex flex-col gap-y-6">
         <Link to="/" className="px-3 mb-2">
           <img src={logo} alt="TDN" className="h-8 w-auto object-contain" />
@@ -40,7 +39,6 @@ export function LeftBarSide({
         </nav>
       </div>
 
-      {/* Bottom Section: Auth State */}
       <div className="mt-auto pt-4 border-t border-white/5">
         {isLoggedIn ? (
           <button

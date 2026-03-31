@@ -2,7 +2,6 @@ import type { MediaUploadResponse, Post, ProfileData } from "./api-types";
 
 const BASE_URL = `https://api.developernetwork.net/api/v1`;
 
-
 export async function getProfile(): Promise<ProfileData> {
     const token = localStorage.getItem("access_token");
 
@@ -19,10 +18,10 @@ export async function getProfile(): Promise<ProfileData> {
     if(!userRes.ok) throw new Error("Failed User Response");
 
     const userData = await userRes.json();
+    
+    const safeUsername = encodeURIComponent(userData.username);
 
-    console.log(userData);
-
-    const res = await fetch(`${BASE_URL}/profiles/${userData.username}`);
+    const res = await fetch(`${BASE_URL}/profiles/${safeUsername}`);
 
     if(!res.ok) throw new Error("Failed profile");
 
@@ -30,8 +29,8 @@ export async function getProfile(): Promise<ProfileData> {
 
     return result.data;
 }
+
 export async function getPosts(page: number = 1, limit: number = 10, type?: string): Promise<Post[]> {
-   
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("limit", limit.toString());
@@ -69,7 +68,6 @@ export async function createPost(content: string, type: string, mediaUrls: strin
     return result.data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function uploadMedia(files: File[]): Promise<MediaUploadResponse> {
     const token = localStorage.getItem("access_token");
     const formData = new FormData();
@@ -89,8 +87,8 @@ export async function uploadMedia(files: File[]): Promise<MediaUploadResponse> {
 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Medya yükleme başarısız.");
+        throw new Error(errorData.message || "Media failed.");
     }
 
-    return await res.json();
+    return res.json();
 }

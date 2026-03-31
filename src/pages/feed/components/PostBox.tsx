@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { createPost, uploadMedia } from "../api"; // uploadMedia'yı api.ts'ye eklediğini varsayıyorum
+import { createPost, uploadMedia } from "../api";
 
 interface PostBoxProps {
   avatarUrl?: string;
@@ -10,24 +10,20 @@ export function PostBox({ avatarUrl, onPostCreated }: PostBoxProps) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Dosya seçimi için gerekli state ve ref
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Dosya seçildiğinde çalışan fonksiyon
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       setSelectedFiles(prev => [...prev, ...filesArray]);
 
-      // Önizleme URL'leri oluşturma (Local/Blob URL)
       const newPreviews = filesArray.map(file => URL.createObjectURL(file));
       setPreviews(prev => [...prev, ...newPreviews]);
     }
   };
 
-  // Önizlemeden dosya silme
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
     setPreviews(prev => prev.filter((_, i) => i !== index));
@@ -40,26 +36,21 @@ export function PostBox({ avatarUrl, onPostCreated }: PostBoxProps) {
   try {
     let finalUrls: string[] = [];
 
-    // 1. Tüm dosyaları tek bir istekte gönderiyoruz
     if (selectedFiles.length > 0) {
       const response = await uploadMedia(selectedFiles);
       console.log("Backend'den dönen medya bilgisi:", response);
       
-      // Senin backend'in { data: { mediaUrls: [] } } dönüyor
       finalUrls = response.data.mediaUrls;
     }
 
-    // 2. Alınan URL'ler ile postu oluştur
     await createPost(content, "COMMUNITY", finalUrls); 
     
-    // Temizlik
     setContent("");
     setSelectedFiles([]);
     setPreviews([]);
     if (onPostCreated) onPostCreated();
 
   } catch (error) {
-    console.error("İşlem hatası:", error);
     alert(error instanceof Error ? error.message : "Bir hata oluştu");
   } finally {
     setIsSubmitting(false);
@@ -81,7 +72,6 @@ export function PostBox({ avatarUrl, onPostCreated }: PostBoxProps) {
           className="w-full bg-transparent text-xl text-white placeholder-white/30 border-none focus:ring-0 resize-none min-h-[60px]"
         />
 
-        {/* ÖNİZLEME ALANI */}
         {previews.length > 0 && (
           <div className="grid grid-cols-2 gap-2 mt-2">
             {previews.map((url, index) => (
@@ -102,7 +92,6 @@ export function PostBox({ avatarUrl, onPostCreated }: PostBoxProps) {
         
         <div className="flex items-center justify-between border-t border-white/5 pt-3">
           <div className="flex gap-x-2 text-blue-400">
-            {/* Gizli Dosya Inputu */}
             <input 
               type="file" 
               className="hidden" 
@@ -112,7 +101,6 @@ export function PostBox({ avatarUrl, onPostCreated }: PostBoxProps) {
               onChange={handleFileChange}
             />
 
-            {/* Medya Butonu */}
             <button 
               type="button"
               onClick={() => fileInputRef.current?.click()}
