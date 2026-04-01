@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import FeedPage from "../pages/FeedPage";
 import OAuthSuccessPage from "../pages/OAuthSuccessPage";
+import BookmarksPage from "../pages/BookmarksPage";
 
 export const router = createBrowserRouter([
     {
@@ -10,6 +11,10 @@ export const router = createBrowserRouter([
     {
         path: "/oauth-success",
         element: <OAuthSuccessPage />,
+    },
+    {
+        path: "/bookmarks",
+        element: <BookmarksPage />,
     },
     {
         path: "*",

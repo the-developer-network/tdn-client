@@ -30,4 +30,20 @@ export const feedApi = {
 
     unlikePost: (postId: string): Promise<void> =>
         api.delete(`/posts/${postId}/unlike`, { contentType: false }),
+
+    savePost: (postId: string): Promise<void> =>
+        api.post(`/posts/${postId}/save`),
+
+    unsavePost: (postId: string): Promise<void> =>
+        api.delete(`/posts/${postId}/unsave`, { contentType: false }),
+
+    getBookmarks: (
+        params: { page?: number; limit?: number } = {},
+    ): Promise<Post[]> => {
+        const query = new URLSearchParams();
+        query.set("page", String(params.page ?? 1));
+        query.set("limit", String(params.limit ?? 20));
+
+        return api.get<Post[]>(`/posts/bookmarks?${query.toString()}`);
+    },
 };

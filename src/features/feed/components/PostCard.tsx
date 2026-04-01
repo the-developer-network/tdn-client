@@ -18,6 +18,7 @@ export function PostCard({
     likeCount,
     commentCount,
     isLiked,
+    isBookmarked = false,
 }: Post) {
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
@@ -30,7 +31,10 @@ export function PostCard({
         likeCount: likes,
         isLikeLoading,
         handleLike,
-    } = usePostActions(isLiked, likeCount, id);
+        isBookmarked: bookmarked,
+        isBookmarkLoading,
+        handleBookmark,
+    } = usePostActions(isLiked, likeCount, isBookmarked, id);
 
     return (
         <article className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer">
@@ -145,10 +149,19 @@ export function PostCard({
                         </button>
 
                         {/* Bookmark */}
-                        <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
+                        <button
+                            onClick={handleBookmark}
+                            disabled={isBookmarkLoading}
+                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50
+            ${
+                bookmarked
+                    ? "text-white" // Aktifken bembeyaz olacak
+                    : "text-white/40 hover:bg-white/5 hover:text-white/60"
+            }`}
+                        >
                             <svg
                                 className="w-4 h-4"
-                                fill="none"
+                                fill={bookmarked ? "currentColor" : "none"}
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
                             >
