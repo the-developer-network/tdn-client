@@ -8,11 +8,11 @@ export const router = createBrowserRouter([
         element: <FeedPage />,
     },
     {
-        path: "*",
-        element: <Navigate to="/" replace />,
-    },
-    {
         path: "/oauth-success",
         element: <OAuthSuccessPage />,
+    },
+    {
+        path: "*",
+        element: <Navigate to="/" replace />,
     },
 ]);

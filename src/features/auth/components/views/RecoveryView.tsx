@@ -4,12 +4,14 @@ import { authApi } from "../../api/auth-api";
 import { Button } from "../../../../shared/components/ui/Button";
 import { profileApi } from "../../../profile/api/profile.api";
 import { useAuthStore } from "../../../../core/auth/auth.store";
+import { useNavigate } from "react-router-dom";
 
 export function RecoveryView() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { recoveryToken, setStep, closeModal } = useAuthModalStore();
     const { setAuth, updateUser } = useAuthStore();
+    const navigate = useNavigate();
 
     const handleRecover = async () => {
         if (!recoveryToken) return;
@@ -29,6 +31,7 @@ export function RecoveryView() {
             }
 
             closeModal();
+            navigate("/");
         } catch (err) {
             console.error("Recovery error:", err);
             setError("Account recovery failed. The link may have expired.");
@@ -39,7 +42,6 @@ export function RecoveryView() {
 
     return (
         <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-right-4 duration-300">
-            {/* İkon */}
             <div className="w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6">
                 <svg
                     className="w-8 h-8 text-orange-400"
