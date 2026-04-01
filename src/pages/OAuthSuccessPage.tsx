@@ -2,11 +2,15 @@ import { useEffect } from "react";
 import { AuthModal } from "../features/auth/components/AuthModal";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
+import { profileApi } from "../features/profile/api/profile.api";
+import { decodeToken } from "../shared/utils/jwt";
+import { useAuthStore } from "../core/auth/auth.store";
 
 export default function OAuthSuccess() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { openModal, setRecoveryToken } = useAuthModalStore();
+    const { setAuth, updateUser } = useAuthStore();
 
     const token = searchParams.get("token");
     const error = searchParams.get("error");
@@ -15,14 +19,54 @@ export default function OAuthSuccess() {
     useEffect(() => {
         if (token) {
             localStorage.setItem("access_token", token);
-            navigate("/", { replace: true });
+            const handleAuthentication = async () => {
+                const decoded = decodeToken<{ id: string; username: string }>(
+                    token,
+                );
+
+                if (decoded?.id && decoded?.username) {
+                    setAuth(
+                        {
+                            id: decoded.id,
+                            username: decoded.username,
+                            isEmailVerified: true,
+                        },
+                        token,
+                    );
+
+                    try {
+                        const profileData = await profileApi.getProfile(
+                            decoded.username,
+                        );
+
+                        updateUser({
+                            fullName: profileData.fullName,
+                            avatarUrl: profileData.avatarUrl,
+                        });
+                    } catch (error) {
+                        console.error("Hydration error:", error);
+                    }
+
+                    navigate("/", { replace: true });
+                }
+            };
+            handleAuthentication();
         } else if (error === "account_pending_deletion" && recoveryToken) {
             setRecoveryToken(recoveryToken);
             openModal("account-recovery");
         } else {
             navigate("/", { replace: true });
         }
-    }, [token, error, recoveryToken, navigate, openModal, setRecoveryToken]);
+    }, [
+        token,
+        error,
+        recoveryToken,
+        navigate,
+        openModal,
+        setRecoveryToken,
+        setAuth,
+        updateUser,
+    ]);
     return (
         <div className="min-h-screen bg-black flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
