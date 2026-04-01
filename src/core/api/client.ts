@@ -47,8 +47,8 @@ export const apiClient = async <T>(
     const response = await fetch(`${BASE_URL}${endpoint}`, {
         ...fetchOptions,
         headers,
+        credentials: "include",
     });
-
     if (response.status === 401 && !isPublic && !_retry) {
         if (isRefreshing) {
             return new Promise<string | null>((resolve, reject) => {
@@ -63,13 +63,15 @@ export const apiClient = async <T>(
         const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
         });
+
+        const refreshBody = await refreshRes.json();
+        console.log("refresh response:", refreshRes.status, refreshBody);
 
         if (refreshRes.ok) {
             const { data } = await refreshRes.json();
             localStorage.setItem("access_token", data.accessToken);
-            processQueue(null, data.access_token);
+            processQueue(null, data.accessToken);
             isRefreshing = false;
             return apiClient<T>(endpoint, { ...options, _retry: true });
         }
