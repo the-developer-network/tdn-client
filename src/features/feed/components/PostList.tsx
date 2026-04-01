@@ -1,0 +1,42 @@
+import { PostCard } from "./PostCard";
+import type { Post } from "../api/feed.types";
+
+interface PostListProps {
+    posts: Post[];
+    isLoading: boolean;
+    error: string | null;
+}
+
+export function PostList({ posts, isLoading, error }: PostListProps) {
+    if (isLoading) {
+        return (
+            <div className="flex justify-center p-10">
+                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-10 text-center text-red-400/60 text-sm">
+                {error}
+            </div>
+        );
+    }
+
+    if (posts.length === 0) {
+        return (
+            <div className="p-10 text-center text-white/30 italic text-sm">
+                Bu kategoride henüz bir paylaşım yok.
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col">
+            {posts.map((post) => (
+                <PostCard key={post.id} {...post} />
+            ))}
+        </div>
+    );
+}
