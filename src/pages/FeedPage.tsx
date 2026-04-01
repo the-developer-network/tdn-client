@@ -87,7 +87,12 @@ export default function FeedPage() {
                     </div>
 
                     {/* Post Box */}
-                    {isAuthenticated && <PostBox onPostCreated={addPost} />}
+                    {isAuthenticated && (
+                        <PostBox
+                            onPostCreated={addPost}
+                            activeCategory={activeCategory}
+                        />
+                    )}
 
                     <PostList
                         posts={posts}

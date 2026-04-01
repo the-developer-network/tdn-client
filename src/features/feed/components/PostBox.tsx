@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { feedApi } from "../api/feed.api";
-import type { Post } from "../api/feed.types";
+import type { Post, PostType } from "../api/feed.types";
 
 interface PostBoxProps {
     onPostCreated: (post: Post) => void;
+    activeCategory: PostType;
 }
 
-export function PostBox({ onPostCreated }: PostBoxProps) {
+export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     const [content, setContent] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useAuthStore();
@@ -16,7 +17,7 @@ export function PostBox({ onPostCreated }: PostBoxProps) {
         if (!content.trim() || isSubmitting) return;
         setIsSubmitting(true);
         try {
-            const post = await feedApi.createPost(content, "COMMUNITY");
+            const post = await feedApi.createPost(content, activeCategory);
             onPostCreated(post);
             setContent("");
         } catch (err) {
