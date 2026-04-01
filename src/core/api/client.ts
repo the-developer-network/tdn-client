@@ -62,12 +62,13 @@ export const apiClient = async <T>(
 
         const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
         });
 
         if (refreshRes.ok) {
             const { data } = await refreshRes.json();
-            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("access_token", data.accessToken);
             processQueue(null, data.access_token);
             isRefreshing = false;
             return apiClient<T>(endpoint, { ...options, _retry: true });

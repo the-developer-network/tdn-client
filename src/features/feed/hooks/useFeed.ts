@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { feedApi } from "../api/feed-api";
+import { feedApi } from "../api/feed.api";
 import type { Post, PostType } from "../api/feed.types";
 
 export function useFeed() {
@@ -30,6 +30,10 @@ export function useFeed() {
         [fetchPosts],
     );
 
+    const addPost = useCallback((post: Post) => {
+        setPosts((prev) => [post, ...prev]);
+    }, []);
+
     return {
         posts,
         isLoading,
@@ -37,5 +41,6 @@ export function useFeed() {
         fetchPosts,
         activeCategory,
         changeCategory,
+        addPost,
     };
 }

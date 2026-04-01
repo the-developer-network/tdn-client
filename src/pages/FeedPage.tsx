@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { AuthModal } from "../features/auth/components/AuthModal";
 import { Sidebar } from "../shared/layout/Sidebar";
 import { PostList } from "../features/feed/components/PostList";
+import { PostBox } from "../features/feed/components/PostBox";
 import { useFeed } from "../features/feed/hooks/useFeed";
+import { useAuthStore } from "../core/auth/auth.store";
 import type { PostType } from "../features/feed/api/feed.types";
 
 const CATEGORIES: { label: string; value: PostType }[] = [
@@ -20,7 +22,9 @@ export default function FeedPage() {
         fetchPosts,
         activeCategory,
         changeCategory,
+        addPost,
     } = useFeed();
+    const { isAuthenticated } = useAuthStore();
 
     useEffect(() => {
         fetchPosts("COMMUNITY");
@@ -67,12 +71,11 @@ export default function FeedPage() {
                                 <button
                                     key={cat.label}
                                     onClick={() => changeCategory(cat.value)}
-                                    className={`flex-1 py-3 text-sm font-medium transition-colors relative
-                ${
-                    activeCategory === cat.value
-                        ? "text-white"
-                        : "text-white/40 hover:text-white/70"
-                }`}
+                                    className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+                                        activeCategory === cat.value
+                                            ? "text-white"
+                                            : "text-white/40 hover:text-white/70"
+                                    }`}
                                 >
                                     {cat.label}
                                     {activeCategory === cat.value && (
@@ -82,6 +85,9 @@ export default function FeedPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Post Box */}
+                    {isAuthenticated && <PostBox onPostCreated={addPost} />}
 
                     <PostList
                         posts={posts}

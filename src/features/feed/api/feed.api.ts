@@ -1,5 +1,5 @@
 import { api } from "../../../core/api/client";
-import type { GetPostsParams, Post } from "./feed.types";
+import type { GetPostsParams, Post, PostType } from "./feed.types";
 
 export const feedApi = {
     getPosts: (params: GetPostsParams = {}): Promise<Post[]> => {
@@ -12,4 +12,6 @@ export const feedApi = {
             isPublic: true,
         });
     },
+    createPost: (content: string, type: PostType): Promise<Post> =>
+        api.post<Post>("/posts", { content, type, mediaUrls: [] }),
 };
