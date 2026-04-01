@@ -23,7 +23,14 @@ export default function OAuthSuccessPage() {
             );
 
             if (decoded?.id && decoded?.username) {
-                setAuth({ id: decoded.id, username: decoded.username }, token);
+                setAuth(
+                    {
+                        id: decoded.id,
+                        username: decoded.username,
+                        isEmailVerified: true,
+                    },
+                    token,
+                );
 
                 try {
                     const profileData = await profileApi.getProfile(
