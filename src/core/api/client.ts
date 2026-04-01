@@ -100,7 +100,7 @@ export const api = {
         apiClient<T>(url, {
             ...options,
             method: "POST",
-            body: JSON.stringify(body),
+            body: body instanceof FormData ? body : JSON.stringify(body),
         }),
     delete: <T>(url: string, options?: ApiOptions) =>
         apiClient<T>(url, { ...options, method: "DELETE" }),

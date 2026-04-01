@@ -12,6 +12,17 @@ export const feedApi = {
             isPublic: true,
         });
     },
-    createPost: (content: string, type: PostType): Promise<Post> =>
-        api.post<Post>("/posts", { content, type, mediaUrls: [] }),
+    createPost: (
+        content: string,
+        type: PostType,
+        mediaUrls: string[] = [],
+    ): Promise<Post> => api.post<Post>("/posts", { content, type, mediaUrls }),
+    uploadMedia: (files: File[]): Promise<{ mediaUrls: string[] }> => {
+        const formData = new FormData();
+        files.forEach((file) => formData.append("files", file));
+
+        return api.post<{ mediaUrls: string[] }>("/media", formData, {
+            contentType: false,
+        });
+    },
 };
