@@ -27,7 +27,7 @@ export function PostList({ posts, isLoading, error }: PostListProps) {
     if (posts.length === 0) {
         return (
             <div className="p-10 text-center text-white/30 italic text-sm">
-                Bu kategoride henüz bir paylaşım yok.
+                Caterogy Empty
             </div>
         );
     }

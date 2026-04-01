@@ -25,4 +25,9 @@ export const feedApi = {
             contentType: false,
         });
     },
+    likePost: (postId: string): Promise<void> =>
+        api.post(`/posts/${postId}/like`, {}, { contentType: true }),
+
+    unlikePost: (postId: string): Promise<void> =>
+        api.delete(`/posts/${postId}/unlike`, { contentType: false }),
 };

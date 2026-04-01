@@ -15,8 +15,6 @@ export function IdentifierView() {
             const response = await authApi.checkIdentifier(value);
             setIdentifier(value);
 
-            console.log(response.check);
-
             if (response.check) {
                 setStep("login");
             } else {

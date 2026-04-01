@@ -3,7 +3,7 @@ import { AuthModal } from "../features/auth/components/AuthModal";
 import { Sidebar } from "../shared/layout/Sidebar";
 import { PostList } from "../features/feed/components/PostList";
 import { PostBox } from "../features/feed/components/PostBox";
-import { useFeed } from "../features/feed/hooks/useFeed";
+import { useFeed } from "../features/feed/components/useFeed";
 import { useAuthStore } from "../core/auth/auth.store";
 import type { PostType } from "../features/feed/api/feed.types";
 
@@ -24,11 +24,12 @@ export default function FeedPage() {
         changeCategory,
         addPost,
     } = useFeed();
-    const { isAuthenticated } = useAuthStore();
+
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     useEffect(() => {
-        fetchPosts("COMMUNITY");
-    }, [fetchPosts]);
+        fetchPosts(activeCategory);
+    }, [activeCategory, fetchPosts, isAuthenticated]);
 
     return (
         <div className="flex justify-center min-h-screen bg-black">
@@ -87,12 +88,10 @@ export default function FeedPage() {
                     </div>
 
                     {/* Post Box */}
-                    {isAuthenticated && (
-                        <PostBox
-                            onPostCreated={addPost}
-                            activeCategory={activeCategory}
-                        />
-                    )}
+                    <PostBox
+                        onPostCreated={addPost}
+                        activeCategory={activeCategory}
+                    />
 
                     <PostList
                         posts={posts}

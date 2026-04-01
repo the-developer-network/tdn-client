@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
+import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { feedApi } from "../api/feed.api";
 import type { Post, PostType } from "../api/feed.types";
 
@@ -17,7 +18,9 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     const [previews, setPreviews] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { user } = useAuthStore();
+
+    const { user, isAuthenticated } = useAuthStore();
+    const { openModal, setStep } = useAuthModalStore();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = Array.from(e.target.files || []);
@@ -36,6 +39,13 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
 
     const handleSubmit = async () => {
         if ((!content.trim() && files.length === 0) || isSubmitting) return;
+
+        if (!isAuthenticated) {
+            setStep("login");
+            openModal();
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             let mediaUrls: string[] = [];
@@ -70,15 +80,22 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                 <img
                     src={
                         user?.avatarUrl ||
-                        `https://ui-avatars.com/api/?name=${user?.username}`
+                        (user
+                            ? `https://ui-avatars.com/api/?name=${user.username}`
+                            : `https://ui-avatars.com/api/?name=Guest&background=random`)
                     }
                     className="h-10 w-10 rounded-full border border-white/5 object-cover shrink-0"
+                    alt="User avatar"
                 />
                 <div className="flex-1 flex flex-col gap-3">
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        placeholder="What are you building today?"
+                        placeholder={
+                            isAuthenticated
+                                ? "What are you building today?"
+                                : "Sign in to share your thoughts..."
+                        }
                         rows={3}
                         className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none text-[15px] leading-relaxed"
                     />

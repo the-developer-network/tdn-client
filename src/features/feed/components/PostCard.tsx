@@ -1,4 +1,5 @@
 import type { Post, PostType } from "../api/feed.types";
+import { usePostActions } from "../hooks/usePostActions";
 
 const BADGE_STYLES: Record<PostType, string> = {
     TECH_NEWS: "border-white/20 text-white/60 bg-white/5",
@@ -8,6 +9,7 @@ const BADGE_STYLES: Record<PostType, string> = {
 };
 
 export function PostCard({
+    id,
     author,
     content,
     type,
@@ -15,12 +17,20 @@ export function PostCard({
     mediaUrls,
     likeCount,
     commentCount,
+    isLiked,
 }: Post) {
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
     const handleShare = () => {
         navigator.clipboard.writeText(window.location.href);
     };
+
+    const {
+        isLiked: liked,
+        likeCount: likes,
+        isLikeLoading,
+        handleLike,
+    } = usePostActions(isLiked, likeCount, id);
 
     return (
         <article className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer">
@@ -110,10 +120,17 @@ export function PostCard({
                         </button>
 
                         {/* Like */}
-                        <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
+                        <button
+                            onClick={handleLike}
+                            disabled={isLikeLoading}
+                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors
+            ${
+                liked ? "text-pink-500" : "hover:bg-white/5 hover:text-white/60"
+            } disabled:opacity-50`}
+                        >
                             <svg
                                 className="w-4 h-4"
-                                fill="none"
+                                fill={liked ? "currentColor" : "none"}
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
                             >
@@ -124,7 +141,7 @@ export function PostCard({
                                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                                 />
                             </svg>
-                            <span className="text-xs">{likeCount}</span>
+                            <span className="text-xs">{likes}</span>
                         </button>
 
                         {/* Bookmark */}

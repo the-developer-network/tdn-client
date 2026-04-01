@@ -36,11 +36,15 @@ export const apiClient = async <T>(
 
     const headers = new Headers(fetchOptions.headers);
 
-    if (contentType && !(fetchOptions.body instanceof FormData)) {
+    if (
+        contentType &&
+        fetchOptions.body &&
+        !(fetchOptions.body instanceof FormData)
+    ) {
         headers.set("Content-Type", "application/json");
     }
 
-    if (!isPublic && token) {
+    if (token) {
         headers.set("Authorization", `Bearer ${token}`);
     }
 
@@ -49,6 +53,7 @@ export const apiClient = async <T>(
         headers,
         credentials: "include",
     });
+
     if (response.status === 401 && !isPublic && !_retry) {
         if (isRefreshing) {
             return new Promise<string | null>((resolve, reject) => {
