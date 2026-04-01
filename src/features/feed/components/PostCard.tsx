@@ -22,10 +22,6 @@ export function PostCard({
 }: Post) {
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
-    const handleShare = () => {
-        navigator.clipboard.writeText(window.location.href);
-    };
-
     const {
         isLiked: liked,
         likeCount: likes,
@@ -34,7 +30,14 @@ export function PostCard({
         isBookmarked: bookmarked,
         isBookmarkLoading,
         handleBookmark,
-    } = usePostActions(isLiked, likeCount, isBookmarked, id);
+        handleShare,
+    } = usePostActions(
+        isLiked,
+        likeCount,
+        isBookmarked,
+        id,
+        `${author.username} post`,
+    );
 
     return (
         <article className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer">
@@ -45,6 +48,7 @@ export function PostCard({
                         `https://ui-avatars.com/api/?name=${author.username}`
                     }
                     className="h-10 w-10 rounded-full border border-white/5 object-cover shrink-0"
+                    alt={author.username}
                 />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -155,7 +159,7 @@ export function PostCard({
                             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50
             ${
                 bookmarked
-                    ? "text-white" // Aktifken bembeyaz olacak
+                    ? "text-white"
                     : "text-white/40 hover:bg-white/5 hover:text-white/60"
             }`}
                         >

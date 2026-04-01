@@ -2,12 +2,14 @@ import { useState } from "react";
 import { feedApi } from "../api/feed.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
+import { shareContent } from "../../../shared/utils/share";
 
 export function usePostActions(
     initialLiked: boolean,
     initialLikeCount: number,
     initialBookmarked: boolean,
     postId: string,
+    postTitle?: string,
 ) {
     const [isLiked, setIsLiked] = useState(initialLiked);
     const [likeCount, setLikeCount] = useState(initialLikeCount);
@@ -69,6 +71,22 @@ export function usePostActions(
         }
     };
 
+    const handleShare = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        const postUrl = `${window.location.origin}/post/${postId}`;
+
+        const result = await shareContent({
+            title: postTitle || "Post",
+            text: "You should check out this post!",
+            url: postUrl,
+        });
+
+        if (result === "copied") {
+            alert("The link has been copied to the clipboard!");
+        }
+    };
+
     return {
         isLiked,
         likeCount,
@@ -77,5 +95,6 @@ export function usePostActions(
         isBookmarked,
         isBookmarkLoading,
         handleBookmark,
+        handleShare,
     };
 }
