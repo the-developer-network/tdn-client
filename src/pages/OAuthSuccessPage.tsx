@@ -15,10 +15,16 @@ export default function OAuthSuccess() {
     const token = searchParams.get("token");
     const error = searchParams.get("error");
     const recoveryToken = searchParams.get("recoveryToken");
+    const refreshToken = searchParams.get("refreshToken");
 
     useEffect(() => {
         if (token) {
             localStorage.setItem("access_token", token);
+
+            if (refreshToken) {
+                localStorage.setItem("refresh_token", refreshToken);
+            }
+
             const handleAuthentication = async () => {
                 const decoded = decodeToken<{ id: string; username: string }>(
                     token,
@@ -61,6 +67,7 @@ export default function OAuthSuccess() {
         token,
         error,
         recoveryToken,
+        refreshToken,
         navigate,
         openModal,
         setRecoveryToken,

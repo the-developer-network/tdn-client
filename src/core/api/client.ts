@@ -65,25 +65,36 @@ export const apiClient = async <T>(
 
         isRefreshing = true;
 
+        const storedRefreshToken = localStorage.getItem("refresh_token");
+
         const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: storedRefreshToken
+                ? JSON.stringify({ refreshToken: storedRefreshToken })
+                : undefined,
             credentials: "include",
         });
 
         const refreshBody = await refreshRes.json();
-        console.log("refresh response:", refreshRes.status, refreshBody);
 
         if (refreshRes.ok) {
-            const { data } = await refreshRes.json();
-            localStorage.setItem("access_token", data.accessToken);
-            processQueue(null, data.accessToken);
-            isRefreshing = false;
-            return apiClient<T>(endpoint, { ...options, _retry: true });
+            const newAccessToken = refreshBody.data?.accessToken;
+            if (newAccessToken) {
+                localStorage.setItem("access_token", newAccessToken);
+
+                processQueue(null, newAccessToken);
+                isRefreshing = false;
+                return apiClient<T>(endpoint, { ...options, _retry: true });
+            }
         }
 
         isRefreshing = false;
         processQueue(new Error("Session Expired"), null);
         localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
         throw new Error("Session Expired");
     }
 
