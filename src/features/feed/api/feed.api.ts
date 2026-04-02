@@ -46,4 +46,7 @@ export const feedApi = {
 
         return api.get<Post[]>(`/posts/bookmarks?${query.toString()}`);
     },
+
+    getPostById: (postId: string): Promise<Post> =>
+        api.get<Post>(`/posts/${postId}`, { isPublic: true }),
 };

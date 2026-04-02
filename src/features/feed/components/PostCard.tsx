@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { Post, PostType } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
 
@@ -21,6 +22,7 @@ export function PostCard({
     isBookmarked = false,
 }: Post) {
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
+    const navigate = useNavigate();
 
     const {
         isLiked: liked,
@@ -39,8 +41,15 @@ export function PostCard({
         `${author.username} post`,
     );
 
+    const handleCardClick = () => {
+        navigate(`/post/${id}`);
+    };
+
     return (
-        <article className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer">
+        <article
+            className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer"
+            onClick={handleCardClick}
+        >
             <div className="flex gap-4">
                 <img
                     src={
