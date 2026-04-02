@@ -69,9 +69,9 @@ export const apiClient = async <T>(
 
         const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: storedRefreshToken
+                ? { "Content-Type": "application/json" }
+                : {},
             body: storedRefreshToken
                 ? JSON.stringify({ refreshToken: storedRefreshToken })
                 : undefined,
