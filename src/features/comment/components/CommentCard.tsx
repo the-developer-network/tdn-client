@@ -16,6 +16,7 @@ export function CommentCard({ comment }: CommentCardProps) {
         isBookmarked,
         isBookmarkLoading,
         handleSave,
+        handleShare,
     } = useCommentActions(
         comment.isLiked,
         comment.likeCount,
@@ -138,7 +139,10 @@ export function CommentCard({ comment }: CommentCardProps) {
                             </svg>
                         </button>
 
-                        <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
+                        <button
+                            className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                            onClick={handleShare}
+                        >
                             <svg
                                 className="w-4 h-4"
                                 fill="none"

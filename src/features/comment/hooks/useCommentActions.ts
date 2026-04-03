@@ -2,6 +2,7 @@ import { useState } from "react";
 import { commentApi } from "../api/comment.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
+import { shareContent } from "../../../shared/utils/share";
 
 export function useCommentActions(
     initialLiked: boolean,
@@ -68,6 +69,18 @@ export function useCommentActions(
         }
     };
 
+    const handleShare = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const postUrl = `${window.location.origin}/comments/${commentId}`;
+        const result = await shareContent({
+            title: "Comment",
+            text: "Check out this comment!",
+            url: postUrl,
+        });
+        if (result === "copied") {
+            alert("The link has been copied to the clipboard!");
+        }
+    };
     return {
         isLiked,
         likeCount,
@@ -76,5 +89,6 @@ export function useCommentActions(
         isBookmarked,
         isBookmarkLoading,
         handleSave,
+        handleShare,
     };
 }
