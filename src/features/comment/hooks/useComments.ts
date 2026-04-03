@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { commentApi } from "../api/comment.api";
+import { useAuthStore } from "../../../core/auth/auth.store";
 import type { Comment } from "../api/comment.types";
 
 export function useComments(postId: string) {
@@ -7,18 +8,24 @@ export function useComments(postId: string) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
     const fetchComments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await commentApi.getComments(postId);
+            const data = await commentApi.getComments(
+                postId,
+                {},
+                !isAuthenticated,
+            );
             setComments(data);
         } catch {
             setError("Comments could not be loaded.");
         } finally {
             setIsLoading(false);
         }
-    }, [postId]);
+    }, [postId, isAuthenticated]);
 
     const addComment = useCallback((comment: Comment) => {
         setComments((prev) => [comment, ...prev]);

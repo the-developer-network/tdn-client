@@ -1,11 +1,18 @@
 import type { Comment } from "../api/comment.types";
+import { useCommentActions } from "../hooks/useCommentActions";
 
 interface CommentCardProps {
     comment: Comment;
 }
 
 export function CommentCard({ comment }: CommentCardProps) {
-    const { author, content, mediaUrls, createdAt, likeCount } = comment;
+    const { author, content, mediaUrls, createdAt } = comment;
+
+    const { isLiked, likeCount, isLikeLoading, handleLike } = useCommentActions(
+        comment.isLiked,
+        comment.likeCount,
+        comment.id,
+    );
 
     if (!author) return null;
 
@@ -73,10 +80,18 @@ export function CommentCard({ comment }: CommentCardProps) {
                     )}
 
                     <div className="flex items-center justify-between max-w-xs mt-3 text-white/30">
-                        <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
+                        <button
+                            onClick={handleLike}
+                            disabled={isLikeLoading}
+                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
+                                isLiked
+                                    ? "text-pink-500"
+                                    : "hover:bg-white/5 hover:text-white/60"
+                            }`}
+                        >
                             <svg
                                 className="w-4 h-4"
-                                fill="none"
+                                fill={isLiked ? "currentColor" : "none"}
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
                             >

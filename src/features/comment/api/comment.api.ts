@@ -19,13 +19,14 @@ export const commentApi = {
     getComments: (
         postId: string,
         params: GetCommentsParams = {},
+        isPublic = true,
     ): Promise<Comment[]> => {
         const query = new URLSearchParams();
         query.set("page", String(params.page ?? 1));
         query.set("limit", String(params.limit ?? 20));
         return api.get<Comment[]>(
             `/posts/${postId}/comments?${query.toString()}`,
-            { isPublic: true },
+            isPublic ? { isPublic: true } : undefined,
         );
     },
 
