@@ -2,6 +2,15 @@ import type { ApiErrorResponse, ApiResponse } from "./api-types";
 
 const BASE_URL = "https://api.developernetwork.net/api/v1";
 
+type SessionExpiredHandler = () => void;
+let _onSessionExpired: SessionExpiredHandler | null = null;
+
+export const registerSessionExpiredHandler = (
+    handler: SessionExpiredHandler,
+): void => {
+    _onSessionExpired = handler;
+};
+
 interface ApiOptions extends RequestInit {
     isPublic?: boolean;
     _retry?: boolean;
@@ -67,34 +76,37 @@ export const apiClient = async <T>(
 
         const storedRefreshToken = localStorage.getItem("refresh_token");
 
-        const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
-            method: "POST",
-            headers: storedRefreshToken
-                ? { "Content-Type": "application/json" }
-                : {},
-            body: storedRefreshToken
-                ? JSON.stringify({ refreshToken: storedRefreshToken })
-                : undefined,
-            credentials: "include",
-        });
+        try {
+            const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+                method: "POST",
+                headers: storedRefreshToken
+                    ? { "Content-Type": "application/json" }
+                    : {},
+                body: storedRefreshToken
+                    ? JSON.stringify({ refreshToken: storedRefreshToken })
+                    : undefined,
+                credentials: "include",
+            });
 
-        const refreshBody = await refreshRes.json();
-
-        if (refreshRes.ok) {
-            const newAccessToken = refreshBody.data?.accessToken;
-            if (newAccessToken) {
-                localStorage.setItem("access_token", newAccessToken);
-
-                processQueue(null, newAccessToken);
-                isRefreshing = false;
-                return apiClient<T>(endpoint, { ...options, _retry: true });
+            if (refreshRes.ok) {
+                const refreshBody = await refreshRes.json();
+                const newAccessToken = refreshBody.data?.accessToken;
+                if (newAccessToken) {
+                    localStorage.setItem("access_token", newAccessToken);
+                    processQueue(null, newAccessToken);
+                    isRefreshing = false;
+                    return apiClient<T>(endpoint, { ...options, _retry: true });
+                }
             }
+        } catch {
+            // network error or non-JSON body — fall through to session expiry
         }
 
         isRefreshing = false;
         processQueue(new Error("Session Expired"), null);
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        _onSessionExpired?.();
         throw new Error("Session Expired");
     }
 

@@ -9,3 +9,7 @@ export interface ResetPasswordBody {
     otp: string;
     newPassword: string;
 }
+
+export interface OAuthExchangeBody {
+    code: string;
+}

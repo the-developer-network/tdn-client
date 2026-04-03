@@ -1,5 +1,9 @@
 import { api } from "../../../core/api/client";
-import type { RegisterBody, ResetPasswordBody } from "./auth-api-body-types";
+import type {
+    OAuthExchangeBody,
+    RegisterBody,
+    ResetPasswordBody,
+} from "./auth-api-body-types";
 import type {
     CheckResponse,
     LoginResponse,
@@ -38,4 +42,9 @@ export const authApi = {
             { recoveryToken },
             { isPublic: true },
         ),
+
+    exchangeCode: (payload: OAuthExchangeBody) =>
+        api.post<LoginResponse>("/oauth/exchange", payload, {
+            isPublic: true,
+        }),
 };

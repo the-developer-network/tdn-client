@@ -20,6 +20,7 @@ interface AuthState {
     setAuth: (payload: AuthPayload, token: string) => void;
     updateUser: (details: Partial<User>) => void;
     logout: () => void;
+    clearAuth: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -49,6 +50,11 @@ export const useAuthStore = create<AuthState>()(
                     localStorage.removeItem("access_token");
                     set({ user: null, token: null, isAuthenticated: false });
                 }
+            },
+
+            clearAuth: () => {
+                localStorage.removeItem("access_token");
+                set({ user: null, token: null, isAuthenticated: false });
             },
         }),
         {

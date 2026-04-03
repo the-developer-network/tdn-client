@@ -3,8 +3,8 @@ import { AuthModal } from "../features/auth/components/AuthModal";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { profileApi } from "../features/profile/api/profile.api";
-import { decodeToken } from "../shared/utils/jwt";
 import { useAuthStore } from "../core/auth/auth.store";
+import { authApi } from "../features/auth/api/auth-api";
 
 export default function OAuthSuccess() {
     const [searchParams] = useSearchParams();
@@ -12,47 +12,43 @@ export default function OAuthSuccess() {
     const { openModal, setRecoveryToken } = useAuthModalStore();
     const { setAuth, updateUser } = useAuthStore();
 
-    const token = searchParams.get("token");
+    const code = searchParams.get("code");
     const error = searchParams.get("error");
     const recoveryToken = searchParams.get("recoveryToken");
-    const refreshToken = searchParams.get("refreshToken");
 
     useEffect(() => {
-        if (token) {
-            localStorage.setItem("access_token", token);
-
-            if (refreshToken) {
-                localStorage.setItem("refresh_token", refreshToken);
-            }
-
+        if (code) {
             const handleAuthentication = async () => {
-                const decoded = decodeToken<{ id: string; username: string }>(
-                    token,
-                );
+                try {
+                    const response = await authApi.exchangeCode({ code });
 
-                if (decoded?.id && decoded?.username) {
+                    localStorage.setItem("access_token", response.accessToken);
+
                     setAuth(
                         {
-                            id: decoded.id,
-                            username: decoded.username,
-                            isEmailVerified: true,
+                            id: response.user.id,
+                            username: response.user.username,
+                            isEmailVerified: response.user.isEmailVerified,
                         },
-                        token,
+                        response.accessToken,
                     );
 
                     try {
                         const profileData = await profileApi.getProfile(
-                            decoded.username,
+                            response.user.username,
                         );
 
                         updateUser({
                             fullName: profileData.fullName,
                             avatarUrl: profileData.avatarUrl,
                         });
-                    } catch (error) {
-                        console.error("Hydration error:", error);
+                    } catch (err) {
+                        console.error("Hydration error:", err);
                     }
 
+                    navigate("/", { replace: true });
+                } catch (err) {
+                    console.error("OAuth exchange error:", err);
                     navigate("/", { replace: true });
                 }
             };
@@ -64,10 +60,9 @@ export default function OAuthSuccess() {
             navigate("/", { replace: true });
         }
     }, [
-        token,
+        code,
         error,
         recoveryToken,
-        refreshToken,
         navigate,
         openModal,
         setRecoveryToken,
