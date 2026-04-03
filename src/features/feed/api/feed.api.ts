@@ -1,5 +1,10 @@
 import { api } from "../../../core/api/client";
-import type { GetPostsParams, Post, PostType } from "./feed.types";
+import type {
+    GetPostsParams,
+    Post,
+    PostType,
+    BookmarksResponse,
+} from "./feed.types";
 
 export const feedApi = {
     getPosts: (params: GetPostsParams = {}): Promise<Post[]> => {
@@ -39,12 +44,14 @@ export const feedApi = {
 
     getBookmarks: (
         params: { page?: number; limit?: number } = {},
-    ): Promise<Post[]> => {
+    ): Promise<BookmarksResponse> => {
         const query = new URLSearchParams();
         query.set("page", String(params.page ?? 1));
         query.set("limit", String(params.limit ?? 20));
 
-        return api.get<Post[]>(`/posts/bookmarks?${query.toString()}`);
+        return api.get<BookmarksResponse>(
+            `/posts/bookmarks?${query.toString()}`,
+        );
     },
 
     getPostById: (postId: string): Promise<Post> =>

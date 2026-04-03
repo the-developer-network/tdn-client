@@ -1,3 +1,5 @@
+import type { Comment } from "../../comment/api/comment.types";
+
 export type PostType =
     | "COMMUNITY"
     | "TECH_NEWS"
@@ -28,4 +30,9 @@ export interface GetPostsParams {
     page?: number;
     limit?: number;
     type?: PostType;
+}
+
+export interface BookmarksResponse {
+    posts: Post[];
+    comments: Comment[];
 }

@@ -6,11 +6,15 @@ import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 export function useCommentActions(
     initialLiked: boolean,
     initialLikeCount: number,
+    initialBookmarked: boolean,
     commentId: string,
 ) {
     const [isLiked, setIsLiked] = useState(initialLiked);
     const [likeCount, setLikeCount] = useState(initialLikeCount);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+    const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
+    const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { openModal, setStep } = useAuthModalStore();
@@ -41,5 +45,36 @@ export function useCommentActions(
         }
     };
 
-    return { isLiked, likeCount, isLikeLoading, handleLike };
+    const handleSave = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!isAuthenticated) {
+            setStep("login");
+            openModal();
+            return;
+        }
+        if (isBookmarkLoading) return;
+
+        const prevBookmarked = isBookmarked;
+        setIsBookmarked(!isBookmarked);
+        setIsBookmarkLoading(true);
+
+        try {
+            if (prevBookmarked) await commentApi.unsaveComment(commentId);
+            else await commentApi.saveComment(commentId);
+        } catch {
+            setIsBookmarked(prevBookmarked);
+        } finally {
+            setIsBookmarkLoading(false);
+        }
+    };
+
+    return {
+        isLiked,
+        likeCount,
+        isLikeLoading,
+        handleLike,
+        isBookmarked,
+        isBookmarkLoading,
+        handleSave,
+    };
 }

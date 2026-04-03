@@ -35,4 +35,10 @@ export const commentApi = {
 
     unlikeComment: (commentId: string): Promise<void> =>
         api.delete(`/comments/${commentId}/unlike`),
+
+    saveComment: (commentId: string): Promise<void> =>
+        api.post(`/comments/${commentId}/save`, {}),
+
+    unsaveComment: (commentId: string): Promise<void> =>
+        api.delete(`/comments/${commentId}/unsave`),
 };

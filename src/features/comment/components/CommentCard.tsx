@@ -8,9 +8,18 @@ interface CommentCardProps {
 export function CommentCard({ comment }: CommentCardProps) {
     const { author, content, mediaUrls, createdAt } = comment;
 
-    const { isLiked, likeCount, isLikeLoading, handleLike } = useCommentActions(
+    const {
+        isLiked,
+        likeCount,
+        isLikeLoading,
+        handleLike,
+        isBookmarked,
+        isBookmarkLoading,
+        handleSave,
+    } = useCommentActions(
         comment.isLiked,
         comment.likeCount,
+        comment.isBookmarked,
         comment.id,
     );
 
@@ -105,10 +114,18 @@ export function CommentCard({ comment }: CommentCardProps) {
                             <span className="text-xs">{likeCount}</span>
                         </button>
 
-                        <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
+                        <button
+                            onClick={handleSave}
+                            disabled={isBookmarkLoading}
+                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
+                                isBookmarked
+                                    ? "text-blue-400"
+                                    : "hover:bg-white/5 hover:text-white/60"
+                            }`}
+                        >
                             <svg
                                 className="w-4 h-4"
-                                fill="none"
+                                fill={isBookmarked ? "currentColor" : "none"}
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
                             >

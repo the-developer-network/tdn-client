@@ -6,9 +6,10 @@ import { PostList } from "../features/feed/components/PostList";
 import { useBookmarks } from "../features/feed/hooks/useBookmarks";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
+import { CommentList } from "../features/comment/components/CommentList";
 
 export default function BookmarksPage() {
-    const { posts, isLoading, error } = useBookmarks();
+    const { posts, isLoading, error, comments } = useBookmarks();
     const navigate = useNavigate();
 
     const { user, isAuthenticated } = useAuthStore();
@@ -41,12 +42,15 @@ export default function BookmarksPage() {
                         </h1>
                         {/* Username */}
                         <p className="text-sm text-white/40 mt-1">
-                            @{user?.username} (Posts you saved)
+                            @{user?.username} (Posts & comments you saved)
                         </p>
                     </div>
 
                     {/* (Empty State) */}
-                    {posts.length === 0 && !isLoading && !error ? (
+                    {posts.length === 0 &&
+                    comments.length === 0 &&
+                    !isLoading &&
+                    !error ? (
                         <div className="flex flex-col items-center justify-center p-12 text-center border-b border-white/10">
                             <div className="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center mb-4">
                                 <svg
@@ -72,12 +76,21 @@ export default function BookmarksPage() {
                             </p>
                         </div>
                     ) : (
-                        /* Post List */
-                        <PostList
-                            posts={posts}
-                            isLoading={isLoading}
-                            error={error}
-                        />
+                        <>
+                            {" "}
+                            /* Post List */
+                            <PostList
+                                posts={posts}
+                                isLoading={isLoading}
+                                error={error}
+                            />
+                            /** Comment List */
+                            <CommentList
+                                comments={comments}
+                                isLoading={isLoading}
+                                error={error}
+                            />
+                        </>
                     )}
                 </main>
             </div>

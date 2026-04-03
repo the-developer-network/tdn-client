@@ -168,7 +168,7 @@ export function PostCard({
                             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50
             ${
                 bookmarked
-                    ? "text-white"
+                    ? "text-blue-400"
                     : "text-white/40 hover:bg-white/5 hover:text-white/60"
             }`}
                         >
