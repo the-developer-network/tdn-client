@@ -33,7 +33,7 @@ export function TrendingTopicsWidget() {
                             No trends yet.
                         </p>
                     )}
-                    {trends.map((trend) => (
+                    {trends.slice(0, 7).map((trend) => (
                         <div
                             key={trend.tag}
                             onClick={() =>
