@@ -21,6 +21,7 @@ export default function CommentDetailPage() {
         error: repliesError,
         fetchReplies,
         addReply,
+        removeReply,
     } = useCommentReplies(id!);
 
     const handleBack = () => {
@@ -98,7 +99,14 @@ export default function CommentDetailPage() {
                         <div className="p-8 text-red-400/60">{error}</div>
                     ) : comment ? (
                         <>
-                            <CommentCard comment={comment} />
+                            <CommentCard
+                                comment={comment}
+                                onDeleted={() => {
+                                    navigate(`/post/${comment.postId}`, {
+                                        replace: true,
+                                    });
+                                }}
+                            />
                             <CommentBox
                                 postId={comment.postId}
                                 parentId={id!}
@@ -119,6 +127,7 @@ export default function CommentDetailPage() {
                                     <CommentCard
                                         key={reply.id}
                                         comment={reply}
+                                        onDeleted={removeReply}
                                     />
                                 ))
                             )}

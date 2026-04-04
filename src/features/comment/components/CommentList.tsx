@@ -5,9 +5,15 @@ interface CommentListProps {
     comments: Comment[];
     isLoading: boolean;
     error: string | null;
+    onCommentDeleted?: (commentId: string) => void;
 }
 
-export function CommentList({ comments, isLoading, error }: CommentListProps) {
+export function CommentList({
+    comments,
+    isLoading,
+    error,
+    onCommentDeleted,
+}: CommentListProps) {
     if (isLoading) {
         return (
             <div className="flex justify-center p-8">
@@ -35,7 +41,11 @@ export function CommentList({ comments, isLoading, error }: CommentListProps) {
     return (
         <div>
             {comments.map((comment) => (
-                <CommentCard key={comment.id} comment={comment} />
+                <CommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onDeleted={onCommentDeleted}
+                />
             ))}
         </div>
     );

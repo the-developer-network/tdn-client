@@ -11,6 +11,10 @@ export function useCommentReplies(commentId: string) {
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+    const removeReply = useCallback((commentId: string) => {
+        setReplies((prev) => prev.filter((reply) => reply.id !== commentId));
+    }, []);
+
     const fetchReplies = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -33,5 +37,5 @@ export function useCommentReplies(commentId: string) {
         setReplies((prev) => [reply, ...prev]);
     }, []);
 
-    return { replies, isLoading, error, fetchReplies, addReply };
+    return { replies, isLoading, error, fetchReplies, addReply, removeReply };
 }

@@ -23,6 +23,7 @@ export default function FeedPage() {
         activeCategory,
         changeCategory,
         addPost,
+        removePost,
     } = useFeed();
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -97,6 +98,7 @@ export default function FeedPage() {
                         posts={posts}
                         isLoading={isLoading}
                         error={error}
+                        onPostDeleted={removePost}
                     />
                 </main>
             </div>

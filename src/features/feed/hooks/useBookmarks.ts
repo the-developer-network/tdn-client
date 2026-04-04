@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { feedApi } from "../api/feed.api";
 import type { Post } from "../api/feed.types";
 import type { Comment } from "../../comment/api/comment.types";
+
 export function useBookmarks() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
@@ -27,5 +28,9 @@ export function useBookmarks() {
         fetchBookmarks();
     }, [fetchBookmarks]);
 
-    return { posts, comments, isLoading, error, fetchBookmarks };
+    const removePost = useCallback((postId: string) => {
+        setPosts((prev) => prev.filter((post) => post.id !== postId));
+    }, []);
+
+    return { posts, comments, isLoading, error, fetchBookmarks, removePost };
 }

@@ -3,6 +3,7 @@ export interface CommentAuthor {
     username: string;
     fullName?: string;
     avatarUrl: string;
+    isMe?: boolean;
 }
 
 export interface Comment {

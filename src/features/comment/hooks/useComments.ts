@@ -10,6 +10,12 @@ export function useComments(postId: string) {
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+    const removeComment = useCallback((commentId: string) => {
+        setComments((prev) =>
+            prev.filter((comment) => comment.id !== commentId),
+        );
+    }, []);
+
     const fetchComments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -31,5 +37,12 @@ export function useComments(postId: string) {
         setComments((prev) => [comment, ...prev]);
     }, []);
 
-    return { comments, isLoading, error, fetchComments, addComment };
+    return {
+        comments,
+        isLoading,
+        error,
+        fetchComments,
+        addComment,
+        removeComment,
+    };
 }

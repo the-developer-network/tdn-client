@@ -5,9 +5,15 @@ interface PostListProps {
     posts: Post[];
     isLoading: boolean;
     error: string | null;
+    onPostDeleted?: (postId: string) => void;
 }
 
-export function PostList({ posts, isLoading, error }: PostListProps) {
+export function PostList({
+    posts,
+    isLoading,
+    error,
+    onPostDeleted,
+}: PostListProps) {
     if (isLoading) {
         return (
             <div className="flex justify-center p-10">
@@ -35,7 +41,7 @@ export function PostList({ posts, isLoading, error }: PostListProps) {
     return (
         <div className="flex flex-col">
             {posts.map((post) => (
-                <PostCard key={post.id} {...post} />
+                <PostCard key={post.id} {...post} onDeleted={onPostDeleted} />
             ))}
         </div>
     );

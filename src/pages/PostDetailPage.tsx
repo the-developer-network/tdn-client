@@ -21,6 +21,7 @@ export default function PostDetailPage() {
         isLoading: commentsLoading,
         fetchComments,
         addComment,
+        removeComment,
     } = useComments(id!);
 
     useEffect(() => {
@@ -81,7 +82,12 @@ export default function PostDetailPage() {
                         </div>
                     ) : post ? (
                         <div>
-                            <PostCard {...post} />
+                            <PostCard
+                                {...post}
+                                onDeleted={() => {
+                                    navigate("/", { replace: true });
+                                }}
+                            />
                             <CommentBox
                                 postId={post.id}
                                 onCommentCreated={addComment}
@@ -91,6 +97,7 @@ export default function PostDetailPage() {
                                     comments={comments}
                                     isLoading={commentsLoading}
                                     error={null}
+                                    onCommentDeleted={removeComment}
                                 />
                             </div>
                         </div>

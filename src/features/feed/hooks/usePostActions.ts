@@ -3,6 +3,7 @@ import { feedApi } from "../api/feed.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { shareContent } from "../../../shared/utils/share";
+import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 export function usePostActions(
     initialLiked: boolean,
@@ -10,6 +11,7 @@ export function usePostActions(
     initialBookmarked: boolean,
     postId: string,
     postTitle?: string,
+    onDeleteSuccess?: () => void,
 ) {
     const [isLiked, setIsLiked] = useState(initialLiked);
     const [likeCount, setLikeCount] = useState(initialLikeCount);
@@ -17,6 +19,7 @@ export function usePostActions(
 
     const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { openModal, setStep } = useAuthModalStore();
@@ -87,6 +90,29 @@ export function usePostActions(
         }
     };
 
+    const handleDelete = async () => {
+        if (!isAuthenticated) {
+            setStep("login");
+            openModal();
+            return false;
+        }
+
+        if (isDeleteLoading) return false;
+
+        setIsDeleteLoading(true);
+
+        try {
+            await feedApi.deletePost(postId);
+            onDeleteSuccess?.();
+            return true;
+        } catch (err) {
+            alert(getErrorMessage(err));
+            return false;
+        } finally {
+            setIsDeleteLoading(false);
+        }
+    };
+
     return {
         isLiked,
         likeCount,
@@ -96,5 +122,7 @@ export function usePostActions(
         isBookmarkLoading,
         handleBookmark,
         handleShare,
+        isDeleteLoading,
+        handleDelete,
     };
 }

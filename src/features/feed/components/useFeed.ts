@@ -34,6 +34,10 @@ export function useFeed() {
         setPosts((prev) => [post, ...prev]);
     }, []);
 
+    const removePost = useCallback((postId: string) => {
+        setPosts((prev) => prev.filter((post) => post.id !== postId));
+    }, []);
+
     return {
         posts,
         isLoading,
@@ -42,5 +46,6 @@ export function useFeed() {
         activeCategory,
         changeCategory,
         addPost,
+        removePost,
     };
 }

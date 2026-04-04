@@ -59,4 +59,6 @@ export const commentApi = {
             isPublic ? { isPublic: true } : undefined,
         );
     },
+    deleteComment: (commentId: string): Promise<void> =>
+        api.delete(`/comments/${commentId}`, { contentType: false }),
 };

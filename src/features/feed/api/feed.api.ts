@@ -56,4 +56,7 @@ export const feedApi = {
 
     getPostById: (postId: string): Promise<Post> =>
         api.get<Post>(`/posts/${postId}`, { isPublic: true }),
+
+    deletePost: (postId: string): Promise<void> =>
+        api.delete(`/posts/${postId}`, { contentType: false }),
 };
