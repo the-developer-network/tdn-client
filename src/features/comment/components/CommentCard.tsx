@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { Comment } from "../api/comment.types";
 import { useCommentActions } from "../hooks/useCommentActions";
+import { RichText } from "../../../shared/components/ui/RichText";
 
 interface CommentCardProps {
     comment: Comment;
@@ -68,7 +69,7 @@ export function CommentCard({ comment }: CommentCardProps) {
                     </div>
 
                     <p className="mt-1.5 text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap">
-                        {content}
+                        <RichText text={content} />
                     </p>
 
                     {mediaUrls && mediaUrls.length > 0 && (
@@ -89,6 +90,7 @@ export function CommentCard({ comment }: CommentCardProps) {
                                     ) : (
                                         <img
                                             src={url}
+                                            onClick={(e) => e.stopPropagation()}
                                             alt=""
                                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                                             loading="lazy"

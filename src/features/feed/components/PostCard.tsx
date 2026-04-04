@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { Post, PostType } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
+import { RichText } from "../../../shared/components/ui/RichText";
 
 const BADGE_STYLES: Record<PostType, string> = {
     TECH_NEWS: "border-white/20 text-white/60 bg-white/5",
@@ -86,7 +87,7 @@ export function PostCard({
                     </div>
 
                     <p className="mt-2 text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap">
-                        {content}
+                        <RichText text={content} />
                     </p>
 
                     {mediaUrls.length > 0 && (
