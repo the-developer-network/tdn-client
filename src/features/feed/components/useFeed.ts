@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { feedApi } from "../api/feed.api";
-import type { Post, PostType } from "../api/feed.types";
+import type { GetPostsParams, Post, PostType } from "../api/feed.types";
 
 export function useFeed() {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -8,11 +8,15 @@ export function useFeed() {
     const [error, setError] = useState<string | null>(null);
     const [activeCategory, setActiveCategory] = useState<PostType>("COMMUNITY");
 
-    const fetchPosts = useCallback(async (type?: PostType) => {
+    const fetchPosts = useCallback(async (arg?: PostType | GetPostsParams) => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await feedApi.getPosts({ page: 1, limit: 20, type });
+            const params: GetPostsParams =
+                typeof arg === "string"
+                    ? { page: 1, limit: 20, type: arg }
+                    : { page: 1, limit: 20, ...arg };
+            const data = await feedApi.getPosts(params);
             setPosts(data);
         } catch (err) {
             setError("Posts could not be loaded.");

@@ -30,6 +30,7 @@ export interface GetPostsParams {
     page?: number;
     limit?: number;
     type?: PostType;
+    tag?: string;
 }
 
 export interface BookmarksResponse {

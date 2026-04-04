@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { useTrends } from "../../features/trends/hooks/useTrends";
 
 export function TrendingTopicsWidget() {
     const { trends, isLoading, error } = useTrends();
+    const navigate = useNavigate();
 
     return (
         <div className="pt-4 px-4">
@@ -34,6 +36,9 @@ export function TrendingTopicsWidget() {
                     {trends.map((trend) => (
                         <div
                             key={trend.tag}
+                            onClick={() =>
+                                navigate(`/explore?tag=${trend.tag}`)
+                            }
                             className="px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer"
                         >
                             <p className="text-xs text-white/40">
@@ -50,7 +55,10 @@ export function TrendingTopicsWidget() {
                 </div>
 
                 <div className="px-4 py-3 border-t border-white/5">
-                    <span className="text-sm text-blue-400 hover:text-blue-300 cursor-pointer transition-colors">
+                    <span
+                        onClick={() => navigate("/explore")}
+                        className="text-sm text-blue-400 hover:text-blue-300 cursor-pointer transition-colors"
+                    >
                         Show more
                     </span>
                 </div>
