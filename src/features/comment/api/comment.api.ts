@@ -41,4 +41,22 @@ export const commentApi = {
 
     unsaveComment: (commentId: string): Promise<void> =>
         api.delete(`/comments/${commentId}/unsave`),
+    getCommentById: (commentId: string, isPublic = true): Promise<Comment> =>
+        api.get<Comment>(
+            `/comments/${commentId}`,
+            isPublic ? { isPublic: true } : undefined,
+        ),
+    getReplies: (
+        commentId: string,
+        params: GetCommentsParams = {},
+        isPublic = true,
+    ): Promise<Comment[]> => {
+        const query = new URLSearchParams();
+        query.set("page", String(params.page ?? 1));
+        query.set("limit", String(params.limit ?? 20));
+        return api.get<Comment[]>(
+            `/comments/${commentId}/replies?${query.toString()}`,
+            isPublic ? { isPublic: true } : undefined,
+        );
+    },
 };

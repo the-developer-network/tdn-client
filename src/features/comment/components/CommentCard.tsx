@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { Comment } from "../api/comment.types";
 import { useCommentActions } from "../hooks/useCommentActions";
 
@@ -6,7 +7,7 @@ interface CommentCardProps {
 }
 
 export function CommentCard({ comment }: CommentCardProps) {
-    const { author, content, mediaUrls, createdAt } = comment;
+    const { author, content, mediaUrls, createdAt, replyCount } = comment;
 
     const {
         isLiked,
@@ -24,12 +25,21 @@ export function CommentCard({ comment }: CommentCardProps) {
         comment.id,
     );
 
+    const navigate = useNavigate();
+
     if (!author) return null;
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
+    const handleCardClick = () => {
+        navigate(`/comments/${comment.id}`);
+    };
+
     return (
-        <article className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors">
+        <article
+            className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer"
+            onClick={handleCardClick}
+        >
             <div className="flex gap-3">
                 <img
                     src={
@@ -90,6 +100,28 @@ export function CommentCard({ comment }: CommentCardProps) {
                     )}
 
                     <div className="flex items-center justify-between max-w-xs mt-3 text-white/30">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/comments/${comment.id}`);
+                            }}
+                            className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                        >
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                />
+                            </svg>
+                            <span className="text-xs">{replyCount}</span>
+                        </button>
                         <button
                             onClick={handleLike}
                             disabled={isLikeLoading}

@@ -11,6 +11,7 @@ export interface Comment {
     mediaUrls: string[];
     createdAt: string;
     likeCount: number;
+    replyCount: number;
     isLiked: boolean;
     isBookmarked: boolean;
     author: CommentAuthor;
