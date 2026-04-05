@@ -1,75 +1,92 @@
-# React + TypeScript + Vite
+# TDN Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TDN Client is the frontend single-page application (SPA) for a social developer network. Built with React 19 and TypeScript 5.9, it uses Vite 8 for development and Cloudflare Workers (via `wrangler`) for deployment.
 
-Currently, two official plugins are available:
+Short: this repository contains the client application providing feed, post details, comments, bookmarks, and OAuth login flow.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Technologies:**
 
-## React Compiler
+- **React:** 19
+- **TypeScript:** 5.9 (strict)
+- **Vite:** 8
+- **Cloudflare Workers:** `wrangler`
+- **Tailwind CSS:** 4
+- **Zustand:** 5 (state management)
+- **React Router:** 7
+- **pnpm:** package manager
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+**Project status:** Private (see `package.json` -> `private: true`).
 
-Note: This will impact Vite dev & build performances.
+## Quick Start
 
-## Expanding the ESLint configuration
+- Install dependencies:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+pnpm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- Run development server:
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+pnpm run dev
 ```
+
+- Build & preview locally with Wrangler:
+
+```bash
+pnpm run preview
+```
+
+- Deploy to Cloudflare Workers:
+
+```bash
+pnpm run deploy
+```
+
+## Useful scripts
+
+- `dev`: start Vite dev server (`pnpm run dev`)
+- `build`: TypeScript build + Vite build (`pnpm run build`)
+- `preview`: build then `wrangler dev` for local Worker preview
+- `deploy`: build then `wrangler deploy`
+- `lint`: run ESLint
+- `format`: run Prettier
+
+## API & Authentication
+
+- API base URL: `https://api.developernetwork.net/api/v1` (defined in `src/core/api/client.ts`).
+- `src/core/api/client.ts` implements automatic token refresh, request queueing during refresh, and session-expiration handling.
+
+## Architecture / Folder Overview
+
+- `src/app/`: entry point, router, and global CSS
+- `src/core/`: API client, auth store, and cross-cutting utilities
+- `src/features/`: feature modules (auth, feed, comment, profile, trends)
+- `src/pages/`: route-level pages (FeedPage, PostDetailPage, BookmarksPage, etc.)
+- `src/shared/`: reusable UI components and utilities
+
+## Notable files
+
+- `src/app/main.tsx`: application bootstrap and session-expired handler registration
+- `src/app/router.tsx`: application routes (`/`, `/explore`, `/post/:id`, `/bookmarks`, `/comments/:id`, `/oauth-success`)
+- `src/core/api/client.ts`: main API client with token refresh and error handling
+
+## Development Conventions
+
+- Use `pnpm` as the package manager.
+- Code style: Prettier + ESLint with husky + lint-staged for pre-commit checks.
+- Use Zustand for global state; follow hooks and component patterns in the codebase.
+- Tailwind CSS utility classes only; avoid adding global CSS unless necessary.
+
+## Deployment
+
+- The project is configured to run on Cloudflare Workers. See `wrangler.jsonc` for configuration.
+
+## Contributing
+
+- Follow the repository's pre-commit checks (husky + lint-staged). Run `pnpm run lint` and `pnpm run format` before opening a pull request.
+- Contribution workflow: create a topic branch for your changes, then open a pull request. By contributing you agree that your contributions will be licensed under the project's license unless otherwise agreed in writing.
+
+## License
+
+- This project is distributed under the Custom Source-Available License. See the `LICENSE` file for the full text.
