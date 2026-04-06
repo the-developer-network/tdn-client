@@ -47,3 +47,15 @@ export interface FollowListMeta {
     offset: number;
     count: number;
 }
+
+export interface SuggestedUser {
+    userId: string;
+    username: string;
+    fullName: string;
+    avatarUrl: string;
+    bannerUrl: string;
+    bio: string;
+    followersCount: number;
+    isFollowing: boolean;
+    isMe: boolean;
+}

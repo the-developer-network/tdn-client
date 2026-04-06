@@ -9,6 +9,7 @@ import ProfilePage from "../pages/ProfilePage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import SettingsPage from "../pages/SettingsPage";
+import FollowsPage from "../pages/FollowsPage";
 
 export const router = createBrowserRouter([
     {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
     {
         path: "/settings",
         element: <SettingsPage />,
+    },
+    {
+        path: "/follows",
+        element: <FollowsPage />,
     },
     {
         path: "*",
