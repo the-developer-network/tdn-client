@@ -1,0 +1,27 @@
+version: 2
+updates:
+    - package-ecosystem: "npm"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      open-pull-requests-limit: 5
+      groups:
+          dev-tooling:
+              patterns:
+                  - "eslint*"
+                  - "@typescript-eslint/*"
+                  - "prettier"
+                  - "husky"
+                  - "lint-staged"
+          vite:
+              patterns:
+                  - "vite"
+                  - "@vitejs/*"
+                  - "@cloudflare/vite-plugin"
+          react:
+              patterns:
+                  - "react"
+                  - "react-dom"
+                  - "react-router*"
+                  - "react-helmet-async"

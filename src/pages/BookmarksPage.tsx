@@ -36,10 +36,17 @@ export default function BookmarksPage() {
                 </p>
             </div>
 
+            {/* Loading */}
+            {isLoading && (
+                <div className="flex justify-center py-16">
+                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+            )}
+
             {/* (Empty State) */}
-            {posts.length === 0 &&
+            {!isLoading &&
+            posts.length === 0 &&
             comments.length === 0 &&
-            !isLoading &&
             !error ? (
                 <div className="flex flex-col items-center justify-center p-12 text-center border-b border-white/10">
                     <div className="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center mb-4">
@@ -67,17 +74,21 @@ export default function BookmarksPage() {
                 </div>
             ) : (
                 <>
-                    <PostList
-                        posts={posts}
-                        isLoading={isLoading}
-                        error={error}
-                        onPostDeleted={removePost}
-                    />
-                    <CommentList
-                        comments={comments}
-                        isLoading={isLoading}
-                        error={error}
-                    />
+                    {!isLoading && (
+                        <>
+                            <PostList
+                                posts={posts}
+                                isLoading={false}
+                                error={error}
+                                onPostDeleted={removePost}
+                            />
+                            <CommentList
+                                comments={comments}
+                                isLoading={false}
+                                error={error}
+                            />
+                        </>
+                    )}
                 </>
             )}
         </PageShell>
