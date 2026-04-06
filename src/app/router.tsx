@@ -6,6 +6,8 @@ import PostDetailPage from "../pages/PostDetailPage";
 import CommentDetailPage from "../pages/CommentDetailPage";
 import ExplorePage from "../pages/ExplorePage";
 import ProfilePage from "../pages/ProfilePage";
+import TermsOfServicePage from "../pages/TermsOfServicePage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 
 export const router = createBrowserRouter([
     {
@@ -35,6 +37,14 @@ export const router = createBrowserRouter([
     {
         path: "/comments/:id",
         element: <CommentDetailPage />,
+    },
+    {
+        path: "/terms",
+        element: <TermsOfServicePage />,
+    },
+    {
+        path: "/privacy",
+        element: <PrivacyPolicyPage />,
     },
     {
         path: "*",

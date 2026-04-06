@@ -1,5 +1,5 @@
 import { api } from "../../../core/api/client";
-import type { Profile, FollowUser } from "./profile.types";
+import type { Profile, FollowUser, UpdateProfileBody } from "./profile.types";
 import type { Post } from "../../feed/api/feed.types";
 
 export const profileApi = {
@@ -27,6 +27,9 @@ export const profileApi = {
         api.get<FollowUser[]>(`/profiles/${username}/following`, {
             isPublic: true,
         }),
+
+    updateProfile: (body: UpdateProfileBody): Promise<Profile> =>
+        api.patch<Profile>("/profiles/me", body),
 
     searchProfiles: (q: string, limit = 10): Promise<Profile[]> => {
         const qs = `?q=${encodeURIComponent(q)}&limit=${limit}`;

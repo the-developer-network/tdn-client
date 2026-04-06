@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Calendar, LinkIcon } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
 import { FollowListModal } from "../features/profile/components/FollowListModal";
+import { EditProfileModal } from "../features/profile/components/EditProfileModal";
 import { useProfile } from "../features/profile/hooks/useProfile";
 import { useUserPosts } from "../features/profile/hooks/useUserPosts";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
+import type { Profile } from "../features/profile/api/profile.types";
 
 export default function ProfilePage() {
     const { username } = useParams<{ username: string }>();
@@ -18,6 +20,8 @@ export default function ProfilePage() {
     const [followModal, setFollowModal] = useState<
         "followers" | "following" | null
     >(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [localProfile, setLocalProfile] = useState<Profile | null>(null);
 
     const updateUser = useAuthStore((state) => state.updateUser);
     const openModal = useAuthModalStore((state) => state.openModal);
@@ -67,6 +71,11 @@ export default function ProfilePage() {
         removePost,
     } = useUserPosts(username ?? "");
 
+    const displayProfile = useMemo(
+        () => localProfile ?? profile,
+        [localProfile, profile],
+    );
+
     if (!username) {
         navigate("/", { replace: true });
         return null;
@@ -88,7 +97,7 @@ export default function ProfilePage() {
                             <div className="h-5 w-32 bg-white/10 rounded animate-pulse" />
                         ) : (
                             <h1 className="text-base font-bold text-white leading-tight">
-                                {profile?.fullName || username}
+                                {displayProfile?.fullName || username}
                             </h1>
                         )}
                         <p className="text-xs text-white/40">
@@ -123,13 +132,13 @@ export default function ProfilePage() {
             )}
 
             {/* Profile content */}
-            {!profileLoading && profile && (
+            {!profileLoading && displayProfile && (
                 <>
                     {/* Banner */}
                     <div className="relative h-40 bg-zinc-900 overflow-hidden">
-                        {profile.bannerUrl && (
+                        {displayProfile.bannerUrl && (
                             <img
-                                src={profile.bannerUrl}
+                                src={displayProfile.bannerUrl}
                                 alt="Banner"
                                 className="w-full h-full object-cover"
                             />
@@ -140,17 +149,17 @@ export default function ProfilePage() {
                     <div className="relative z-10 px-4 flex items-end justify-between -mt-10 mb-3">
                         <img
                             src={
-                                profile.avatarUrl ||
-                                `https://ui-avatars.com/api/?name=${profile.username}&size=80`
+                                displayProfile.avatarUrl ||
+                                `https://ui-avatars.com/api/?name=${displayProfile.username}&size=80`
                             }
-                            alt={profile.username}
+                            alt={displayProfile.username}
                             className="w-20 h-20 rounded-full border-4 border-black object-cover shrink-0 bg-zinc-900"
                         />
 
-                        {profile.isMe ? (
+                        {displayProfile.isMe ? (
                             <button
-                                disabled
-                                className="mt-12 rounded-full border border-white/20 px-5 py-1.5 text-sm font-semibold text-white/50 cursor-not-allowed"
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="mt-12 rounded-full border border-white/20 px-5 py-1.5 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
                             >
                                 Edit Profile
                             </button>
@@ -176,39 +185,39 @@ export default function ProfilePage() {
                     {/* Bio section */}
                     <div className="px-4 pb-4 border-b border-white/10">
                         <h2 className="text-xl font-bold text-white leading-tight">
-                            {profile.fullName || profile.username}
+                            {displayProfile.fullName || displayProfile.username}
                         </h2>
                         <p className="text-sm text-white/50 mt-0.5">
-                            @{profile.username}
+                            @{displayProfile.username}
                         </p>
 
-                        {profile.bio && (
+                        {displayProfile.bio && (
                             <p className="mt-3 text-sm text-white/80 leading-relaxed">
-                                {profile.bio}
+                                {displayProfile.bio}
                             </p>
                         )}
 
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-white/40">
-                            {profile.location && (
+                            {displayProfile.location && (
                                 <span className="flex items-center gap-1">
                                     <MapPin size={12} />
-                                    {profile.location}
+                                    {displayProfile.location}
                                 </span>
                             )}
-                            {profile.createdAt && (
+                            {displayProfile.createdAt && (
                                 <span className="flex items-center gap-1">
                                     <Calendar size={12} />
                                     Joined{" "}
                                     {new Date(
-                                        profile.createdAt,
+                                        displayProfile.createdAt,
                                     ).toLocaleDateString("en-US", {
                                         month: "long",
                                         year: "numeric",
                                     })}
                                 </span>
                             )}
-                            {profile.socials &&
-                                Object.entries(profile.socials)
+                            {displayProfile.socials &&
+                                Object.entries(displayProfile.socials)
                                     .filter(([, v]) => v)
                                     .slice(0, 2)
                                     .map(([key, value]) => (
@@ -233,7 +242,9 @@ export default function ProfilePage() {
                                 className="hover:underline text-left"
                             >
                                 <span className="font-bold text-white">
-                                    {profile.followingCount.toLocaleString()}
+                                    {(
+                                        displayProfile.followingCount ?? 0
+                                    ).toLocaleString()}
                                 </span>{" "}
                                 <span className="text-white/40">Following</span>
                             </button>
@@ -284,6 +295,23 @@ export default function ProfilePage() {
                 username={username}
                 type={followModal ?? "followers"}
             />
+
+            {/* Edit Profile modal */}
+            {displayProfile?.isMe && displayProfile && (
+                <EditProfileModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    profile={displayProfile}
+                    username={username}
+                    onSuccess={(updated) => {
+                        setLocalProfile(updated);
+                        updateUser({
+                            fullName: updated.fullName,
+                            avatarUrl: updated.avatarUrl,
+                        });
+                    }}
+                />
+            )}
         </PageShell>
     );
 }

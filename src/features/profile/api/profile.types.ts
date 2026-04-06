@@ -11,10 +11,17 @@ export interface Profile {
     createdAt: string;
     updatedAt: string;
     followersCount: number;
-    followingCount: number;
+    followingCount?: number;
     postCount: number;
     isMe: boolean;
     isFollowing: boolean;
+}
+
+export interface UpdateProfileBody {
+    fullName?: string;
+    bio?: string;
+    location?: string;
+    socials?: Record<string, string>;
 }
 
 export interface FollowUser {

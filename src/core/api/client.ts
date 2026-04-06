@@ -134,4 +134,10 @@ export const api = {
         }),
     delete: <T>(url: string, options?: ApiOptions) =>
         apiClient<T>(url, { ...options, method: "DELETE" }),
+    patch: <T>(url: string, body?: unknown, options?: ApiOptions) =>
+        apiClient<T>(url, {
+            ...options,
+            method: "PATCH",
+            body: body instanceof FormData ? body : JSON.stringify(body),
+        }),
 };

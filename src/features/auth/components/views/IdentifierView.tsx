@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthModalStore } from "../../store/auth-modal.store";
 import { authApi } from "../../api/auth-api";
 import { Button } from "../../../../shared/components/ui/Button";
@@ -6,7 +7,13 @@ import { Button } from "../../../../shared/components/ui/Button";
 export function IdentifierView() {
     const [value, setValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const { setStep, setIdentifier } = useAuthModalStore();
+    const { setStep, setIdentifier, closeModal } = useAuthModalStore();
+    const navigate = useNavigate();
+
+    function handleNavigate(path: string) {
+        closeModal();
+        navigate(path);
+    }
 
     const handleNext = async () => {
         if (!value) return;
@@ -85,11 +92,17 @@ export function IdentifierView() {
 
             <p className="mt-8 text-[12px] text-white/40 leading-relaxed text-center">
                 By signing up, you agree to the{" "}
-                <span className="text-blue-500 hover:underline cursor-pointer">
+                <span
+                    className="text-blue-500 hover:underline cursor-pointer"
+                    onClick={() => handleNavigate("/terms")}
+                >
                     Terms of Service
                 </span>{" "}
                 and{" "}
-                <span className="text-blue-500 hover:underline cursor-pointer">
+                <span
+                    className="text-blue-500 hover:underline cursor-pointer"
+                    onClick={() => handleNavigate("/privacy")}
+                >
                     Privacy Policy
                 </span>
                 .
