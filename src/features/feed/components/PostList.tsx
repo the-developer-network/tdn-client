@@ -1,5 +1,9 @@
+import { Fragment } from "react";
 import { PostCard } from "./PostCard";
+import { AdPlaceholderCard } from "./AdPlaceholderCard";
 import type { Post } from "../api/feed.types";
+
+const AD_INTERVAL = 5;
 
 interface PostListProps {
     posts: Post[];
@@ -38,10 +42,17 @@ export function PostList({
         );
     }
 
+    const showAds = posts.length > AD_INTERVAL;
+
     return (
         <div className="flex flex-col">
-            {posts.map((post) => (
-                <PostCard key={post.id} {...post} onDeleted={onPostDeleted} />
+            {posts.map((post, index) => (
+                <Fragment key={post.id}>
+                    <PostCard {...post} onDeleted={onPostDeleted} />
+                    {showAds && (index + 1) % AD_INTERVAL === 0 && (
+                        <AdPlaceholderCard />
+                    )}
+                </Fragment>
             ))}
         </div>
     );
