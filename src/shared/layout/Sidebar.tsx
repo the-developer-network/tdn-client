@@ -5,7 +5,7 @@ import logo from "../assets/images/logo.png";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
 
 export function Sidebar() {
-    const { isAuthenticated, user, logout } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
     const { openModal, setStep } = useAuthModalStore();
 
@@ -111,15 +111,15 @@ export function Sidebar() {
                             </svg>
                         </button>
 
-                        {/* Logout Option on Hover/Click - Simplified for now */}
+                        {/* Settings popup on hover */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                logout();
+                                navigate("/settings");
                             }}
-                            className="absolute -top-12 left-0 w-full bg-zinc-900 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-red-500 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all hover:bg-zinc-800"
+                            className="absolute -top-12 left-0 w-full bg-zinc-900 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all hover:bg-zinc-800 text-left shadow-xl"
                         >
-                            Log out @{user.username}
+                            Settings
                         </button>
                     </div>
                 ) : (

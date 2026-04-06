@@ -12,16 +12,23 @@ import type {
 
 export const authApi = {
     checkIdentifier: (identifier: string) =>
-        api.post<CheckResponse>("/auth/check", { identifier }),
+        api.post<CheckResponse>(
+            "/auth/check",
+            { identifier },
+            { isPublic: true },
+        ),
 
     login: (identifier: string, password: string) =>
-        api.post<LoginResponse>("/auth/login", {
-            identifier,
-            password,
-        }),
+        api.post<LoginResponse>(
+            "/auth/login",
+            { identifier, password },
+            { isPublic: true },
+        ),
 
     register: (payload: RegisterBody) =>
-        api.post<RegisterResponse>("/auth/register", payload),
+        api.post<RegisterResponse>("/auth/register", payload, {
+            isPublic: true,
+        }),
 
     sendVerification: () => api.post<void>("/auth/send-verification"),
 
@@ -29,10 +36,10 @@ export const authApi = {
         api.post<{ verified: boolean }>("/auth/verify-email", { otp }),
 
     forgotPassword: (email: string) =>
-        api.post<void>("/auth/forgot-password", { email }),
+        api.post<void>("/auth/forgot-password", { email }, { isPublic: true }),
 
     resetPassword: (payload: ResetPasswordBody) =>
-        api.post<void>("/auth/reset-password", payload),
+        api.post<void>("/auth/reset-password", payload, { isPublic: true }),
 
     logout: () => api.post("/auth/logout", undefined, { contentType: false }),
 

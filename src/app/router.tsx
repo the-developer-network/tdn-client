@@ -8,6 +8,7 @@ import ExplorePage from "../pages/ExplorePage";
 import ProfilePage from "../pages/ProfilePage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
+import SettingsPage from "../pages/SettingsPage";
 
 export const router = createBrowserRouter([
     {
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
     {
         path: "/privacy",
         element: <PrivacyPolicyPage />,
+    },
+    {
+        path: "/settings",
+        element: <SettingsPage />,
     },
     {
         path: "*",
