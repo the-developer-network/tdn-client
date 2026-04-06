@@ -5,6 +5,7 @@ import BookmarksPage from "../pages/BookmarksPage";
 import PostDetailPage from "../pages/PostDetailPage";
 import CommentDetailPage from "../pages/CommentDetailPage";
 import ExplorePage from "../pages/ExplorePage";
+import ProfilePage from "../pages/ProfilePage";
 
 export const router = createBrowserRouter([
     {
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
     {
         path: "/bookmarks",
         element: <BookmarksPage />,
+    },
+    {
+        path: "/profile/:username",
+        element: <ProfilePage />,
     },
     {
         path: "/comments/:id",

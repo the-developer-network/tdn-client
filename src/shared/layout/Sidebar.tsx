@@ -7,6 +7,16 @@ import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
 export function Sidebar() {
     const { isAuthenticated, user, logout } = useAuthStore();
     const navigate = useNavigate();
+    const { openModal, setStep } = useAuthModalStore();
+
+    function handleProfileClick() {
+        if (!isAuthenticated) {
+            setStep("login");
+            openModal();
+            return;
+        }
+        navigate(`/profile/${user?.username}`);
+    }
 
     return (
         <aside className="fixed w-[275px] h-screen flex flex-col justify-between py-6 px-4 border-r border-white/10 bg-black">
@@ -43,13 +53,15 @@ export function Sidebar() {
                         label="Bookmarks"
                         icon={<BookmarkIcon />}
                     />
-                    <NavItem
-                        to={
-                            isAuthenticated ? `/profile/${user?.username}` : "/"
-                        }
-                        label="Profile"
-                        icon={<ProfileIcon />}
-                    />
+                    <button
+                        onClick={handleProfileClick}
+                        className="flex items-center gap-x-4 px-4 py-3 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all group w-full text-left"
+                    >
+                        <span className="w-6 h-6 transition-transform group-hover:scale-110">
+                            <ProfileIcon />
+                        </span>
+                        <span className="text-xl hidden xl:block">Profile</span>
+                    </button>
                 </nav>
             </div>
 

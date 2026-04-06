@@ -13,6 +13,10 @@ export interface PostAuthor {
     avatarUrl: string;
     isMe?: boolean;
 }
+export interface PostTag {
+    name: string;
+}
+
 export interface Post {
     id: string;
     content: string;
@@ -24,6 +28,7 @@ export interface Post {
     isLiked: boolean;
     isBookmarked: boolean;
     author: PostAuthor;
+    tags?: PostTag[];
 }
 
 export interface GetPostsParams {

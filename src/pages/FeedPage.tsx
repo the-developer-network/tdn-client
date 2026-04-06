@@ -6,6 +6,7 @@ import { PostBox } from "../features/feed/components/PostBox";
 import { useFeed } from "../features/feed/components/useFeed";
 import { useAuthStore } from "../core/auth/auth.store";
 import type { PostType } from "../features/feed/api/feed.types";
+import { ProfileSearchDropdown } from "../features/profile/components/ProfileSearchDropdown";
 
 const CATEGORIES: { label: string; value: PostType }[] = [
     { label: "Community", value: "COMMUNITY" },
@@ -38,27 +39,7 @@ export default function FeedPage() {
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
                 {/* Search */}
                 <div className="px-4 pt-4 pb-3">
-                    <div className="relative">
-                        <svg
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                            />
-                        </svg>
-                        <input
-                            type="text"
-                            placeholder="Search profiles..."
-                            disabled
-                            className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white/60 placeholder-white/30 cursor-not-allowed outline-none"
-                        />
-                    </div>
+                    <ProfileSearchDropdown />
                 </div>
 
                 {/* Categories */}

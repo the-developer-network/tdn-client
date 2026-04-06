@@ -12,3 +12,9 @@ export interface TrendsMeta {
     timestamp: string;
     windowDays: number;
 }
+
+export interface TagSearchItem {
+    name: string;
+    postCount: number;
+    category: string;
+}
