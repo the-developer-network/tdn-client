@@ -74,18 +74,30 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             author.avatarUrl ||
                             `https://ui-avatars.com/api/?name=${author.username}`
                         }
-                        className="h-9 w-9 rounded-full border border-white/5 object-cover shrink-0"
+                        className="h-9 w-9 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
                         alt={author.username}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/profile/${author.username}`);
+                        }}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                            {author.fullName && (
-                                <span className="font-semibold text-white text-sm">
-                                    {author.fullName}
+                            <span
+                                className="flex items-center gap-1.5 cursor-pointer"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/profile/${author.username}`);
+                                }}
+                            >
+                                {author.fullName && (
+                                    <span className="font-semibold text-white text-sm hover:underline">
+                                        {author.fullName}
+                                    </span>
+                                )}
+                                <span className="text-white/40 text-sm hover:underline">
+                                    @{author.username}
                                 </span>
-                            )}
-                            <span className="text-white/40 text-sm">
-                                @{author.username}
                             </span>
                             <span className="text-white/20">·</span>
                             <span className="text-white/40 text-xs">
