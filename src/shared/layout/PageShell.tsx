@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AuthModal } from "../../features/auth/components/AuthModal";
 import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
 
 interface PageShellProps {
     children: ReactNode;
@@ -11,11 +12,11 @@ export function PageShell({ children, rightRail }: PageShellProps) {
     return (
         <div className="flex justify-center min-h-screen bg-black">
             <div className="flex w-full max-w-[1250px]">
-                <div className="hidden sm:block w-[275px] shrink-0">
+                <div className="hidden sm:block sm:w-[220px] lg:w-[275px] shrink-0">
                     <Sidebar />
                 </div>
 
-                <main className="flex-1 max-w-[600px] border-x border-white/10 min-h-screen">
+                <main className="flex-1 max-w-full sm:max-w-[600px] sm:border-x border-white/10 min-h-screen pb-16 sm:pb-0">
                     {children}
                 </main>
 
@@ -29,6 +30,7 @@ export function PageShell({ children, rightRail }: PageShellProps) {
             </div>
 
             <AuthModal />
+            <BottomNav />
         </div>
     );
 }

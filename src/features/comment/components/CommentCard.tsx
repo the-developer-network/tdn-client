@@ -145,7 +145,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             </div>
                         )}
 
-                        <div className="mt-3 flex items-center gap-18 text-white/30">
+                        <div className="mt-3 flex items-center gap-6 text-white/30">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();

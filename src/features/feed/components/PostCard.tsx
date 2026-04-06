@@ -163,7 +163,7 @@ export function PostCard({
                             </div>
                         )}
 
-                        <div className="mt-4 flex items-center gap-18 text-white/30">
+                        <div className="mt-4 flex items-center gap-6 text-white/30">
                             <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
                                 <svg
                                     className="w-4 h-4"
