@@ -1,6 +1,8 @@
 import type { ApiErrorResponse, ApiResponse } from "./api-types";
 
-const BASE_URL = "https://api.developernetwork.net/api/v1";
+const BASE_URL = import.meta.env.PROD
+    ? "https://api.developernetwork.net/api/v1"
+    : "http://localhost:8080/api/v1";
 
 type SessionExpiredHandler = () => void;
 let _onSessionExpired: SessionExpiredHandler | null = null;
