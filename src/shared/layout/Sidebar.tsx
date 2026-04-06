@@ -3,11 +3,13 @@ import { useAuthStore } from "../../core/auth/auth.store";
 import { Button } from "../components/ui/Button";
 import logo from "../assets/images/logo.png";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
+import { useNotificationStore } from "../../features/notifications/store/notification.store";
 
 export function Sidebar() {
     const { isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
     const { openModal, setStep } = useAuthModalStore();
+    const unreadCount = useNotificationStore((state) => state.unreadCount);
 
     function handleProfileClick() {
         if (!isAuthenticated) {
@@ -42,6 +44,7 @@ export function Sidebar() {
                         to="/notifications"
                         label="Notifications"
                         icon={<BellIcon />}
+                        badge={unreadCount}
                     />
                     <NavItem
                         to="/follows"
@@ -142,18 +145,25 @@ function NavItem({
     to,
     label,
     icon,
+    badge,
 }: {
     to: string;
     label: string;
     icon: React.ReactNode;
+    badge?: number;
 }) {
     return (
         <Link
             to={to}
             className="flex items-center gap-x-4 px-4 py-3 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all group"
         >
-            <span className="w-6 h-6 transition-transform group-hover:scale-110">
+            <span className="relative w-6 h-6 transition-transform group-hover:scale-110">
                 {icon}
+                {badge != null && badge > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">
+                        {badge > 99 ? "99+" : badge}
+                    </span>
+                )}
             </span>
             <span className="text-xl hidden xl:block">{label}</span>
         </Link>

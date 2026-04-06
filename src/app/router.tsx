@@ -10,6 +10,7 @@ import TermsOfServicePage from "../pages/TermsOfServicePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import SettingsPage from "../pages/SettingsPage";
 import FollowsPage from "../pages/FollowsPage";
+import NotificationsPage from "../pages/NotificationsPage";
 
 export const router = createBrowserRouter([
     {
@@ -55,6 +56,10 @@ export const router = createBrowserRouter([
     {
         path: "/follows",
         element: <FollowsPage />,
+    },
+    {
+        path: "/notifications",
+        element: <NotificationsPage />,
     },
     {
         path: "*",
