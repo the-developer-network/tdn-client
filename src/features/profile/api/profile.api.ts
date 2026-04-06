@@ -2,6 +2,7 @@ import { api } from "../../../core/api/client";
 import type {
     Profile,
     FollowUser,
+    SuggestedUser,
     UpdateProfileBody,
     AvatarUploadResponse,
     BannerUploadResponse,
@@ -65,6 +66,9 @@ export const profileApi = {
         const qs = `?q=${encodeURIComponent(q)}&limit=${limit}`;
         return api.get<Profile[]>(`/profiles/search${qs}`, { isPublic: true });
     },
+
+    getSuggestions: (limit = 10): Promise<SuggestedUser[]> =>
+        api.get<SuggestedUser[]>(`/profiles/suggestions?limit=${limit}`),
 
     follow: (targetId: string): Promise<void> =>
         api.post<void>("/follows", { targetId }),
