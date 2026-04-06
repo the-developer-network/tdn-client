@@ -1,15 +1,66 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+    <head>
+        <meta charset="UTF-8" />
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Developer Network</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/app/main.tsx"></script>
-  </body>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TDN - The Developer Network</title>
+
+        <!-- Default SEO meta (overridden per-page by react-helmet-async + CF edge function) -->
+        <meta
+            name="description"
+            content="TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community."
+        />
+
+        <!-- Open Graph defaults -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="TDN - The Developer Network" />
+        <meta property="og:title" content="TDN - The Developer Network" />
+        <meta
+            property="og:description"
+            content="TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community."
+        />
+        <meta
+            property="og:image"
+            content="https://developernetwork.net/og-default.png"
+        />
+        <meta property="og:url" content="https://developernetwork.net" />
+
+        <!-- Twitter Card defaults -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="TDN - The Developer Network" />
+        <meta
+            name="twitter:description"
+            content="TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community."
+        />
+        <meta
+            name="twitter:image"
+            content="https://developernetwork.net/og-default.png"
+        />
+
+        <!-- JSON-LD: WebSite schema (enables Google Sitelinks search box) -->
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "TDN - The Developer Network",
+                "url": "https://developernetwork.net",
+                "description": "TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community.",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://developernetwork.net/explore?q={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/app/main.tsx"></script>
+    </body>
 </html>

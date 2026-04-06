@@ -12,6 +12,7 @@ import { useFollowAction } from "../features/profile/hooks/useFollowAction";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import type { Profile } from "../features/profile/api/profile.types";
+import { SEO } from "../shared/components/ui/SEO";
 
 export default function ProfilePage() {
     const { username } = useParams<{ username: string }>();
@@ -83,6 +84,16 @@ export default function ProfilePage() {
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
+            <SEO
+                title={
+                    displayProfile
+                        ? displayProfile.fullName ||
+                          `@${displayProfile.username}`
+                        : username
+                }
+                description={displayProfile?.bio ?? undefined}
+                canonical={`/profile/${username}`}
+            />
             {/* Sticky header */}
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
                 <div className="flex items-center gap-3 px-4 py-3">

@@ -24,6 +24,7 @@
         "lucide-react": "^1.7.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
+        "react-helmet-async": "^3.0.0",
         "react-router-dom": "^7.13.2",
         "tailwindcss": "^4.2.2",
         "zustand": "^5.0.12"
@@ -31,6 +32,7 @@
     "devDependencies": {
         "@babel/core": "^7.29.0",
         "@cloudflare/vite-plugin": "^1.29.1",
+        "@cloudflare/workers-types": "^4.20260405.1",
         "@eslint/js": "^9.39.4",
         "@rolldown/plugin-babel": "^0.2.1",
         "@types/babel__core": "^7.20.5",

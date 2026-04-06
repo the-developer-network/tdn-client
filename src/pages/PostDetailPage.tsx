@@ -8,6 +8,7 @@ import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget"
 import { CommentBox } from "../features/comment/components/CommentBox";
 import { useComments } from "../features/comment/hooks/useComments";
 import { CommentList } from "../features/comment/components/CommentList";
+import { SEO } from "../shared/components/ui/SEO";
 
 export default function PostDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -45,6 +46,15 @@ export default function PostDetailPage() {
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
+            <SEO
+                title={
+                    post
+                        ? `${post.author.username}: ${post.content.slice(0, 60)}${post.content.length > 60 ? "..." : ""}`
+                        : "Post"
+                }
+                description={post?.content.slice(0, 155)}
+                canonical={id ? `/post/${id}` : undefined}
+            />
             <div
                 className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center gap-6 cursor-pointer"
                 onClick={() => navigate(-1)}

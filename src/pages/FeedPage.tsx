@@ -7,6 +7,7 @@ import { useFeed } from "../features/feed/components/useFeed";
 import { useAuthStore } from "../core/auth/auth.store";
 import type { PostType } from "../features/feed/api/feed.types";
 import { ProfileSearchDropdown } from "../features/profile/components/ProfileSearchDropdown";
+import { SEO } from "../shared/components/ui/SEO";
 
 const CATEGORIES: { label: string; value: PostType }[] = [
     { label: "Community", value: "COMMUNITY" },
@@ -35,7 +36,10 @@ export default function FeedPage() {
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
-            {/* Header */}
+            <SEO
+                description="TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community."
+                canonical="/"
+            />
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
                 {/* Search */}
                 <div className="px-4 pt-4 pb-3">
