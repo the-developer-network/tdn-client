@@ -42,11 +42,17 @@ export function NotificationCard({ notification }: NotificationCardProps) {
                 break;
             case "NEW_POST":
             case "LIKE":
-                navigate(`/post/${notification.referenceId}`);
+                if (notification.referenceId) {
+                    navigate(`/post/${notification.referenceId}`);
+                } else {
+                    navigate(`/profile/${notification.username}`);
+                }
                 break;
             case "COMMENT":
             case "COMMENT_LIKE":
-                navigate(`/comments/${notification.referenceId}`);
+                if (notification.referenceId) {
+                    navigate(`/comments/${notification.referenceId}`);
+                }
                 break;
         }
     }

@@ -6,6 +6,7 @@ interface NotificationState {
     unreadCount: number;
     setNotifications: (list: Notification[], append?: boolean) => void;
     addNotification: (notification: Notification) => void;
+    incrementUnread: () => void;
     markAllRead: () => void;
 }
 
@@ -29,6 +30,9 @@ export const useNotificationStore = create<NotificationState>((set) => ({
                 ? state.unreadCount
                 : state.unreadCount + 1,
         })),
+
+    incrementUnread: () =>
+        set((state) => ({ unreadCount: state.unreadCount + 1 })),
 
     markAllRead: () =>
         set((state) => ({

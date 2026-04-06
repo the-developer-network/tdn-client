@@ -11,9 +11,15 @@ export interface Notification {
     username: string;
     type: NotificationType;
     avatarUrl: string;
-    referenceId: string;
+    referenceId: string | null;
     createdAt: string;
     isRead: boolean;
+}
+
+export interface RealtimeNotificationPayload {
+    type: NotificationType;
+    issuerId: string;
+    postId?: string;
 }
 
 export interface NotificationMeta {
