@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
                 </div>
             </div>
 
-            <div className="px-6 py-8 max-w-2xl space-y-8 text-white/80 text-sm leading-relaxed">
+            <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-8 text-white/80 text-sm leading-relaxed">
                 <div>
                     <p className="text-white/40 text-xs mb-4">
                         Last updated: April 2026

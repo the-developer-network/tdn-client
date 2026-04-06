@@ -34,7 +34,7 @@ export function AuthModal() {
 
     return (
         <Modal isOpen={isOpen} onClose={closeModal}>
-            <div className="flex flex-col items-center px-8 md:px-12 py-10 min-h-[450px]">
+            <div className="flex flex-col items-center px-5 sm:px-8 md:px-12 py-10 sm:min-h-[450px]">
                 <img src={logo} alt="TDN" className="h-8 w-auto mb-10" />
                 <div className="w-full">{renderContent()}</div>
             </div>

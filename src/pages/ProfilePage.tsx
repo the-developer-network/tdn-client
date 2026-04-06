@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Calendar, LinkIcon } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, LinkIcon, Settings } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
@@ -92,7 +92,7 @@ export default function ProfilePage() {
                     >
                         <ArrowLeft size={18} />
                     </button>
-                    <div>
+                    <div className="flex-1">
                         {profileLoading ? (
                             <div className="h-5 w-32 bg-white/10 rounded animate-pulse" />
                         ) : (
@@ -106,6 +106,15 @@ export default function ProfilePage() {
                                 : "\u00a0"}
                         </p>
                     </div>
+                    {displayProfile?.isMe && (
+                        <button
+                            onClick={() => navigate("/settings")}
+                            className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                            aria-label="Settings"
+                        >
+                            <Settings size={18} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -121,9 +130,9 @@ export default function ProfilePage() {
             {/* Profile skeleton */}
             {profileLoading && (
                 <div className="animate-pulse">
-                    <div className="h-40 bg-zinc-900" />
+                    <div className="h-24 sm:h-32 md:h-40 bg-zinc-900" />
                     <div className="px-4 pb-4">
-                        <div className="w-20 h-20 rounded-full bg-zinc-800 border-4 border-black -mt-10 mb-3" />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-zinc-800 border-4 border-black -mt-10 mb-3" />
                         <div className="h-5 w-40 bg-zinc-800 rounded mb-2" />
                         <div className="h-4 w-24 bg-zinc-800 rounded mb-3" />
                         <div className="h-4 w-64 bg-zinc-800 rounded" />
@@ -135,7 +144,7 @@ export default function ProfilePage() {
             {!profileLoading && displayProfile && (
                 <>
                     {/* Banner */}
-                    <div className="relative h-40 bg-zinc-900 overflow-hidden">
+                    <div className="relative h-24 sm:h-32 md:h-40 bg-zinc-900 overflow-hidden">
                         {displayProfile.bannerUrl && (
                             <img
                                 src={displayProfile.bannerUrl}
@@ -153,13 +162,13 @@ export default function ProfilePage() {
                                 `https://ui-avatars.com/api/?name=${displayProfile.username}&size=80`
                             }
                             alt={displayProfile.username}
-                            className="w-20 h-20 rounded-full border-4 border-black object-cover shrink-0 bg-zinc-900"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-black object-cover shrink-0 bg-zinc-900"
                         />
 
                         {displayProfile.isMe ? (
                             <button
                                 onClick={() => setIsEditModalOpen(true)}
-                                className="mt-12 rounded-full border border-white/20 px-5 py-1.5 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
+                                className="mt-8 sm:mt-12 rounded-full border border-white/20 px-5 py-1.5 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
                             >
                                 Edit Profile
                             </button>
@@ -167,7 +176,7 @@ export default function ProfilePage() {
                             <button
                                 onClick={handleFollow}
                                 disabled={followLoading}
-                                className={`mt-12 rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                                className={`mt-8 sm:mt-12 rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
                                     isFollowing
                                         ? "border-white/20 text-white/70 bg-transparent hover:border-red-500/50 hover:text-red-400"
                                         : "border-white bg-white text-black hover:bg-white/90"

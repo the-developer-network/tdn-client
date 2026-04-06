@@ -30,7 +30,7 @@ export function FollowListModal({
                     {type}
                 </h2>
 
-                <div className="max-h-[60vh] overflow-y-auto">
+                <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
                     {isLoading && (
                         <div className="flex justify-center py-10">
                             <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

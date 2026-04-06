@@ -107,7 +107,7 @@ export function EditProfileModal({
 
             <div className="pb-6">
                 {/* Banner */}
-                <div className="relative h-32 bg-zinc-900 overflow-hidden rounded-t-2xl">
+                <div className="relative h-24 sm:h-32 bg-zinc-900 overflow-hidden rounded-t-2xl">
                     {currentBanner && (
                         <img
                             src={currentBanner}

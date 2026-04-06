@@ -21,7 +21,7 @@ export function Sidebar() {
     }
 
     return (
-        <aside className="fixed w-[275px] h-screen flex flex-col justify-between py-6 px-4 border-r border-white/10 bg-black">
+        <aside className="fixed w-full sm:w-[220px] lg:w-[275px] h-screen flex flex-col justify-between py-6 px-4 border-r border-white/10 bg-black">
             <div className="flex flex-col gap-y-6">
                 {/* Brand Logo */}
                 <Link to="/" className="px-3 mb-2">
