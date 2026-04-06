@@ -310,6 +310,17 @@ export default function ProfilePage() {
                             avatarUrl: updated.avatarUrl,
                         });
                     }}
+                    onAvatarUpdate={(avatarUrl) => {
+                        setLocalProfile((prev) =>
+                            prev ? { ...prev, avatarUrl } : null,
+                        );
+                        updateUser({ avatarUrl });
+                    }}
+                    onBannerUpdate={(bannerUrl) => {
+                        setLocalProfile((prev) =>
+                            prev ? { ...prev, bannerUrl } : null,
+                        );
+                    }}
                 />
             )}
         </PageShell>

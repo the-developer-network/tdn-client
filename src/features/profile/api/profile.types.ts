@@ -24,6 +24,14 @@ export interface UpdateProfileBody {
     socials?: Record<string, string>;
 }
 
+export interface AvatarUploadResponse {
+    avatarUrl: string;
+}
+
+export interface BannerUploadResponse {
+    bannerUrl: string;
+}
+
 export interface FollowUser {
     userId: string;
     username: string;
