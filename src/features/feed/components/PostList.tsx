@@ -27,6 +27,7 @@ export function PostList({
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (isLoading) return;
         const sentinel = sentinelRef.current;
         if (!sentinel) return;
         const observer = new IntersectionObserver(
@@ -39,7 +40,7 @@ export function PostList({
         );
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [onLoadMore]);
+    }, [onLoadMore, isLoading]);
 
     if (isLoading) {
         return (
