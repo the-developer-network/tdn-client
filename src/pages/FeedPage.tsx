@@ -20,12 +20,15 @@ export default function FeedPage() {
     const {
         posts,
         isLoading,
+        isLoadingMore,
         error,
         fetchPosts,
         activeCategory,
         changeCategory,
         addPost,
         removePost,
+        hasMore,
+        loadMore,
     } = useFeed();
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -73,8 +76,11 @@ export default function FeedPage() {
             <PostList
                 posts={posts}
                 isLoading={isLoading}
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
                 error={error}
                 onPostDeleted={removePost}
+                onLoadMore={loadMore}
             />
         </PageShell>
     );

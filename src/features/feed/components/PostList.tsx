@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { PostCard } from "./PostCard";
 import { AdPlaceholderCard } from "./AdPlaceholderCard";
 import type { Post } from "../api/feed.types";
@@ -8,16 +8,39 @@ const AD_INTERVAL = 5;
 interface PostListProps {
     posts: Post[];
     isLoading: boolean;
+    isLoadingMore: boolean;
+    hasMore: boolean;
     error: string | null;
     onPostDeleted?: (postId: string) => void;
+    onLoadMore: () => void;
 }
 
 export function PostList({
     posts,
     isLoading,
+    isLoadingMore,
+    hasMore,
     error,
     onPostDeleted,
+    onLoadMore,
 }: PostListProps) {
+    const sentinelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    onLoadMore();
+                }
+            },
+            { threshold: 0.1 },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [onLoadMore]);
+
     if (isLoading) {
         return (
             <div className="flex justify-center p-10">
@@ -37,7 +60,7 @@ export function PostList({
     if (posts.length === 0) {
         return (
             <div className="p-10 text-center text-white/30 italic text-sm">
-                Caterogy Empty
+                Category Empty
             </div>
         );
     }
@@ -54,6 +77,17 @@ export function PostList({
                     )}
                 </Fragment>
             ))}
+            <div ref={sentinelRef} className="h-1" />
+            {isLoadingMore && (
+                <div className="flex justify-center p-6">
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+            )}
+            {!hasMore && (
+                <div className="p-6 text-center text-white/20 text-xs">
+                    No more posts
+                </div>
+            )}
         </div>
     );
 }
