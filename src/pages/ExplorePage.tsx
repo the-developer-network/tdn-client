@@ -87,8 +87,11 @@ export default function ExplorePage() {
                     <PostList
                         posts={posts}
                         isLoading={postsLoading}
+                        isLoadingMore={false}
+                        hasMore={false}
                         error={postsError}
                         onPostDeleted={removePost}
+                        onLoadMore={() => {}}
                     />
                 </>
             ) : (

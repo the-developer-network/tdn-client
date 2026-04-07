@@ -216,8 +216,14 @@ export default function TermsOfServicePage() {
                 </section>
 
                 <div className="border-t border-white/10 pt-6 text-white/40 text-xs">
-                    Questions? Reach out to us via the platform or through our
-                    open source repositories.
+                    Questions? Email us at{" "}
+                    <a
+                        href="mailto:contact@developernetwork.net"
+                        className="hover:text-white/60 transition-colors"
+                    >
+                        contact@developernetwork.net
+                    </a>
+                    .
                 </div>
             </div>
         </PageShell>

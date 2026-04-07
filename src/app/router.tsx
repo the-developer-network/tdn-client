@@ -8,6 +8,7 @@ import ExplorePage from "../pages/ExplorePage";
 import ProfilePage from "../pages/ProfilePage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
+import ContactPage from "../pages/ContactPage";
 import SettingsPage from "../pages/SettingsPage";
 import FollowsPage from "../pages/FollowsPage";
 import NotificationsPage from "../pages/NotificationsPage";
@@ -48,6 +49,10 @@ export const router = createBrowserRouter([
     {
         path: "/privacy",
         element: <PrivacyPolicyPage />,
+    },
+    {
+        path: "/contact",
+        element: <ContactPage />,
     },
     {
         path: "/settings",

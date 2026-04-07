@@ -135,6 +135,28 @@ export function Sidebar() {
                     </Button>
                 )}
             </div>
+
+            {/* Footer links */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 pt-3 pb-1">
+                <Link
+                    to="/privacy"
+                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                >
+                    Privacy
+                </Link>
+                <Link
+                    to="/terms"
+                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                >
+                    Terms
+                </Link>
+                <Link
+                    to="/contact"
+                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                >
+                    Contact
+                </Link>
+            </div>
         </aside>
     );
 }

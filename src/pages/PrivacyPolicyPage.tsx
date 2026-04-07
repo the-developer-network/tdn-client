@@ -116,8 +116,20 @@ export default function PrivacyPolicyPage() {
                         </li>
                     </ul>
                     <p className="mt-3">
-                        We do not use third-party tracking cookies or analytics
-                        cookies. Our cookies are strictly functional.
+                        TDN also displays advertisements served by{" "}
+                        <span className="text-white/80">Google AdSense</span>.
+                        Google may use cookies to serve ads based on your prior
+                        visits to this or other websites. You can opt out of
+                        personalized advertising by visiting{" "}
+                        <a
+                            href="https://www.google.com/settings/ads"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:underline"
+                        >
+                            Google Ads Settings
+                        </a>
+                        .
                     </p>
                 </section>
 
@@ -187,6 +199,22 @@ export default function PrivacyPolicyPage() {
                         </li>
                         <li>
                             <span className="text-white/80">
+                                Google AdSense
+                            </span>{" "}
+                            — for serving advertisements. Google may collect
+                            data as described in the{" "}
+                            <a
+                                href="https://policies.google.com/privacy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:underline"
+                            >
+                                Google Privacy Policy
+                            </a>
+                            .
+                        </li>
+                        <li>
+                            <span className="text-white/80">
                                 Cloudflare Workers
                             </span>{" "}
                             — for platform hosting and delivery.
@@ -235,8 +263,14 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <div className="border-t border-white/10 pt-6 text-white/40 text-xs">
-                    Questions about your privacy? Reach out through the platform
-                    or our open source repositories.
+                    Questions about your privacy? Email us at{" "}
+                    <a
+                        href="mailto:contact@developernetwork.net"
+                        className="hover:text-white/60 transition-colors"
+                    >
+                        contact@developernetwork.net
+                    </a>
+                    .
                 </div>
             </div>
         </PageShell>

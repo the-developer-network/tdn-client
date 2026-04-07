@@ -286,8 +286,11 @@ export default function ProfilePage() {
             <PostList
                 posts={posts}
                 isLoading={postsLoading && posts.length === 0}
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
                 error={postsError}
                 onPostDeleted={removePost}
+                onLoadMore={loadMore}
             />
 
             {/* Load more */}
