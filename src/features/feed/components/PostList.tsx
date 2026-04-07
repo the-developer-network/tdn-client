@@ -27,7 +27,7 @@ export function PostList({
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (isLoading) return;
+        if (isLoading || !hasMore || isLoadingMore) return;
         const sentinel = sentinelRef.current;
         if (!sentinel) return;
         const observer = new IntersectionObserver(
@@ -40,7 +40,7 @@ export function PostList({
         );
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [onLoadMore, isLoading]);
+    }, [onLoadMore, isLoading, hasMore, isLoadingMore]);
 
     if (isLoading) {
         return (

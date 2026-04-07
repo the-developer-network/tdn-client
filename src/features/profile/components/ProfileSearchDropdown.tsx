@@ -12,7 +12,7 @@ export function ProfileSearchDropdown() {
     const showDropdown = isFocused && query.length >= 2;
 
     useEffect(() => {
-        function handleClickOutside(e: MouseEvent) {
+        function handleOutside(e: MouseEvent | TouchEvent) {
             if (
                 containerRef.current &&
                 !containerRef.current.contains(e.target as Node)
@@ -20,9 +20,12 @@ export function ProfileSearchDropdown() {
                 setIsFocused(false);
             }
         }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("mousedown", handleOutside);
+        document.addEventListener("touchstart", handleOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleOutside);
+            document.removeEventListener("touchstart", handleOutside);
+        };
     }, []);
 
     function handleSelect(username: string) {
@@ -51,7 +54,7 @@ export function ProfileSearchDropdown() {
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsFocused(true)}
                     placeholder="Search profiles..."
-                    className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 focus:bg-white/8 transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-[16px] sm:text-sm text-white placeholder-white/30 outline-none focus:border-white/30 focus:bg-white/8 transition-colors"
                 />
             </div>
 
@@ -71,6 +74,7 @@ export function ProfileSearchDropdown() {
                         <button
                             key={profile.id ?? profile.username}
                             onMouseDown={(e) => e.preventDefault()}
+                            onTouchStart={(e) => e.preventDefault()}
                             onClick={() => handleSelect(profile.username)}
                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
                         >
