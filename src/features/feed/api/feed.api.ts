@@ -13,9 +13,10 @@ export const feedApi = {
         query.set("limit", String(params.limit ?? 20));
         if (params.type) query.set("type", params.type);
         if (params.tag) query.set("tag", params.tag);
+        if (params.followedOnly) query.set("followedOnly", "true");
 
         return api.get<Post[]>(`/posts?${query.toString()}`, {
-            isPublic: true,
+            isPublic: !params.followedOnly,
         });
     },
     createPost: (

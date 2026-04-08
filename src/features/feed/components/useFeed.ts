@@ -4,7 +4,7 @@ import type { GetPostsParams, Post, PostType } from "../api/feed.types";
 
 const PAGE_LIMIT = 20;
 
-export function useFeed() {
+export function useFeed(followedOnly: boolean = false) {
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -12,6 +12,8 @@ export function useFeed() {
     const [activeCategory, setActiveCategory] = useState<PostType>("COMMUNITY");
     const [hasMore, setHasMore] = useState(true);
     const pageRef = useRef(1);
+    const followedOnlyRef = useRef(followedOnly);
+    followedOnlyRef.current = followedOnly;
 
     const fetchPosts = useCallback(async (arg?: PostType | GetPostsParams) => {
         setIsLoading(true);
@@ -20,8 +22,18 @@ export function useFeed() {
         try {
             const params: GetPostsParams =
                 typeof arg === "string"
-                    ? { page: 1, limit: PAGE_LIMIT, type: arg }
-                    : { page: 1, limit: PAGE_LIMIT, ...arg };
+                    ? {
+                          page: 1,
+                          limit: PAGE_LIMIT,
+                          type: arg,
+                          followedOnly: followedOnlyRef.current,
+                      }
+                    : {
+                          page: 1,
+                          limit: PAGE_LIMIT,
+                          followedOnly: followedOnlyRef.current,
+                          ...arg,
+                      };
             const data = await feedApi.getPosts(params);
             setPosts(data);
             setHasMore(data.length === PAGE_LIMIT);
@@ -42,6 +54,7 @@ export function useFeed() {
                 page: nextPage,
                 limit: PAGE_LIMIT,
                 type: activeCategory,
+                followedOnly: followedOnlyRef.current,
             });
             setPosts((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);

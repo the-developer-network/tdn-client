@@ -36,6 +36,7 @@ export interface GetPostsParams {
     limit?: number;
     type?: PostType;
     tag?: string;
+    followedOnly?: boolean;
 }
 
 export interface BookmarksResponse {
