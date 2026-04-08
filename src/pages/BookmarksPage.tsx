@@ -85,11 +85,13 @@ export default function BookmarksPage() {
                                 onPostDeleted={removePost}
                                 onLoadMore={() => {}}
                             />
-                            <CommentList
-                                comments={comments}
-                                isLoading={false}
-                                error={error}
-                            />
+                            {comments.length > 0 && (
+                                <CommentList
+                                    comments={comments}
+                                    isLoading={false}
+                                    error={error}
+                                />
+                            )}
                         </>
                     )}
                 </>

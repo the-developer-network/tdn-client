@@ -52,9 +52,7 @@ export default function SettingsPage() {
                 )}
                 <ChangeUsernameSection />
                 <ChangeEmailSection />
-                <ChangePasswordSection
-                    providers={accountInfo?.providers ?? null}
-                />
+                <ChangePasswordSection />
                 <DangerZoneSection />
             </div>
         </PageShell>
@@ -232,14 +230,12 @@ function ChangeEmailSection() {
     );
 }
 
-function ChangePasswordSection({ providers }: { providers: string[] | null }) {
+function ChangePasswordSection() {
     const { handleSubmit, isLoading, error, success } = useUpdatePassword();
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [localError, setLocalError] = useState<string | null>(null);
-
-    if (providers !== null && !providers.includes("local")) return null;
 
     async function handleFormSubmit(e: React.FormEvent) {
         e.preventDefault();

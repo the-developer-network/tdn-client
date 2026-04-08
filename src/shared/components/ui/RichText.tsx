@@ -35,7 +35,7 @@ function parseRichText(
                     href={full}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
+                    className="text-blue-400 hover:underline break-all"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {full}
