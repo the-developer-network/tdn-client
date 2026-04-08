@@ -4,6 +4,7 @@ import type { Post, PostType } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
+import { useTranslation } from "../../../shared/hooks/useTranslation";
 
 const BADGE_STYLES: Record<PostType, string> = {
     TECH_NEWS: "border-white/20 text-white/60 bg-white/5",
@@ -33,6 +34,16 @@ export function PostCard({
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
     const navigate = useNavigate();
+
+    const {
+        displayContent,
+        isTranslated,
+        isTranslating: isTranslatingContent,
+        translateError,
+        showTranslate,
+        handleTranslate,
+        handleRevert,
+    } = useTranslation(content);
 
     const {
         isLiked: liked,
@@ -131,9 +142,63 @@ export function PostCard({
                         </div>
 
                         <RichText
-                            text={content}
+                            text={displayContent}
                             className="mt-2 text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap"
                         />
+                        {(showTranslate || isTranslated || translateError) && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                {!isTranslated && !translateError && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            void handleTranslate();
+                                        }}
+                                        disabled={isTranslatingContent}
+                                        className="text-xs text-blue-400 hover:underline disabled:opacity-50"
+                                    >
+                                        {isTranslatingContent
+                                            ? "Translating..."
+                                            : "Translate post"}
+                                    </button>
+                                )}
+                                {isTranslated && (
+                                    <>
+                                        <span className="text-xs text-white/30">
+                                            Translated
+                                        </span>
+                                        <span className="text-white/20">·</span>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRevert();
+                                            }}
+                                            className="text-xs text-white/40 hover:underline"
+                                        >
+                                            Show original
+                                        </button>
+                                    </>
+                                )}
+                                {translateError && (
+                                    <>
+                                        <span className="text-xs text-red-400">
+                                            {translateError}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRevert();
+                                            }}
+                                            className="text-xs text-white/40 hover:underline"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {mediaUrls.length > 0 && (
                             <div

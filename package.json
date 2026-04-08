@@ -21,6 +21,7 @@
     "dependencies": {
         "@tailwindcss/vite": "^4.2.2",
         "@types/react-router-dom": "^5.3.3",
+        "franc-min": "^6.2.0",
         "lucide-react": "^1.7.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
