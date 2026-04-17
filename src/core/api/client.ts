@@ -33,6 +33,27 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
+const attemptTokenRefresh = async (): Promise<string | null> => {
+    try {
+        const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+            method: "POST",
+            credentials: "include",
+        });
+
+        if (refreshRes.ok) {
+            const refreshBody = await refreshRes.json();
+            const newAccessToken = refreshBody.data?.accessToken;
+            if (newAccessToken) {
+                localStorage.setItem("access_token", newAccessToken);
+                return newAccessToken;
+            }
+        }
+    } catch {
+        // network error — fall through
+    }
+    return null;
+};
+
 export const apiClient = async <T>(
     endpoint: string,
     options: ApiOptions = {},
@@ -65,7 +86,32 @@ export const apiClient = async <T>(
         credentials: "include",
     });
 
-    if (response.status === 401 && !isPublic && !_retry) {
+    if (response.status === 401 && !_retry) {
+        // Public endpoints: retry without token so the request succeeds
+        // as unauthenticated, then attempt a background refresh.
+        if (isPublic) {
+            headers.delete("Authorization");
+            const retryRes = await fetch(`${BASE_URL}${endpoint}`, {
+                ...fetchOptions,
+                headers,
+                credentials: "include",
+            });
+
+            // Background refresh so subsequent authenticated calls work
+            attemptTokenRefresh().then((newToken) => {
+                if (!newToken) {
+                    localStorage.removeItem("access_token");
+                    _onSessionExpired?.();
+                }
+            });
+
+            if (retryRes.status === 204) return {} as T;
+            const retryResult = await retryRes.json();
+            if (!retryRes.ok) throw retryResult as ApiErrorResponse;
+            return (retryResult as ApiResponse<T>).data;
+        }
+
+        // Authenticated endpoints: queue behind an in-flight refresh
         if (isRefreshing) {
             return new Promise<string | null>((resolve, reject) => {
                 failedQueue.push({ resolve, reject });
@@ -76,38 +122,16 @@ export const apiClient = async <T>(
 
         isRefreshing = true;
 
-        const storedRefreshToken = localStorage.getItem("refresh_token");
-
-        try {
-            const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
-                method: "POST",
-                headers: storedRefreshToken
-                    ? { "Content-Type": "application/json" }
-                    : {},
-                body: storedRefreshToken
-                    ? JSON.stringify({ refreshToken: storedRefreshToken })
-                    : undefined,
-                credentials: "include",
-            });
-
-            if (refreshRes.ok) {
-                const refreshBody = await refreshRes.json();
-                const newAccessToken = refreshBody.data?.accessToken;
-                if (newAccessToken) {
-                    localStorage.setItem("access_token", newAccessToken);
-                    processQueue(null, newAccessToken);
-                    isRefreshing = false;
-                    return apiClient<T>(endpoint, { ...options, _retry: true });
-                }
-            }
-        } catch {
-            // network error or non-JSON body — fall through to session expiry
+        const newToken = await attemptTokenRefresh();
+        if (newToken) {
+            processQueue(null, newToken);
+            isRefreshing = false;
+            return apiClient<T>(endpoint, { ...options, _retry: true });
         }
 
         isRefreshing = false;
         processQueue(new Error("Session Expired"), null);
         localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
         _onSessionExpired?.();
         throw new Error("Session Expired");
     }
