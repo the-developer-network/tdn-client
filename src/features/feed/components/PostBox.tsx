@@ -19,8 +19,16 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { user, isAuthenticated } = useAuthStore();
     const { openModal, setStep } = useAuthModalStore();
+
+    const autoResize = () => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = Array.from(e.target.files || []);
@@ -66,6 +74,9 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
             setContent("");
             setFiles([]);
             setPreviews([]);
+            if (textareaRef.current) {
+                textareaRef.current.style.height = "auto";
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -89,15 +100,19 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                 />
                 <div className="flex-1 flex flex-col gap-3">
                     <textarea
+                        ref={textareaRef}
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={(e) => {
+                            setContent(e.target.value);
+                            autoResize();
+                        }}
                         placeholder={
                             isAuthenticated
                                 ? "What are you building today?"
                                 : "Sign in to share your thoughts..."
                         }
                         rows={3}
-                        className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none text-[15px] leading-relaxed"
+                        className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
                     />
 
                     {/* Preview */}
