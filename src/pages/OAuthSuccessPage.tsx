@@ -22,8 +22,6 @@ export default function OAuthSuccess() {
                 try {
                     const response = await authApi.exchangeCode({ code });
 
-                    localStorage.setItem("access_token", response.accessToken);
-
                     setAuth(
                         {
                             id: response.user.id,

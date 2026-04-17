@@ -24,20 +24,28 @@ interface AuthModalState {
     reset: () => void;
 }
 
+let closeTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export const useAuthModalStore = create<AuthModalState>((set) => ({
     isOpen: false,
     step: "initial",
     identifier: "",
     recoveryToken: null,
 
-    openModal: (step = "initial") => set({ isOpen: true, step }),
+    openModal: (step = "initial") => {
+        if (closeTimeout) {
+            clearTimeout(closeTimeout);
+            closeTimeout = null;
+        }
+        set({ isOpen: true, step });
+    },
 
     closeModal: () => {
         set({ isOpen: false });
-        setTimeout(
-            () => set({ step: "initial", identifier: "", recoveryToken: null }),
-            300,
-        );
+        closeTimeout = setTimeout(() => {
+            closeTimeout = null;
+            set({ step: "initial", identifier: "", recoveryToken: null });
+        }, 300);
     },
 
     setStep: (step) => set({ step }),
