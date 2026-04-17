@@ -48,6 +48,7 @@ function buildMetaTags(
     <meta property="og:image" content="${i}" />
     <meta property="og:url" content="${u}" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@devnetworknet" />
     <meta name="twitter:title" content="${t}" />
     <meta name="twitter:description" content="${d}" />
     <meta name="twitter:image" content="${i}" />
@@ -55,6 +56,11 @@ function buildMetaTags(
 }
 
 function injectIntoHead(html: string, tags: string): string {
+    // Remove existing OG, Twitter, and description meta tags to avoid duplicates
+    html = html.replace(
+        /<meta\s+(property="og:|name="twitter:|name="description")[^>]*>\s*/g,
+        "",
+    );
     return html.replace("</head>", `${tags}\n  </head>`);
 }
 
@@ -62,7 +68,8 @@ async function fetchPost(postId: string): Promise<Post | null> {
     try {
         const res = await fetch(`${API_BASE}/posts/${postId}`);
         if (!res.ok) return null;
-        return (await res.json()) as Post;
+        const json = (await res.json()) as { data: Post };
+        return json.data;
     } catch {
         return null;
     }
@@ -72,7 +79,8 @@ async function fetchProfile(username: string): Promise<Profile | null> {
     try {
         const res = await fetch(`${API_BASE}/profiles/${username}`);
         if (!res.ok) return null;
-        return (await res.json()) as Profile;
+        const json = (await res.json()) as { data: Profile };
+        return json.data;
     } catch {
         return null;
     }
