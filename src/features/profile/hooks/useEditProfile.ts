@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { profileApi } from "../api/profile.api";
 import type { Profile, UpdateProfileBody } from "../api/profile.types";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
@@ -29,7 +29,9 @@ export function useEditProfile({
     const [error, setError] = useState<string | null>(null);
 
     // Re-initialize when profile changes (e.g. after page loads)
-    useEffect(() => {
+    const [prevProfile, setPrevProfile] = useState(profile);
+    if (prevProfile !== profile) {
+        setPrevProfile(profile);
         setFullName(profile.fullName ?? "");
         setBio(profile.bio ?? "");
         setLocation(profile.location ?? "");
@@ -39,7 +41,7 @@ export function useEditProfile({
                 value,
             })),
         );
-    }, [profile]);
+    }
 
     function addSocial() {
         setSocials((prev) => [...prev, { key: "", value: "" }]);

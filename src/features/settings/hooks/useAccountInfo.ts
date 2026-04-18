@@ -8,23 +8,34 @@ export function useAccountInfo() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    async function fetchAccountInfo(cancelled = false) {
+    async function fetchAccountInfo() {
         setIsLoading(true);
         setError(null);
         try {
             const res = await settingsApi.getAccountInfo();
-            if (!cancelled) setAccountInfo(res);
+            setAccountInfo(res);
         } catch (err) {
             console.error("[useAccountInfo] fetch error:", err);
-            if (!cancelled) setError(getErrorMessage(err));
+            setError(getErrorMessage(err));
         } finally {
-            if (!cancelled) setIsLoading(false);
+            setIsLoading(false);
         }
     }
 
     useEffect(() => {
         let cancelled = false;
-        void fetchAccountInfo(cancelled);
+        settingsApi
+            .getAccountInfo()
+            .then((res) => {
+                if (!cancelled) setAccountInfo(res);
+            })
+            .catch((err) => {
+                console.error("[useAccountInfo] fetch error:", err);
+                if (!cancelled) setError(getErrorMessage(err));
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false);
+            });
         return () => {
             cancelled = true;
         };
