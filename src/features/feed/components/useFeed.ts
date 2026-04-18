@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { feedApi } from "../api/feed.api";
 import type { GetPostsParams, Post, PostType } from "../api/feed.types";
 
@@ -13,7 +13,10 @@ export function useFeed(followedOnly: boolean = false) {
     const [hasMore, setHasMore] = useState(true);
     const pageRef = useRef(1);
     const followedOnlyRef = useRef(followedOnly);
-    followedOnlyRef.current = followedOnly;
+
+    useEffect(() => {
+        followedOnlyRef.current = followedOnly;
+    }, [followedOnly]);
 
     const fetchPosts = useCallback(async (arg?: PostType | GetPostsParams) => {
         setIsLoading(true);

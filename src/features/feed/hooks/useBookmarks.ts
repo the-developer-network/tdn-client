@@ -6,7 +6,7 @@ import type { Comment } from "../../comment/api/comment.types";
 export function useBookmarks() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchBookmarks = useCallback(async () => {
@@ -25,8 +25,28 @@ export function useBookmarks() {
     }, []);
 
     useEffect(() => {
-        fetchBookmarks();
-    }, [fetchBookmarks]);
+        let cancelled = false;
+        feedApi
+            .getBookmarks({ page: 1, limit: 20 })
+            .then((data) => {
+                if (!cancelled) {
+                    setPosts(data.posts);
+                    setComments(data.comments);
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setError("Bookmarks could not be loaded.");
+                    console.error(err);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const removePost = useCallback((postId: string) => {
         setPosts((prev) => prev.filter((post) => post.id !== postId));

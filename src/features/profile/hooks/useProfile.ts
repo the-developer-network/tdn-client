@@ -8,7 +8,6 @@ export function useProfile(username: string) {
     const [fetchedUsername, setFetchedUsername] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Derived: loading is true while the current username hasn't been fetched yet
     const isLoading = fetchedUsername !== username;
 
     useEffect(() => {

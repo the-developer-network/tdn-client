@@ -5,7 +5,7 @@ import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 export function useSuggestions(limit = 10) {
     const [suggestions, setSuggestions] = useState<SuggestedUser[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchSuggestions = useCallback(async () => {
@@ -22,8 +22,22 @@ export function useSuggestions(limit = 10) {
     }, [limit]);
 
     useEffect(() => {
-        fetchSuggestions();
-    }, [fetchSuggestions]);
+        let cancelled = false;
+        profileApi
+            .getSuggestions(limit)
+            .then((data) => {
+                if (!cancelled) setSuggestions(data);
+            })
+            .catch((err) => {
+                if (!cancelled) setError(getErrorMessage(err));
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [limit]);
 
     return { suggestions, isLoading, error, refetch: fetchSuggestions };
 }

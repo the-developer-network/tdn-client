@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { profileApi } from "../api/profile.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
@@ -11,13 +11,19 @@ export function useFollowAction(
     const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
     const [followersCount, setFollowersCount] = useState(initialFollowersCount);
 
-    useEffect(() => {
+    const [prev, setPrev] = useState({
+        initialIsFollowing,
+        initialFollowersCount,
+    });
+    if (prev.initialIsFollowing !== initialIsFollowing) {
+        setPrev((p) => ({ ...p, initialIsFollowing }));
         setIsFollowing(initialIsFollowing);
-    }, [initialIsFollowing]);
-
-    useEffect(() => {
+    }
+    if (prev.initialFollowersCount !== initialFollowersCount) {
+        setPrev((p) => ({ ...p, initialFollowersCount }));
         setFollowersCount(initialFollowersCount);
-    }, [initialFollowersCount]);
+    }
+
     const [isLoading, setIsLoading] = useState(false);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
