@@ -115,22 +115,6 @@ export default function PrivacyPolicyPage() {
                             request
                         </li>
                     </ul>
-                    <p className="mt-3">
-                        TDN also displays advertisements served by{" "}
-                        <span className="text-white/80">Google AdSense</span>.
-                        Google may use cookies to serve ads based on your prior
-                        visits to this or other websites. You can opt out of
-                        personalized advertising by visiting{" "}
-                        <a
-                            href="https://www.google.com/settings/ads"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:underline"
-                        >
-                            Google Ads Settings
-                        </a>
-                        .
-                    </p>
                 </section>
 
                 {/* 4 */}
@@ -196,22 +180,6 @@ export default function PrivacyPolicyPage() {
                         <li>
                             <span className="text-white/80">GitHub OAuth</span>{" "}
                             — for sign-in. Governed by GitHub's Privacy Policy.
-                        </li>
-                        <li>
-                            <span className="text-white/80">
-                                Google AdSense
-                            </span>{" "}
-                            — for serving advertisements. Google may collect
-                            data as described in the{" "}
-                            <a
-                                href="https://policies.google.com/privacy"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-400 hover:underline"
-                            >
-                                Google Privacy Policy
-                            </a>
-                            .
                         </li>
                         <li>
                             <span className="text-white/80">
