@@ -52,7 +52,7 @@
         "prettier": "3.8.2",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.58.1",
-        "vite": "^8.0.8",
+        "vite": "^8.0.9",
         "wrangler": "^4.81.0"
     }
 }
