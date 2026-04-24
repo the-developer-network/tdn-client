@@ -9,10 +9,14 @@ export function useFeed(followedOnly: boolean = false) {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
     const [activeCategory, setActiveCategory] = useState<PostType>("COMMUNITY");
     const [hasMore, setHasMore] = useState(true);
     const pageRef = useRef(1);
     const followedOnlyRef = useRef(followedOnly);
+    const lastFetchParamsRef = useRef<PostType | GetPostsParams | undefined>(
+        undefined,
+    );
 
     useEffect(() => {
         followedOnlyRef.current = followedOnly;
@@ -21,7 +25,9 @@ export function useFeed(followedOnly: boolean = false) {
     const fetchPosts = useCallback(async (arg?: PostType | GetPostsParams) => {
         setIsLoading(true);
         setError(null);
+        setLoadMoreError(null);
         pageRef.current = 1;
+        lastFetchParamsRef.current = arg;
         try {
             const params: GetPostsParams =
                 typeof arg === "string"
@@ -40,9 +46,8 @@ export function useFeed(followedOnly: boolean = false) {
             const data = await feedApi.getPosts(params);
             setPosts(data);
             setHasMore(data.length === PAGE_LIMIT);
-        } catch (err) {
+        } catch {
             setError("Posts could not be loaded.");
-            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -62,8 +67,8 @@ export function useFeed(followedOnly: boolean = false) {
             setPosts((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;
-        } catch (err) {
-            console.error(err);
+        } catch {
+            setLoadMoreError("Failed to load more posts.");
         } finally {
             setIsLoadingMore(false);
         }
@@ -86,17 +91,29 @@ export function useFeed(followedOnly: boolean = false) {
         setPosts((prev) => prev.filter((post) => post.id !== postId));
     }, []);
 
+    const retry = useCallback(() => {
+        fetchPosts(lastFetchParamsRef.current);
+    }, [fetchPosts]);
+
+    const retryLoadMore = useCallback(() => {
+        setLoadMoreError(null);
+        loadMore();
+    }, [loadMore]);
+
     return {
         posts,
         isLoading,
         isLoadingMore,
         error,
+        loadMoreError,
         fetchPosts,
+        retry,
         activeCategory,
         changeCategory,
         addPost,
         removePost,
         hasMore,
         loadMore,
+        retryLoadMore,
     };
 }

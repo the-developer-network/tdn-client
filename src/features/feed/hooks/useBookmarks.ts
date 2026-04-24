@@ -52,5 +52,13 @@ export function useBookmarks() {
         setPosts((prev) => prev.filter((post) => post.id !== postId));
     }, []);
 
-    return { posts, comments, isLoading, error, fetchBookmarks, removePost };
+    return {
+        posts,
+        comments,
+        isLoading,
+        error,
+        fetchBookmarks,
+        retry: fetchBookmarks,
+        removePost,
+    };
 }

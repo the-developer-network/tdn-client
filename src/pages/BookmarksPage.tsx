@@ -9,7 +9,8 @@ import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { CommentList } from "../features/comment/components/CommentList";
 
 export default function BookmarksPage() {
-    const { posts, isLoading, error, comments, removePost } = useBookmarks();
+    const { posts, isLoading, error, comments, removePost, retry } =
+        useBookmarks();
     const navigate = useNavigate();
 
     const { user, isAuthenticated } = useAuthStore();
@@ -84,12 +85,14 @@ export default function BookmarksPage() {
                                 error={error}
                                 onPostDeleted={removePost}
                                 onLoadMore={() => {}}
+                                onRetry={retry}
                             />
                             {comments.length > 0 && (
                                 <CommentList
                                     comments={comments}
                                     isLoading={false}
                                     error={error}
+                                    onRetry={retry}
                                 />
                             )}
                         </>

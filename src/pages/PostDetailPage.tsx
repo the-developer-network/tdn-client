@@ -20,9 +20,11 @@ export default function PostDetailPage() {
     const {
         comments,
         isLoading: commentsLoading,
+        error: commentsError,
         fetchComments,
         addComment,
         removeComment,
+        retry: retryComments,
     } = useComments(id!);
 
     useEffect(() => {
@@ -100,8 +102,9 @@ export default function PostDetailPage() {
                         <CommentList
                             comments={comments}
                             isLoading={commentsLoading}
-                            error={null}
+                            error={commentsError}
                             onCommentDeleted={removeComment}
+                            onRetry={retryComments}
                         />
                     </div>
                 </div>

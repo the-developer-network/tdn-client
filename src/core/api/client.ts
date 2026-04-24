@@ -1,4 +1,7 @@
+import { NetworkError } from "./api-types";
 import type { ApiErrorResponse, ApiResponse } from "./api-types";
+
+const REQUEST_TIMEOUT_MS = 15_000;
 
 const BASE_URL = import.meta.env.PROD
     ? "https://api.developernetwork.net/api/v1"
@@ -80,11 +83,27 @@ export const apiClient = async <T>(
         headers.set("Authorization", `Bearer ${token}`);
     }
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-        ...fetchOptions,
-        headers,
-        credentials: "include",
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+        response = await fetch(`${BASE_URL}${endpoint}`, {
+            ...fetchOptions,
+            headers,
+            credentials: "include",
+            signal: controller.signal,
+        });
+    } catch (err) {
+        clearTimeout(timeoutId);
+        const isAbort =
+            err instanceof DOMException && err.name === "AbortError";
+        throw new NetworkError(
+            isAbort ? "Request timed out" : "Network request failed",
+        );
+    } finally {
+        clearTimeout(timeoutId);
+    }
 
     if (response.status === 401 && !_retry) {
         // Public endpoints: retry without token so the request succeeds

@@ -1,3 +1,10 @@
+export class NetworkError extends Error {
+    constructor(message = "Network request failed") {
+        super(message);
+        this.name = "NetworkError";
+    }
+}
+
 export interface ApiResponse<T> {
     data: T;
     meta?: unknown;

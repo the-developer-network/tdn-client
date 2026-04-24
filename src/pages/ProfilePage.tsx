@@ -69,6 +69,7 @@ export default function ProfilePage() {
         error: postsError,
         hasMore,
         loadMore,
+        retry: retryPosts,
         removePost,
     } = useUserPosts(username ?? "");
 
@@ -291,6 +292,7 @@ export default function ProfilePage() {
                 error={postsError}
                 onPostDeleted={removePost}
                 onLoadMore={loadMore}
+                onRetry={retryPosts}
             />
 
             {/* Load more */}

@@ -5,6 +5,8 @@ import { useNotificationSocket } from "../features/notifications/hooks/useNotifi
 import { registerSessionExpiredHandler } from "../core/api/client";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
+import { ToastContainer } from "../shared/components/ui/ToastContainer";
+import { OfflineBanner } from "../shared/components/ui/OfflineBanner";
 
 export function AppInit() {
     useNotificationSocket();
@@ -16,5 +18,11 @@ export function AppInit() {
         });
     }, []);
 
-    return <RouterProvider router={router} />;
+    return (
+        <>
+            <OfflineBanner />
+            <ToastContainer />
+            <RouterProvider router={router} />
+        </>
+    );
 }

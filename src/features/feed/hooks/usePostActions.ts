@@ -4,6 +4,7 @@ import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { shareContent } from "../../../shared/utils/share";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { useToastStore } from "../../../shared/store/toast.store";
 
 export function usePostActions(
     initialLiked: boolean,
@@ -23,6 +24,7 @@ export function usePostActions(
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { openModal, setStep } = useAuthModalStore();
+    const addToast = useToastStore((state) => state.addToast);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -42,9 +44,10 @@ export function usePostActions(
         try {
             if (prevLiked) await feedApi.unlikePost(postId);
             else await feedApi.likePost(postId);
-        } catch {
+        } catch (err) {
             setIsLiked(prevLiked);
             setLikeCount(prevCount);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsLikeLoading(false);
         }
@@ -67,8 +70,9 @@ export function usePostActions(
         try {
             if (prevBookmarked) await feedApi.unsavePost(postId);
             else await feedApi.savePost(postId);
-        } catch {
+        } catch (err) {
             setIsBookmarked(prevBookmarked);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsBookmarkLoading(false);
         }
@@ -86,7 +90,7 @@ export function usePostActions(
         });
 
         if (result === "copied") {
-            alert("The link has been copied to the clipboard!");
+            addToast({ type: "info", message: "Link copied to clipboard!" });
         }
     };
 
@@ -106,7 +110,7 @@ export function usePostActions(
             onDeleteSuccess?.();
             return true;
         } catch (err) {
-            alert(getErrorMessage(err));
+            addToast({ type: "error", message: getErrorMessage(err) });
             return false;
         } finally {
             setIsDeleteLoading(false);

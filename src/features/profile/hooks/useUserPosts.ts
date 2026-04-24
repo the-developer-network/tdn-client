@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { profileApi } from "../api/profile.api";
 import type { Post } from "../../feed/api/feed.types";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
@@ -8,13 +8,16 @@ const LIMIT = 20;
 export function useUserPosts(username: string) {
     const [posts, setPosts] = useState<Post[]>([]);
     const [page, setPage] = useState(1);
-    const [fetchedUsername, setFetchedUsername] = useState<string | null>(null);
+    // Track the "fetch key" that was last completed; isLoading is derived from it
+    const [fetchedKey, setFetchedKey] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const retryCountRef = useRef(0);
+    const [retryTick, setRetryTick] = useState(0);
 
-    // Derived: initial load is pending until we've fetched for this username
-    const isLoading = fetchedUsername !== username && !isLoadingMore;
+    const currentKey = `${username}::${retryTick}`;
+    const isLoading = fetchedKey !== currentKey && !isLoadingMore;
 
     useEffect(() => {
         let cancelled = false;
@@ -27,18 +30,20 @@ export function useUserPosts(username: string) {
                 setHasMore(data.length === LIMIT);
                 setPage(1);
                 setError(null);
-                setFetchedUsername(username);
+                setFetchedKey(currentKey);
             })
             .catch((err) => {
                 if (cancelled) return;
                 setError(getErrorMessage(err));
-                setFetchedUsername(username);
+                setFetchedKey(currentKey);
             });
 
         return () => {
             cancelled = true;
         };
-    }, [username]);
+        // currentKey encodes both username and retryTick — safe to use as dep
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentKey]);
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
@@ -55,6 +60,11 @@ export function useUserPosts(username: string) {
             .finally(() => setIsLoadingMore(false));
     }, [username, page]);
 
+    const retry = useCallback(() => {
+        retryCountRef.current += 1;
+        setRetryTick(retryCountRef.current);
+    }, []);
+
     const removePost = useCallback((postId: string) => {
         setPosts((prev) => prev.filter((p) => p.id !== postId));
     }, []);
@@ -66,6 +76,7 @@ export function useUserPosts(username: string) {
         error,
         hasMore,
         loadMore,
+        retry,
         removePost,
     };
 }

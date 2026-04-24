@@ -28,6 +28,7 @@ export default function FeedPage() {
         isLoading,
         isLoadingMore,
         error,
+        loadMoreError,
         fetchPosts,
         activeCategory,
         changeCategory,
@@ -35,6 +36,8 @@ export default function FeedPage() {
         removePost,
         hasMore,
         loadMore,
+        retry,
+        retryLoadMore,
     } = useFeed(followedOnly);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -124,8 +127,11 @@ export default function FeedPage() {
                 isLoadingMore={isLoadingMore}
                 hasMore={hasMore}
                 error={error}
+                loadMoreError={loadMoreError}
                 onPostDeleted={removePost}
                 onLoadMore={loadMore}
+                onRetry={retry}
+                onRetryLoadMore={retryLoadMore}
             />
         </PageShell>
     );

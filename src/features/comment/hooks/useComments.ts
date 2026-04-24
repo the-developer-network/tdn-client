@@ -42,6 +42,7 @@ export function useComments(postId: string) {
         isLoading,
         error,
         fetchComments,
+        retry: fetchComments,
         addComment,
         removeComment,
     };
