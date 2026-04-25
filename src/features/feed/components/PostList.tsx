@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef } from "react";
 import { PostCard } from "./PostCard";
 import { AdPlaceholderCard } from "./AdPlaceholderCard";
+import { Button } from "../../../shared/components/ui/Button";
 import type { Post } from "../api/feed.types";
 
 const AD_INTERVAL = 5;
@@ -11,8 +12,11 @@ interface PostListProps {
     isLoadingMore: boolean;
     hasMore: boolean;
     error: string | null;
+    loadMoreError?: string | null;
     onPostDeleted?: (postId: string) => void;
     onLoadMore: () => void;
+    onRetry?: () => void;
+    onRetryLoadMore?: () => void;
 }
 
 export function PostList({
@@ -21,8 +25,11 @@ export function PostList({
     isLoadingMore,
     hasMore,
     error,
+    loadMoreError,
     onPostDeleted,
     onLoadMore,
+    onRetry,
+    onRetryLoadMore,
 }: PostListProps) {
     const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -52,8 +59,13 @@ export function PostList({
 
     if (error) {
         return (
-            <div className="p-10 text-center text-red-400/60 text-sm">
-                {error}
+            <div className="p-10 text-center flex flex-col items-center gap-4">
+                <p className="text-red-400/60 text-sm">{error}</p>
+                {onRetry && (
+                    <Button variant="outline" size="sm" onClick={onRetry}>
+                        Try Again
+                    </Button>
+                )}
             </div>
         );
     }
@@ -79,6 +91,20 @@ export function PostList({
                 </Fragment>
             ))}
             <div ref={sentinelRef} className="h-1" />
+            {loadMoreError && (
+                <div className="flex flex-col items-center gap-3 p-6">
+                    <p className="text-red-400/60 text-sm">{loadMoreError}</p>
+                    {onRetryLoadMore && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onRetryLoadMore}
+                        >
+                            Try Again
+                        </Button>
+                    )}
+                </div>
+            )}
             {isLoadingMore && (
                 <div className="flex justify-center p-6">
                     <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

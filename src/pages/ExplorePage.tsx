@@ -19,6 +19,7 @@ export default function ExplorePage() {
         error: postsError,
         fetchPosts,
         removePost,
+        retry: retryPosts,
     } = useFeed();
     const { trends, isLoading: trendsLoading } = useTrends();
     const {
@@ -92,6 +93,7 @@ export default function ExplorePage() {
                         error={postsError}
                         onPostDeleted={removePost}
                         onLoadMore={() => {}}
+                        onRetry={retryPosts}
                     />
                 </>
             ) : (

@@ -3,6 +3,8 @@ import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { feedApi } from "../api/feed.api";
 import type { Post, PostType } from "../api/feed.types";
+import { useToastStore } from "../../../shared/store/toast.store";
+import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 interface PostBoxProps {
     onPostCreated: (post: Post) => void;
@@ -22,6 +24,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { user, isAuthenticated } = useAuthStore();
     const { openModal, setStep } = useAuthModalStore();
+    const addToast = useToastStore((state) => state.addToast);
 
     const autoResize = () => {
         const el = textareaRef.current;
@@ -78,7 +81,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                 textareaRef.current.style.height = "auto";
             }
         } catch (err) {
-            console.error(err);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsSubmitting(false);
             setIsUploading(false);

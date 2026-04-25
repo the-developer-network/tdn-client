@@ -4,6 +4,7 @@ import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { shareContent } from "../../../shared/utils/share";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { useToastStore } from "../../../shared/store/toast.store";
 
 export function useCommentActions(
     initialLiked: boolean,
@@ -23,6 +24,7 @@ export function useCommentActions(
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { openModal, setStep } = useAuthModalStore();
+    const addToast = useToastStore((state) => state.addToast);
 
     const handleDelete = async () => {
         if (!isAuthenticated) {
@@ -40,7 +42,7 @@ export function useCommentActions(
             onDeleteSuccess?.();
             return true;
         } catch (err) {
-            alert(getErrorMessage(err));
+            addToast({ type: "error", message: getErrorMessage(err) });
             return false;
         } finally {
             setIsDeleteLoading(false);
@@ -68,9 +70,10 @@ export function useCommentActions(
         try {
             if (prevLiked) await commentApi.unlikeComment(commentId);
             else await commentApi.likeComment(commentId);
-        } catch {
+        } catch (err) {
             setIsLiked(prevLiked);
             setLikeCount(prevCount);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsLikeLoading(false);
         }
@@ -94,8 +97,9 @@ export function useCommentActions(
         try {
             if (prevBookmarked) await commentApi.unsaveComment(commentId);
             else await commentApi.saveComment(commentId);
-        } catch {
+        } catch (err) {
             setIsBookmarked(prevBookmarked);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsBookmarkLoading(false);
         }
@@ -112,7 +116,7 @@ export function useCommentActions(
         });
 
         if (result === "copied") {
-            alert("The link has been copied to the clipboard!");
+            addToast({ type: "info", message: "Link copied to clipboard!" });
         }
     };
 

@@ -1,11 +1,13 @@
 import type { Comment } from "../api/comment.types";
 import { CommentCard } from "./CommentCard";
+import { Button } from "../../../shared/components/ui/Button";
 
 interface CommentListProps {
     comments: Comment[];
     isLoading: boolean;
     error: string | null;
     onCommentDeleted?: (commentId: string) => void;
+    onRetry?: () => void;
 }
 
 export function CommentList({
@@ -13,6 +15,7 @@ export function CommentList({
     isLoading,
     error,
     onCommentDeleted,
+    onRetry,
 }: CommentListProps) {
     if (isLoading) {
         return (
@@ -24,8 +27,13 @@ export function CommentList({
 
     if (error) {
         return (
-            <div className="p-8 text-center text-red-400/60 text-sm">
-                {error}
+            <div className="p-8 text-center flex flex-col items-center gap-4">
+                <p className="text-red-400/60 text-sm">{error}</p>
+                {onRetry && (
+                    <Button variant="outline" size="sm" onClick={onRetry}>
+                        Try Again
+                    </Button>
+                )}
             </div>
         );
     }
