@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useNotificationStore } from "../store/notification.store";
+import { useToastStore } from "../../../shared/store/toast.store";
 import type { RealtimeNotificationPayload } from "../api/notification.types";
 
 const WS_URL = import.meta.env.PROD
@@ -9,6 +10,7 @@ const WS_URL = import.meta.env.PROD
 
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_MAX_MS = 30_000;
+const MAX_RETRIES = 5;
 
 interface WsMessage {
     event: string;
@@ -44,11 +46,11 @@ export function useNotificationSocket() {
         function connect() {
             if (!activeRef.current) return;
 
-            const url = `${WS_URL}?token=${token}`;
-            const ws = new WebSocket(url);
+            const ws = new WebSocket(WS_URL);
             wsRef.current = ws;
 
             ws.onopen = () => {
+                ws.send(JSON.stringify({ event: "auth", token }));
                 retryCountRef.current = 0;
             };
 
@@ -67,6 +69,15 @@ export function useNotificationSocket() {
                         connect();
                     };
                     window.addEventListener("online", handleOnline);
+                    return;
+                }
+
+                if (retryCountRef.current >= MAX_RETRIES) {
+                    useToastStore.getState().addToast({
+                        type: "info",
+                        message:
+                            "Real-time notifications are currently unavailable.",
+                    });
                     return;
                 }
 
