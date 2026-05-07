@@ -35,7 +35,7 @@
     },
     "devDependencies": {
         "@babel/core": "^7.29.0",
-        "@cloudflare/vite-plugin": "^1.33.2",
+        "@cloudflare/vite-plugin": "^1.36.2",
         "@cloudflare/workers-types": "^4.20260426.1",
         "@eslint/js": "^10.0.1",
         "@rolldown/plugin-babel": "^0.2.3",
@@ -56,7 +56,7 @@
         "prettier": "3.8.3",
         "typescript": "~6.0.3",
         "typescript-eslint": "^8.58.1",
-        "vite": "8.0.10",
+        "vite": "8.0.11",
         "wrangler": "^4.81.0"
     }
 }
