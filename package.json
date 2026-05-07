@@ -2,6 +2,7 @@
     "name": "tdn-client",
     "private": true,
     "version": "0.0.0",
+    "packageManager": "pnpm@11.0.8",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -11,6 +12,9 @@
         "preview": "pnpm run build && wrangler dev",
         "deploy": "pnpm run build && wrangler deploy",
         "prepare": "husky"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": ["esbuild", "sharp", "workerd"]
     },
     "lint-staged": {
         "src/**/*.{ts,tsx}": [
