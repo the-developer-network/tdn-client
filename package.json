@@ -14,7 +14,11 @@
         "prepare": "husky"
     },
     "pnpm": {
-        "onlyBuiltDependencies": ["esbuild", "sharp", "workerd"]
+        "onlyBuiltDependencies": [
+            "esbuild",
+            "sharp",
+            "workerd"
+        ]
     },
     "lint-staged": {
         "src/**/*.{ts,tsx}": [
@@ -57,6 +61,6 @@
         "typescript": "~6.0.3",
         "typescript-eslint": "^8.58.1",
         "vite": "8.0.13",
-        "wrangler": "^4.90.0"
+        "wrangler": "^4.92.0"
     }
 }
