@@ -1,8 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
 
-// ──────────────────────────────────────────────
-// Constants
-// ──────────────────────────────────────────────
 const API_BASE = "https://api.developernetwork.net/api/v1";
 const SITE_URL = "https://developernetwork.net";
 const SITE_NAME = "TDN - The Developer Network";
@@ -10,9 +7,6 @@ const DEFAULT_DESCRIPTION =
     "TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-default.png`;
 
-// ──────────────────────────────────────────────
-// Types
-// ──────────────────────────────────────────────
 interface Env {
     ASSETS: Fetcher;
 }
@@ -41,9 +35,6 @@ interface ApiPage {
     data?: ApiPost[];
 }
 
-// ──────────────────────────────────────────────
-// OG Meta Tags
-// ──────────────────────────────────────────────
 function escapeHtml(str: string): string {
     return str
         .replace(/&/g, "&amp;")
@@ -190,9 +181,6 @@ async function handlePage(url: URL, env: Env): Promise<Response> {
     });
 }
 
-// ──────────────────────────────────────────────
-// Sitemap
-// ──────────────────────────────────────────────
 const STATIC_ROUTES = [
     { url: "/", changefreq: "always", priority: "1.0" },
     { url: "/explore", changefreq: "hourly", priority: "0.9" },
@@ -227,10 +215,7 @@ function urlEntry(
   </url>`;
 }
 
-async function fetchPostPage(
-    page: number,
-    limit: number,
-): Promise<ApiPost[]> {
+async function fetchPostPage(page: number, limit: number): Promise<ApiPost[]> {
     try {
         const res = await fetch(
             `${API_BASE}/posts?page=${page}&limit=${limit}`,
@@ -301,9 +286,6 @@ ${[...staticEntries, ...profileEntries, ...postEntries].join("\n")}
     });
 }
 
-// ──────────────────────────────────────────────
-// Worker Entry
-// ──────────────────────────────────────────────
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
