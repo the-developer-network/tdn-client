@@ -35,7 +35,7 @@
     },
     "devDependencies": {
         "@babel/core": "^7.29.0",
-        "@cloudflare/vite-plugin": "^1.33.2",
+        "@cloudflare/vite-plugin": "^1.37.1",
         "@cloudflare/workers-types": "^4.20260516.1",
         "@eslint/js": "^10.0.1",
         "@rolldown/plugin-babel": "^0.2.3",
@@ -44,7 +44,7 @@
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@types/react-router-dom": "^5.3.3",
-        "@vitejs/plugin-react": "^6.0.1",
+        "@vitejs/plugin-react": "^6.0.2",
         "babel-plugin-react-compiler": "^1.0.0",
         "eslint": "^10.2.1",
         "eslint-config-prettier": "^10.1.8",
@@ -56,7 +56,7 @@
         "prettier": "3.8.3",
         "typescript": "~6.0.3",
         "typescript-eslint": "^8.58.1",
-        "vite": "8.0.10",
+        "vite": "8.0.13",
         "wrangler": "^4.90.0"
     }
 }
