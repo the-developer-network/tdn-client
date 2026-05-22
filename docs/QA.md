@@ -28,15 +28,16 @@ pnpm test:e2e:ui       # Playwright interactive UI
 
 ## File Structure
 
-Tests are co-located with their source files. E2E lives in a top-level `e2e/` directory.
+Test infrastructure lives in `tests/` (separate from source). Test files are co-located with their source files. E2E lives in a top-level `e2e/` directory.
 
 ```
-src/
-  test/
-    setup.ts
-    msw-server.ts
+tests/
+  setup.ts
+  msw-server.ts
   mocks/
     handlers.ts
+
+src/
   core/
     api/
       client.test.ts
@@ -48,13 +49,14 @@ src/
     feed/
       hooks/
         usePostActions.test.ts
-        useFeed.test.ts
+        useBookmarks.test.ts
       components/
+        useFeed.test.ts
         PostCard.test.tsx
         PostList.test.tsx
     comment/
       hooks/
-        useCommentActions.test.ts
+        useComments.test.ts
         useCommentReplies.test.ts
       components/
         CommentCard.test.tsx
@@ -79,10 +81,13 @@ src/
       error-handler.test.ts
   pages/
     FeedPage.test.tsx
+    PostDetailPage.test.tsx
+    CommentDetailPage.test.tsx
     BookmarksPage.test.tsx
     NotificationsPage.test.tsx
 
 e2e/
+  fixtures.ts
   auth.spec.ts
   feed.spec.ts
   profile.spec.ts
@@ -206,83 +211,259 @@ The refresh queue is the most critical path: a 401 triggers a single token refre
 
 ### Layer 4 — Custom Hooks
 
-Use `renderHook` + `act`. Override MSW handlers per-test with `server.use()`.
+Use `renderHook` + `act` from `@testing-library/react`. Override MSW handlers per-test with `server.use()`. Handler resets after each test are handled globally in `tests/setup.ts`.
 
-#### `usePostActions` / `useCommentActions`
+**Key patterns:**
 
-Both follow the optimistic update pattern: state changes immediately, rolls back on API error.
+- Hooks that import `useAuthStore` — add `vi.hoisted` localStorage stub. jsdom 29 `Storage.clear()` is broken; a Map-backed stub is required so that Zustand `persist` captures a working storage at module-evaluation time.
+- Hooks that auto-fetch inside `useEffect` — use `waitFor` instead of `await act` to wait for the async update to settle.
+- Hooks that expose notifications / other shared state via a Zustand store — assert against `useXxxStore.getState()`, not hook return values.
+
+#### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
+
+9 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`.
+
+**Requires `vi.hoisted` localStorage stub** (transitively imports `useAuthStore`).
 
 ```ts
-it("like — optimistic rollback on error", async () => {
-    server.use(http.post("*/posts/*/like", () => HttpResponse.error()));
-    const { result } = renderHook(() =>
-        usePostActions(false, 5, false, "post-1"),
-    );
-    await act(async () => {
-        await result.current.handleLike(mockMouseEvent());
-    });
-    expect(result.current.isLiked).toBe(false);
-    expect(result.current.likeCount).toBe(5);
+// Per-test server.use() override for the optimistic-rollback scenario
+server.use(http.post(`${BASE}/posts/post-1/like`, () => HttpResponse.error()));
+const { result } = renderHook(() => usePostActions(false, 5, false, "post-1"));
+await act(async () => {
+    await result.current.handleLike(mockEvent);
 });
+expect(result.current.isLiked).toBe(false); // rolled back
+expect(result.current.likeCount).toBe(5); // rolled back
 ```
 
-| Scenario                             | Assert                             |
-| ------------------------------------ | ---------------------------------- |
-| Unauthenticated like / bookmark      | Auth modal opened; state unchanged |
-| Optimistic like — success            | `isLiked` toggled, count updated   |
-| Optimistic like — error              | State rolled back, toast shown     |
-| Double-click guard (`isLikeLoading`) | API called only once               |
+| Scenario                         | Assert                                                             |
+| -------------------------------- | ------------------------------------------------------------------ |
+| Unauthenticated like             | Auth modal opened (`isOpen=true`); `isLiked`/`likeCount` unchanged |
+| Optimistic like — success        | `isLiked=true`, `likeCount` incremented                            |
+| Optimistic like — API error      | State rolled back; error toast added to `useToastStore`            |
+| Unlike (was already liked)       | `isLiked=false`, `likeCount` decremented                           |
+| Unauthenticated bookmark         | Auth modal opened; `isBookmarked` unchanged                        |
+| Optimistic bookmark — success    | `isBookmarked=true`                                                |
+| Optimistic bookmark — API error  | State rolled back; error toast added                               |
+| `handleDelete` — success         | Returns `true`; `onDeleteSuccess` callback fired                   |
+| `handleDelete` — unauthenticated | Returns `false`; auth modal opened                                 |
 
-#### `useFollowAction`
+> **Note:** `openModal()` defaults `step` to `"initial"`, overwriting a preceding `setStep("login")` call. Assert `isOpen: true` only — do not assert the step value.
 
-| Scenario                         | Assert                                    |
-| -------------------------------- | ----------------------------------------- |
-| Follow — optimistic update       | `isFollowing: true`, `followersCount` + 1 |
-| Follow — API error               | State rolled back                         |
-| `initialIsFollowing` prop change | Internal state syncs with new prop        |
+#### `useBookmarks` (`src/features/feed/hooks/useBookmarks.test.ts`)
 
-#### `useNetworkStatus`
+5 tests. `useBookmarks` does not import `useAuthStore` directly, but `apiClient` calls `localStorage.getItem` at runtime — the `vi.hoisted` stub is still required.
 
 ```ts
+// Hook auto-fetches in useEffect → use waitFor, not await act
+const { result } = renderHook(() => useBookmarks());
+await waitFor(() => expect(result.current.isLoading).toBe(false));
+expect(result.current.posts).toHaveLength(1);
+```
+
+| Scenario                                    | Assert                                                       |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Mount (default handler)                     | `posts` populated, `isLoading=false`, `error=null`           |
+| API fails on mount                          | `error` set to message string; `posts=[]`; `isLoading=false` |
+| `retry()` after error with restored handler | `error=null`; `posts` populated                              |
+| `removePost(id)`                            | Removes post from local state; no API call                   |
+| API returns empty list                      | `posts=[]`; `error=null`                                     |
+
+#### `useComments` (`src/features/comment/hooks/useComments.test.ts`)
+
+5 tests. No auto-fetch — `fetchComments()` is called explicitly. `addComment` and `removeComment` are pure local state mutations.
+
+**Requires `vi.hoisted` localStorage stub** (imports `useAuthStore`).
+
+| Scenario                      | Assert                                                   |
+| ----------------------------- | -------------------------------------------------------- |
+| Initial state                 | `comments=[]`, `isLoading=false`, `error=null`           |
+| `fetchComments()` — success   | List populated from API; `isLoading=false`; `error=null` |
+| `fetchComments()` — API error | `error` set; `comments=[]`                               |
+| `addComment(comment)`         | Prepends to list; no API call                            |
+| `removeComment(id)`           | Removes by id; no API call                               |
+
+#### `useNotifications` (`src/features/notifications/hooks/useNotifications.test.ts`)
+
+5 tests. `fetch()` is called explicitly. Notifications live in `useNotificationStore`, not in the hook's return value — assert against `useNotificationStore.getState().notifications`.
+
+**Requires `vi.hoisted` localStorage stub.**
+
+```ts
+// Pagination test: page 1 returns exactly 20 items → hasMore=true → loadMore appends page 2
+const page1 = Array.from({ length: 20 }, (_, i) => ({
+    ...mockNotification,
+    issuerId: `user-${i + 2}`,
+}));
+server.use(
+    http.get(`${BASE}/notifications`, ({ request }) => {
+        const page = Number(
+            new URL(request.url).searchParams.get("page") ?? "1",
+        );
+        if (page === 1) return HttpResponse.json({ data: page1 });
+        return HttpResponse.json({ data: [mockNotification] });
+    }),
+);
+await act(async () => {
+    await result.current.fetch();
+});
+expect(useNotificationStore.getState().notifications).toHaveLength(20);
+await act(async () => {
+    await result.current.loadMore();
+});
+expect(useNotificationStore.getState().notifications).toHaveLength(21);
+```
+
+| Scenario                          | Assert                                                    |
+| --------------------------------- | --------------------------------------------------------- |
+| `fetch()` — success               | Store populated; `isLoading=false`; `unreadCount` correct |
+| `fetch()` — API error             | `error` truthy; store empty                               |
+| Server returns < 20 items         | `hasMore=false`                                           |
+| `loadMore()` when `hasMore=false` | Store unchanged; `isLoadingMore=false`                    |
+| `loadMore()` when `hasMore=true`  | Page 2 fetched and appended; `hasMore` updated            |
+
+#### `useFollowAction` (`src/features/profile/hooks/useFollowAction.test.ts`)
+
+5 tests. Covers optimistic follow/unfollow, silent rollback on failure, auth guard, and in-render prop sync.
+
+**Requires `vi.hoisted` localStorage stub** (imports `useAuthStore`).
+
+```ts
+// Rollback is silent — no toast. Only check that state is unchanged.
+server.use(http.post(`${BASE}/follows`, () => HttpResponse.error()));
+const { result } = renderHook(() => useFollowAction("user-2", false, 10));
+await act(async () => {
+    await result.current.handleFollow();
+});
+expect(result.current.isFollowing).toBe(false);
+expect(result.current.followersCount).toBe(10);
+expect(result.current.isLoading).toBe(false);
+```
+
+| Scenario                                 | Assert                                                                      |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| Unauthenticated `handleFollow()`         | Auth modal opened (`isOpen=true`); `isFollowing`/`followersCount` unchanged |
+| Optimistic follow — success              | `isFollowing=true`; `followersCount` incremented                            |
+| Optimistic unfollow — success            | `isFollowing=false`; `followersCount` decremented                           |
+| API error                                | State rolled back silently; `isLoading=false`                               |
+| `rerender({ initialIsFollowing: true })` | `isFollowing` syncs with new prop                                           |
+
+> **Note:** In-render state sync pattern (`useState` + guard comparing previous prop) means `rerender()` from RTL triggers the sync immediately — no `waitFor` needed.
+
+#### `useNetworkStatus` (`src/shared/hooks/useNetworkStatus.test.ts`)
+
+3 tests. Simplest hook in the suite — no API calls, no Zustand stores, no `vi.hoisted` needed. Uses `window.dispatchEvent` to simulate connectivity changes.
+
+```ts
+// No vi.hoisted — pure window event listener hook
 it("offline event → false", () => {
     const { result } = renderHook(() => useNetworkStatus());
-    act(() => window.dispatchEvent(new Event("offline")));
+    act(() => {
+        window.dispatchEvent(new Event("offline"));
+    });
     expect(result.current).toBe(false);
 });
 it("online event after offline → true", () => {
     const { result } = renderHook(() => useNetworkStatus());
-    act(() => window.dispatchEvent(new Event("offline")));
-    act(() => window.dispatchEvent(new Event("online")));
+    act(() => {
+        window.dispatchEvent(new Event("offline"));
+    });
+    act(() => {
+        window.dispatchEvent(new Event("online"));
+    });
     expect(result.current).toBe(true);
 });
 ```
 
-#### `useTranslation`
+| Scenario                       | Assert                                                  |
+| ------------------------------ | ------------------------------------------------------- |
+| Initial render                 | `true` (`navigator.onLine` defaults to `true` in jsdom) |
+| `offline` event dispatched     | `false`                                                 |
+| `online` event after `offline` | `true`                                                  |
 
-| Scenario                               | Assert                    |
-| -------------------------------------- | ------------------------- |
-| Content < 10 chars                     | `showTranslate: false`    |
-| Same language as `navigator.language`  | `showTranslate: false`    |
-| Different language detected by `franc` | `showTranslate: true`     |
-| Unauthenticated `handleTranslate()`    | Auth modal opened         |
-| Successful translate                   | `displayContent` updated  |
-| `handleRevert()`                       | Original content restored |
+> Cleanup is automatic: `useNetworkStatus` calls `removeEventListener` in its effect cleanup, so each fresh `renderHook` instance starts with its own listener.
 
-> Mock `franc-min` when language detection is not under test:
+#### `useTranslation` (`src/shared/hooks/useTranslation.test.ts`)
+
+7 tests. Covers `showTranslate` derivation, auth guard, successful translation, revert, and API error.
+
+**Requires both `vi.hoisted` localStorage stub AND `vi.mock("franc-min", ...)`** (imports `useAuthStore` + uses ESM `franc-min`).
+
+```ts
+// Both vi.hoisted and vi.mock are hoisted before imports — safe to combine.
+vi.hoisted(() => {
+    const _map = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+        /* Map-backed stub */
+    });
+});
+vi.mock("franc-min", () => ({ franc: vi.fn() }));
+
+import { franc } from "franc-min"; // mocked version
+
+beforeEach(() => {
+    vi.mocked(franc).mockReturnValue("spa"); // "es" ≠ "en" (jsdom navigator.language)
+});
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+```
+
+| Scenario                                           | Assert                                                                                |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Content < 10 chars                                 | `showTranslate: false`                                                                |
+| `franc` returns `"eng"` (same as browser language) | `showTranslate: false`                                                                |
+| `franc` returns `"spa"` (different from browser)   | `showTranslate: true`                                                                 |
+| Unauthenticated `handleTranslate()`                | Auth modal opened; `isTranslating=false`; `isTranslated=false`                        |
+| Authenticated translate — success                  | `displayContent` = `"Translated content"`; `isTranslated=true`; `isTranslating=false` |
+| `handleRevert()`                                   | `displayContent` restored to original; `isTranslated=false`                           |
+| API error                                          | `translateError` truthy; `isTranslated=false`; `isTranslating=false`                  |
+
+> `vi.mock` factory bypasses ESM module resolution entirely — no `deps.inline` change is needed in `vitest.config.ts`.
 >
-> ```ts
-> vi.mock("franc-min", () => ({ franc: vi.fn().mockReturnValue("spa") }));
-> ```
+> `apiClient` unwraps `ApiResponse<T>.data`, so the MSW handler returns `{ data: { translatedText: "Translated content" } }` and the hook receives `{ translatedText: "Translated content" }` directly.
 
-#### `useFeed`
+#### `useFeed` (`src/features/feed/components/useFeed.test.ts`)
 
-| Scenario                      | Assert                                        |
-| ----------------------------- | --------------------------------------------- |
-| `fetchPosts("COMMUNITY")`     | `posts` populated, `isLoading` false          |
-| `loadMore()`                  | Page 2 requested; posts appended              |
-| API returns < 20 items        | `hasMore: false`                              |
-| `changeCategory("TECH_NEWS")` | New fetch triggered, `activeCategory` updated |
-| `addPost` / `removePost`      | List updated immediately                      |
+6 tests. `fetchPosts` is called explicitly (no auto-fetch on mount). `changeCategory` calls `fetchPosts` fire-and-forget — use `waitFor` to wait for async settlement.
+
+**Requires `vi.hoisted` localStorage stub** (`apiClient` reads `localStorage` at runtime).
+
+```ts
+// changeCategory fires fetchPosts without awaiting it — waitFor is required
+act(() => {
+    result.current.changeCategory("TECH_NEWS");
+});
+await waitFor(() => {
+    expect(result.current.activeCategory).toBe("TECH_NEWS");
+    expect(result.current.isLoading).toBe(false);
+});
+expect(result.current.posts).toHaveLength(1);
+
+// loadMore() pagination test — override handler to return exactly 20 on page 1
+const page1 = Array.from({ length: 20 }, (_, i) => ({
+    ...mockPost,
+    id: `post-${i + 1}`,
+}));
+server.use(
+    http.get(`${BASE}/posts`, ({ request }) => {
+        const page = Number(
+            new URL(request.url).searchParams.get("page") ?? "1",
+        );
+        if (page === 1) return HttpResponse.json({ data: page1 });
+        return HttpResponse.json({ data: [mockPost] });
+    }),
+);
+```
+
+| Scenario                            | Assert                                                |
+| ----------------------------------- | ----------------------------------------------------- |
+| `fetchPosts("COMMUNITY")` — success | `posts` populated; `isLoading=false`; `error=null`    |
+| `fetchPosts()` — API error          | `error` set to message; `posts=[]`; `isLoading=false` |
+| Server returns < 20 items           | `hasMore=false`                                       |
+| `loadMore()` when `hasMore=true`    | Page 2 fetched; posts appended; `hasMore` updated     |
+| `changeCategory("TECH_NEWS")`       | `activeCategory` updated; new fetch triggered         |
+| `addPost()` then `removePost()`     | List mutated immediately; no API call                 |
 
 ---
 
@@ -353,31 +534,48 @@ it("redirects unauthenticated users to /", () => {
 
 ### Layer 7 — E2E (Playwright)
 
-Runs against the dev server (`pnpm dev`). Share auth state via a `loginAs` helper.
+Runs against the dev server (`pnpm dev`, auto-started by `playwright.config.ts`). All API calls are intercepted via `page.route("**/api/v1/**", ...)` — no real backend required. Auth state is injected into `localStorage` with `page.addInitScript()` before each navigation.
 
 ```ts
-// e2e/helpers.ts
-export async function loginAs(page: Page, username: string, password: string) {
-    await page.goto("/");
-    await page.getByRole("button", { name: /sign in/i }).click();
-    await page.getByPlaceholder(/email or username/i).fill(username);
-    await page.getByRole("button", { name: /continue/i }).click();
-    await page.getByPlaceholder(/password/i).fill(password);
-    await page.getByRole("button", { name: /log in/i }).click();
-    await page.waitForURL("/");
-}
+// e2e/fixtures.ts
+export const mockUser = { id: "user-1", username: "alice", fullName: "Alice Smith", ... };
+
+export const test = base.extend<{ authenticatedPage: Page }>({
+    authenticatedPage: async ({ page }, use) => {
+        await page.addInitScript(({ user }) => {
+            localStorage.setItem("tdn-auth-storage",
+                JSON.stringify({ state: { user, isAuthenticated: true }, version: 0 }));
+            localStorage.setItem("access_token", "mock-token");
+        }, { user: mockUser });
+        await use(page);
+    },
+});
 ```
 
-| Spec           | Scenario                                          |
-| -------------- | ------------------------------------------------- |
-| `auth.spec`    | identifier → login → dashboard                    |
-| `auth.spec`    | register → verify-email step shown                |
-| `auth.spec`    | `/oauth-success?code=` → redirects to `/`         |
-| `feed.spec`    | Create a post → appears at top of feed            |
-| `feed.spec`    | Like a post → count increments                    |
-| `feed.spec`    | Bookmark a post → appears in `/bookmarks`         |
-| `profile.spec` | Visit `/profile/:username` → profile info visible |
-| `profile.spec` | Own profile → "Edit Profile" button visible       |
+API mocking pattern (used in every spec):
+
+```ts
+await page.route("**/api/v1/**", async (route, request) => {
+    if (request.url().includes("/auth/check") && request.method() === "POST") {
+        await route.fulfill({ json: { data: { check: true } } });
+    } else {
+        await route.fulfill({ json: { data: null } });
+    }
+});
+```
+
+> `api` client unwraps `ApiResponse<T>.data`, so all mock responses must wrap the payload in `{ data: ... }`.
+
+| Spec           | Scenario                                                        |
+| -------------- | --------------------------------------------------------------- |
+| `auth.spec`    | Clicking "Sign In" opens the identifier input                   |
+| `auth.spec`    | `check: true` response → login step (password field visible)    |
+| `auth.spec`    | `check: false` response → register step ("Create your account") |
+| `feed.spec`    | Mocked posts render as `<article>` elements                     |
+| `feed.spec`    | Clicking "News" tab sends `type=TECH_NEWS` query param          |
+| `feed.spec`    | Clicking like triggers optimistic count increment               |
+| `profile.spec` | Visit `/profile/:username` → full name heading visible          |
+| `profile.spec` | `isMe: true` response → "Edit Profile" button visible           |
 
 ---
 
@@ -396,21 +594,11 @@ export async function loginAs(page: Page, username: string, password: string) {
 
 ## CI
 
-```yaml
-- name: Unit & integration tests
-  run: pnpm test
+See `.github/workflows/ci.yml`. The pipeline runs three jobs:
 
-- name: Coverage
-  run: pnpm test:coverage
-
-- name: Install Playwright browsers
-  run: pnpm exec playwright install --with-deps
-
-- name: E2E
-  run: pnpm test:e2e
-  env:
-      VITE_API_BASE: ${{ secrets.STAGING_API_URL }}
-```
+1. **`lint-and-typecheck`** — ESLint + `tsc -b`
+2. **`unit-tests`** — `pnpm test` (Vitest, 123 tests)
+3. **`e2e`** — `pnpm test:e2e` (Playwright, 8 tests); installs Chromium via `playwright install --with-deps chromium`; starts `pnpm dev` automatically via `webServer` config
 
 ---
 
