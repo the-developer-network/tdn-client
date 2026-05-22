@@ -22,4 +22,13 @@ export default defineConfig([
             globals: globals.browser,
         },
     },
+    {
+        // Playwright E2E files — disable React-specific rules that don't apply
+        files: ["e2e/**/*.{ts,tsx}"],
+        rules: {
+            "react-hooks/rules-of-hooks": "off",
+            "react-hooks/exhaustive-deps": "off",
+            "react-refresh/only-export-components": "off",
+        },
+    },
 ]);

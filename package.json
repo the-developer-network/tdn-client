@@ -2,7 +2,7 @@
     "name": "tdn-client",
     "private": true,
     "version": "0.0.0",
-    "packageManager": "pnpm@11.0.8",
+    "packageManager": "pnpm@11.2.2",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -11,7 +11,12 @@
         "format": "prettier --write ./src/**/*.{ts,tsx}",
         "preview": "pnpm run build && wrangler dev",
         "deploy": "pnpm run build && wrangler deploy",
-        "prepare": "husky"
+        "prepare": "husky",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui"
     },
     "pnpm": {
         "onlyBuiltDependencies": [
@@ -42,13 +47,18 @@
         "@cloudflare/vite-plugin": "^1.37.1",
         "@cloudflare/workers-types": "^4.20260516.1",
         "@eslint/js": "^10.0.1",
+        "@playwright/test": "^1.60.0",
         "@rolldown/plugin-babel": "^0.2.3",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
         "@types/babel__core": "^7.20.5",
         "@types/node": "^25.8.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@types/react-router-dom": "^5.3.3",
         "@vitejs/plugin-react": "^6.0.2",
+        "@vitest/coverage-v8": "^4.1.6",
         "babel-plugin-react-compiler": "^1.0.0",
         "eslint": "^10.2.1",
         "eslint-config-prettier": "^10.1.8",
@@ -56,11 +66,15 @@
         "eslint-plugin-react-refresh": "^0.5.2",
         "globals": "^17.5.0",
         "husky": "^9.1.7",
+        "jsdom": "^29.1.1",
         "lint-staged": "^17.0.2",
+        "msw": "^2.14.6",
         "prettier": "3.8.3",
         "typescript": "~6.0.3",
         "typescript-eslint": "^8.58.1",
         "vite": "8.0.13",
+        "vite-tsconfig-paths": "^6.1.1",
+        "vitest": "^4.1.6",
         "wrangler": "^4.92.0"
     }
 }

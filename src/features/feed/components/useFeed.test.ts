@@ -1,0 +1,162 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { server } from "../../../../tests/msw-server";
+
+// apiClient reads localStorage.getItem at runtime; the jsdom 29 Map-backed stub
+// must be in place before any module that reaches client.ts is evaluated.
+vi.hoisted(() => {
+    const _map = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+        getItem: (key: string) => _map.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+            _map.set(key, String(value));
+        },
+        removeItem: (key: string) => {
+            _map.delete(key);
+        },
+        clear: () => {
+            _map.clear();
+        },
+        get length() {
+            return _map.size;
+        },
+        key: (i: number) => [..._map.keys()][i] ?? null,
+    });
+});
+
+import type { Post } from "../api/feed.types";
+import { useFeed } from "./useFeed";
+
+const BASE = "http://localhost:8080/api/v1";
+
+const mockPost: Post = {
+    id: "post-1",
+    content: "Hello world",
+    type: "COMMUNITY",
+    mediaUrls: [],
+    createdAt: new Date().toISOString(),
+    likeCount: 0,
+    commentCount: 0,
+    isLiked: false,
+    isBookmarked: false,
+    author: {
+        id: "user-1",
+        username: "testuser",
+        fullName: "Test User",
+        avatarUrl: "https://example.com/avatar.png",
+    },
+    tags: [],
+};
+
+beforeEach(() => {
+    localStorage.clear();
+});
+
+describe("useFeed", () => {
+    it("fetchPosts() populates posts and clears isLoading on success", async () => {
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+
+        expect(result.current.posts).toHaveLength(1);
+        expect(result.current.posts[0].id).toBe("post-1");
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error).toBeNull();
+    });
+
+    it("fetchPosts() sets an error message when the API fails", async () => {
+        server.use(http.get(`${BASE}/posts`, () => HttpResponse.error()));
+
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+
+        expect(result.current.error).toBe("Posts could not be loaded.");
+        expect(result.current.posts).toHaveLength(0);
+        expect(result.current.isLoading).toBe(false);
+    });
+
+    it("hasMore is false when the server returns fewer than 20 posts", async () => {
+        // Default handler returns 1 post (< PAGE_LIMIT of 20)
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+
+        expect(result.current.hasMore).toBe(false);
+    });
+
+    it("loadMore() fetches page 2 and appends results when hasMore is true", async () => {
+        const page1 = Array.from({ length: 20 }, (_, i) => ({
+            ...mockPost,
+            id: `post-${i + 1}`,
+        }));
+
+        server.use(
+            http.get(`${BASE}/posts`, ({ request }) => {
+                const url = new URL(request.url);
+                const page = Number(url.searchParams.get("page") ?? "1");
+                if (page === 1) return HttpResponse.json({ data: page1 });
+                return HttpResponse.json({ data: [mockPost] });
+            }),
+        );
+
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+        expect(result.current.posts).toHaveLength(20);
+        expect(result.current.hasMore).toBe(true);
+
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(result.current.posts).toHaveLength(21);
+        expect(result.current.hasMore).toBe(false);
+    });
+
+    it("changeCategory() updates activeCategory and triggers a new fetch", async () => {
+        const { result } = renderHook(() => useFeed());
+
+        // changeCategory calls fetchPosts fire-and-forget — use waitFor to settle
+        act(() => {
+            result.current.changeCategory("TECH_NEWS");
+        });
+
+        await waitFor(() => {
+            expect(result.current.activeCategory).toBe("TECH_NEWS");
+            expect(result.current.isLoading).toBe(false);
+        });
+        expect(result.current.posts).toHaveLength(1);
+    });
+
+    it("addPost() prepends a post and removePost() removes it without any API call", async () => {
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+        expect(result.current.posts).toHaveLength(1);
+
+        const newPost: Post = { ...mockPost, id: "post-new" };
+
+        act(() => {
+            result.current.addPost(newPost);
+        });
+        expect(result.current.posts).toHaveLength(2);
+        expect(result.current.posts[0].id).toBe("post-new");
+
+        act(() => {
+            result.current.removePost("post-new");
+        });
+        expect(result.current.posts).toHaveLength(1);
+    });
+});
