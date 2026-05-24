@@ -6,6 +6,8 @@ export type PostType =
     | "SYSTEM_UPDATE"
     | "JOB_POSTING";
 
+export type PostCategory = "AI" | "GAME" | "MOBILE" | "BACKEND" | "FRONTEND";
+
 export interface PostAuthor {
     id: string;
     username: string;
@@ -37,6 +39,7 @@ export interface GetPostsParams {
     type?: PostType;
     tag?: string;
     followedOnly?: boolean;
+    categories?: PostCategory[];
 }
 
 export interface BookmarksResponse {

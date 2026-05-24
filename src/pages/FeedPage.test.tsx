@@ -1,3 +1,4 @@
+import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
@@ -107,5 +108,34 @@ describe("FeedPage", () => {
     it("calls fetchPosts once on mount", () => {
         render(<FeedPage />);
         expect(mockFetchPosts).toHaveBeenCalledOnce();
+    });
+
+    it("shows category filter chips on TECH_NEWS tab", () => {
+        vi.mocked(useFeed).mockReturnValue(makeUseFeed("TECH_NEWS"));
+        render(<FeedPage />);
+        expect(screen.getByRole("button", { name: "AI" })).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Game" }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Mobile" }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Backend" }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Frontend" }),
+        ).toBeInTheDocument();
+    });
+
+    it("hides category filter chips on COMMUNITY tab", () => {
+        vi.mocked(useFeed).mockReturnValue(makeUseFeed("COMMUNITY"));
+        render(<FeedPage />);
+        expect(
+            screen.queryByRole("button", { name: "AI" }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Backend" }),
+        ).not.toBeInTheDocument();
     });
 });

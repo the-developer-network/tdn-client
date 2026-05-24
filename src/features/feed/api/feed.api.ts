@@ -14,6 +14,9 @@ export const feedApi = {
         if (params.type) query.set("type", params.type);
         if (params.tag) query.set("tag", params.tag);
         if (params.followedOnly) query.set("followedOnly", "true");
+        if (params.categories?.length) {
+            params.categories.forEach((cat) => query.append("categories", cat));
+        }
 
         return api.get<Post[]>(`/posts?${query.toString()}`, {
             isPublic: !params.followedOnly,

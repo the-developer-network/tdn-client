@@ -1,10 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { feedApi } from "../api/feed.api";
-import type { GetPostsParams, Post, PostType } from "../api/feed.types";
+import type {
+    GetPostsParams,
+    Post,
+    PostCategory,
+    PostType,
+} from "../api/feed.types";
 
 const PAGE_LIMIT = 20;
 
-export function useFeed(followedOnly: boolean = false) {
+export function useFeed(
+    followedOnly: boolean = false,
+    categories: PostCategory[] = [],
+) {
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -14,6 +22,7 @@ export function useFeed(followedOnly: boolean = false) {
     const [hasMore, setHasMore] = useState(true);
     const pageRef = useRef(1);
     const followedOnlyRef = useRef(followedOnly);
+    const categoriesRef = useRef(categories);
     const lastFetchParamsRef = useRef<PostType | GetPostsParams | undefined>(
         undefined,
     );
@@ -21,6 +30,10 @@ export function useFeed(followedOnly: boolean = false) {
     useEffect(() => {
         followedOnlyRef.current = followedOnly;
     }, [followedOnly]);
+
+    useEffect(() => {
+        categoriesRef.current = categories;
+    }, [categories]);
 
     const fetchPosts = useCallback(async (arg?: PostType | GetPostsParams) => {
         setIsLoading(true);
@@ -36,11 +49,13 @@ export function useFeed(followedOnly: boolean = false) {
                           limit: PAGE_LIMIT,
                           type: arg,
                           followedOnly: followedOnlyRef.current,
+                          categories: categoriesRef.current,
                       }
                     : {
                           page: 1,
                           limit: PAGE_LIMIT,
                           followedOnly: followedOnlyRef.current,
+                          categories: categoriesRef.current,
                           ...arg,
                       };
             const data = await feedApi.getPosts(params);
@@ -63,6 +78,7 @@ export function useFeed(followedOnly: boolean = false) {
                 limit: PAGE_LIMIT,
                 type: activeCategory,
                 followedOnly: followedOnlyRef.current,
+                categories: categoriesRef.current,
             });
             setPosts((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
