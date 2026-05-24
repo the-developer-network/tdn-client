@@ -159,4 +159,55 @@ describe("useFeed", () => {
         });
         expect(result.current.posts).toHaveLength(1);
     });
+
+    it("fetchPosts() forwards categories to the API", async () => {
+        let capturedCategories: string[] = [];
+
+        server.use(
+            http.get(`${BASE}/posts`, ({ request }) => {
+                const url = new URL(request.url);
+                capturedCategories = url.searchParams.getAll("categories");
+                return HttpResponse.json({ data: [mockPost] });
+            }),
+        );
+
+        const { result } = renderHook(() => useFeed(false, ["AI", "BACKEND"]));
+
+        await act(async () => {
+            await result.current.fetchPosts("TECH_NEWS");
+        });
+
+        expect(capturedCategories).toEqual(["AI", "BACKEND"]);
+    });
+
+    it("loadMore() forwards categories to the API", async () => {
+        const page1 = Array.from({ length: 20 }, (_, i) => ({
+            ...mockPost,
+            id: `post-${i + 1}`,
+        }));
+        let page2Categories: string[] = [];
+
+        server.use(
+            http.get(`${BASE}/posts`, ({ request }) => {
+                const url = new URL(request.url);
+                const page = Number(url.searchParams.get("page") ?? "1");
+                if (page === 1) return HttpResponse.json({ data: page1 });
+                page2Categories = url.searchParams.getAll("categories");
+                return HttpResponse.json({ data: [mockPost] });
+            }),
+        );
+
+        const { result } = renderHook(() => useFeed(false, ["FRONTEND"]));
+
+        await act(async () => {
+            await result.current.fetchPosts("TECH_NEWS");
+        });
+        expect(result.current.hasMore).toBe(true);
+
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(page2Categories).toEqual(["FRONTEND"]);
+    });
 });

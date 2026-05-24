@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import {
+    Gamepad2,
+    Monitor,
+    Server,
+    Smartphone,
+    Sparkles,
+    Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
@@ -7,7 +15,7 @@ import { PostBox } from "../features/feed/components/PostBox";
 import { useFeed } from "../features/feed/components/useFeed";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
-import type { PostType } from "../features/feed/api/feed.types";
+import type { PostCategory, PostType } from "../features/feed/api/feed.types";
 import { ProfileSearchDropdown } from "../features/profile/components/ProfileSearchDropdown";
 import { SEO } from "../shared/components/ui/SEO";
 
@@ -20,8 +28,23 @@ const CATEGORIES: { label: string; value: PostType }[] = [
 
 const FOLLOWED_ONLY_TABS: PostType[] = ["TECH_NEWS", "SYSTEM_UPDATE"];
 
+const FILTER_CATEGORIES: {
+    label: string;
+    value: PostCategory;
+    Icon: LucideIcon;
+}[] = [
+    { label: "Frontend", value: "FRONTEND", Icon: Monitor },
+    { label: "Backend", value: "BACKEND", Icon: Server },
+    { label: "Mobile", value: "MOBILE", Icon: Smartphone },
+    { label: "Game", value: "GAME", Icon: Gamepad2 },
+    { label: "AI", value: "AI", Icon: Sparkles },
+];
+
 export default function FeedPage() {
     const [followedOnly, setFollowedOnly] = useState(false);
+    const [selectedCategories, setSelectedCategories] = useState<
+        PostCategory[]
+    >([]);
 
     const {
         posts,
@@ -38,18 +61,31 @@ export default function FeedPage() {
         loadMore,
         retry,
         retryLoadMore,
-    } = useFeed(followedOnly);
+    } = useFeed(followedOnly, selectedCategories);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const openModal = useAuthModalStore((state) => state.openModal);
 
     useEffect(() => {
         fetchPosts(activeCategory);
-    }, [activeCategory, fetchPosts, isAuthenticated, followedOnly]);
+    }, [
+        activeCategory,
+        fetchPosts,
+        isAuthenticated,
+        followedOnly,
+        selectedCategories,
+    ]);
 
     function handleCategoryChange(type: PostType) {
         setFollowedOnly(false);
+        setSelectedCategories([]);
         changeCategory(type);
+    }
+
+    function handleToggleCategory(cat: PostCategory) {
+        setSelectedCategories((prev) =>
+            prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+        );
     }
 
     function handleFollowedOnlyToggle() {
@@ -95,12 +131,12 @@ export default function FeedPage() {
                     ))}
                 </div>
 
-                {/* Following toggle — only on News & Updates */}
+                {/* Following toggle + category filters — only on News & Updates */}
                 {showFollowedOnlyToggle && (
-                    <div className="flex items-center px-4 py-2">
+                    <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
                         <button
                             onClick={handleFollowedOnlyToggle}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                            className={`flex shrink-0 items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                                 followedOnly
                                     ? "bg-white text-black"
                                     : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
@@ -109,6 +145,21 @@ export default function FeedPage() {
                             <Users size={13} />
                             Following
                         </button>
+                        <div className="w-px h-4 bg-white/10 shrink-0" />
+                        {FILTER_CATEGORIES.map(({ label, value, Icon }) => (
+                            <button
+                                key={value}
+                                onClick={() => handleToggleCategory(value)}
+                                className={`flex shrink-0 items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                    selectedCategories.includes(value)
+                                        ? "bg-white text-black"
+                                        : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
+                                }`}
+                            >
+                                <Icon size={13} />
+                                {label}
+                            </button>
+                        ))}
                     </div>
                 )}
             </div>
