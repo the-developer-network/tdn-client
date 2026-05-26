@@ -52,7 +52,7 @@ export function BottomNav() {
                     <Bell size={22} />
                     {unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-[9px] font-bold leading-none">
-                            {unreadCount > 99 ? "99+" : unreadCount}
+                            {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                     )}
                 </span>

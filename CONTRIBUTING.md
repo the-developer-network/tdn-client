@@ -4,11 +4,11 @@ Thank you for your interest in contributing to **TDN — The Developer Network**
 
 ## Prerequisites
 
-| Tool    | Version              |
-| ------- | -------------------- |
-| Node.js | `v22` (see `.nvmrc`) |
-| pnpm    | `v10+`               |
-| Git     | any recent version   |
+| Tool    | Version             |
+| ------- | ------------------- |
+| Node.js | `26` (see `.nvmrc`) |
+| pnpm    | `v10+`              |
+| Git     | any recent version  |
 
 ```bash
 # Install pnpm if you don't have it
