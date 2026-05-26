@@ -18,18 +18,19 @@
         "test:e2e": "playwright test",
         "test:e2e:ui": "playwright test --ui"
     },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "esbuild",
-            "sharp",
-            "workerd"
-        ]
-    },
+    "onlyBuiltDependencies": [
+        "esbuild",
+        "sharp",
+        "workerd"
+    ],
     "lint-staged": {
         "src/**/*.{ts,tsx}": [
             "eslint --fix",
             "prettier --write --ignore-unknown"
         ]
+    },
+    "engines": {
+        "node": ">25"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.3.0",

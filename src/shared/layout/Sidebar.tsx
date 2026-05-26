@@ -183,7 +183,7 @@ function NavItem({
                 {icon}
                 {badge != null && badge > 0 && (
                     <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">
-                        {badge > 99 ? "99+" : badge}
+                        {badge > 9 ? "9+" : badge}
                     </span>
                 )}
             </span>
