@@ -45,7 +45,7 @@
     },
     "devDependencies": {
         "@babel/core": "^7.29.0",
-        "@cloudflare/vite-plugin": "^1.37.1",
+        "@cloudflare/vite-plugin": "^1.39.0",
         "@cloudflare/workers-types": "^4.20260516.1",
         "@eslint/js": "^10.0.1",
         "@playwright/test": "^1.60.0",
@@ -73,7 +73,7 @@
         "prettier": "3.8.3",
         "typescript": "~6.0.3",
         "typescript-eslint": "^8.59.4",
-        "vite": "8.0.13",
+        "vite": "8.0.14",
         "vite-tsconfig-paths": "^6.1.1",
         "vitest": "^4.1.7",
         "wrangler": "^4.94.0"
