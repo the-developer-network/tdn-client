@@ -19,6 +19,8 @@ updates:
                   - "vite"
                   - "@vitejs/*"
                   - "@cloudflare/vite-plugin"
+                  - "wrangler"
+                  - "@cloudflare/workers-types"
           react:
               patterns:
                   - "react"
