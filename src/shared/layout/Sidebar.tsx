@@ -137,7 +137,7 @@ export function Sidebar() {
             </div>
 
             {/* Footer links */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 pt-3 pb-1">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 px-3 pt-3 pb-1">
                 <Link
                     to="/privacy"
                     className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
@@ -155,6 +155,12 @@ export function Sidebar() {
                     className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
                 >
                     Contact
+                </Link>
+                <Link
+                    to="/socials"
+                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                >
+                    Socials
                 </Link>
             </div>
         </aside>
