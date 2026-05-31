@@ -12,6 +12,7 @@ import ContactPage from "../pages/ContactPage";
 import SettingsPage from "../pages/SettingsPage";
 import FollowsPage from "../pages/FollowsPage";
 import NotificationsPage from "../pages/NotificationsPage";
+import SocialsPage from "../pages/SocialsPage";
 
 export const router = createBrowserRouter([
     {
@@ -65,6 +66,10 @@ export const router = createBrowserRouter([
     {
         path: "/notifications",
         element: <NotificationsPage />,
+    },
+    {
+        path: "/socials",
+        element: <SocialsPage />,
     },
     {
         path: "*",
