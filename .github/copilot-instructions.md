@@ -153,3 +153,17 @@ pnpm deploy    # Build + deploy to Cloudflare production
 - No global CSS additions — Tailwind utility classes only
 - No barrel `index.ts` files
 - No new third-party state management libraries
+
+## Testing Conventions
+
+- Test runner: Vitest + @testing-library/react + MSW v2
+- Every hook that imports useAuthStore requires vi.hoisted localStorage stub
+- vi.mock("franc-min", ...) for useTranslation tests
+- MSW handlers in tests/mocks/handlers.ts; override per-test with server.use()
+- Always assert against useXxxStore.getState() for Zustand store mutations
+- See docs/QA.md for full testing strategy
+
+## Current Model Context
+
+- Node 26, pnpm 11, TypeScript 6.0, Vite 8, React 19, React Compiler enabled
+- Cloudflare Workers deployment via wrangler
