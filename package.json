@@ -46,7 +46,7 @@
     "devDependencies": {
         "@babel/core": "^7.29.0",
         "@cloudflare/vite-plugin": "^1.37.1",
-        "@cloudflare/workers-types": "^4.20260516.1",
+        "@cloudflare/workers-types": "^5.20260730.1",
         "@eslint/js": "^10.0.1",
         "@playwright/test": "^1.60.0",
         "@rolldown/plugin-babel": "^0.2.3",
