@@ -50,6 +50,7 @@ src/
       components/
         AuthModal.test.tsx
         views/
+          LoginView.test.tsx
           RegisterView.test.tsx
     feed/
       hooks/
@@ -573,6 +574,24 @@ it("renders empty state", () => {
 | `step: "login"`        | `LoginView` content visible       |
 | `step: "register"`     | `RegisterView` content visible    |
 | `step: "verify-email"` | `VerifyEmailView` content visible |
+
+#### `LoginView` (`src/features/auth/components/views/LoginView.test.tsx`)
+
+7 tests. The view renders only a password field and takes the account from `useAuthModalStore().identifier`, so each test seeds the store rather than typing one in.
+
+`Button` declares no default `type`, so inside the form every button submits unless it opts out — one test pins that the change-account button does not log the user in.
+
+| Scenario                              | Assert                                                     |
+| ------------------------------------- | ----------------------------------------------------------- |
+| Email identifier                      | Rendered verbatim, no `@` prefix                            |
+| Username identifier                   | Rendered as `@name`                                         |
+| Enter in the password field           | Signs in; token stored                                      |
+| Change-account button                 | `step === "identifier"`; no login attempted                 |
+| Happy path, unverified email          | `step === "verify-email"`                                   |
+| 403 carrying `recoveryToken`          | `step === "account-recovery"`; token kept in the store      |
+| 401                                   | `detail` rendered; step unchanged; store still signed out   |
+
+> The API spreads `AccountPendingDeletionError` into the problem document, so `recoveryToken` sits at the top level beside `status` — mock it there, not nested.
 
 #### `RegisterView` (`src/features/auth/components/views/RegisterView.test.tsx`)
 
