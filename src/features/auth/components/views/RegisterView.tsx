@@ -44,10 +44,9 @@ export function RegisterView() {
     const [error, setError] = useState<string | null>(null);
     const [errorField, setErrorField] = useState<Field | null>(null);
 
-    // Input Değişim Takibi
     const handleChange = (field: keyof typeof formData, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
-        // Kullanıcı düzeltme yapmaya başlayınca hatayı gizle
+        // Drop the error once the user starts correcting it.
         if (error) {
             setError(null);
             setErrorField(null);
@@ -65,7 +64,7 @@ export function RegisterView() {
             password: formData.password,
         };
 
-        // 1. ADIM: Kayıt Ol
+        // Step 1: create the account.
         try {
             await authApi.register(payload);
         } catch (err: unknown) {
@@ -75,10 +74,10 @@ export function RegisterView() {
             return;
         }
 
-        // 2. ADIM: Otomatik Giriş Yap. Hesap artık var, dolayısıyla buradan
-        // sonraki bir hata kullanıcıyı bu forma geri bırakamaz — tekrar
-        // gönderilmesi kesin olarak 409 döner. Şifresi elimizde olduğu için
-        // giriş adımına devrediyoruz.
+        // Step 2: sign the new account in. The account exists from here on, so
+        // a failure below must not drop the user back on this form —
+        // resubmitting it can only ever return 409. We still hold the password,
+        // so the login step is the one screen that can finish the job.
         try {
             const data = await authApi.login(
                 payload.username,
