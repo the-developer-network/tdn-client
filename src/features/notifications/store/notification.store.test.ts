@@ -35,7 +35,11 @@ describe("useNotificationStore", () => {
             expect(state.unreadCount).toBe(1);
         });
 
-        it("appends to the existing list when append=true", () => {
+        // This previously asserted unreadCount became 2 — recounted across the
+        // appended page. That expectation was the bug: it made scrolling
+        // redefine the badge and silently discard realtime increments, which
+        // is why the defect survived. Appending must leave the count alone.
+        it("appends to the existing list without touching unreadCount", () => {
             useNotificationStore.setState({
                 notifications: [makeNotification()],
                 unreadCount: 1,
@@ -50,7 +54,37 @@ describe("useNotificationStore", () => {
 
             const state = useNotificationStore.getState();
             expect(state.notifications).toHaveLength(2);
-            expect(state.unreadCount).toBe(2);
+            expect(state.unreadCount).toBe(1);
+        });
+
+        it("keeps a realtime increment when an older page is appended", () => {
+            const store = useNotificationStore.getState();
+
+            store.setNotifications([makeNotification()], false);
+            expect(useNotificationStore.getState().unreadCount).toBe(1);
+
+            // Arrives over the socket; too thin to become a Notification, so
+            // only the counter moves.
+            store.incrementUnread();
+            expect(useNotificationStore.getState().unreadCount).toBe(2);
+
+            // Page 2 holds older notifications that were already read.
+            store.setNotifications([makeNotification({ isRead: true })], true);
+
+            expect(useNotificationStore.getState().unreadCount).toBe(2);
+        });
+
+        it("resyncs the count from a fresh first page", () => {
+            useNotificationStore.setState({
+                notifications: [makeNotification()],
+                unreadCount: 7,
+            });
+
+            useNotificationStore
+                .getState()
+                .setNotifications([makeNotification({ isRead: true })], false);
+
+            expect(useNotificationStore.getState().unreadCount).toBe(0);
         });
     });
 

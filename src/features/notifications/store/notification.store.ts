@@ -16,11 +16,20 @@ export const useNotificationStore = create<NotificationState>((set) => ({
 
     setNotifications: (list, append = false) =>
         set((state) => {
-            const notifications = append
-                ? [...state.notifications, ...list]
-                : list;
-            const unreadCount = notifications.filter((n) => !n.isRead).length;
-            return { notifications, unreadCount };
+            // Appending a page is a view operation, so it must not redefine the
+            // badge. Recounting here wiped every `incrementUnread` — and those
+            // increments cannot be rebuilt from the list, because the realtime
+            // payload carries only { type, issuerId, postId } and cannot be
+            // turned into a Notification.
+            if (append) {
+                return { notifications: [...state.notifications, ...list] };
+            }
+
+            // A fresh first page is a resync, so the count is derived again.
+            return {
+                notifications: list,
+                unreadCount: list.filter((n) => !n.isRead).length,
+            };
         }),
 
     addNotification: (notification) =>
