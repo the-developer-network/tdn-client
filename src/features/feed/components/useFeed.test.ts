@@ -210,4 +210,63 @@ describe("useFeed", () => {
 
         expect(page2Categories).toEqual(["FRONTEND"]);
     });
+
+    it("ignores a slow response that is superseded by a newer fetch", async () => {
+        const slowPost = { ...mockPost, id: "slow-post" };
+        const fastPost = { ...mockPost, id: "fast-post" };
+
+        server.use(
+            http.get(`${BASE}/posts`, async ({ request }) => {
+                const type = new URL(request.url).searchParams.get("type");
+                if (type === "COMMUNITY") {
+                    // Lands after the TECH_NEWS request that replaced it.
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    return HttpResponse.json({ data: [slowPost] });
+                }
+                return HttpResponse.json({ data: [fastPost] });
+            }),
+        );
+
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            const slow = result.current.fetchPosts("COMMUNITY");
+            const fast = result.current.fetchPosts("TECH_NEWS");
+            await Promise.all([slow, fast]);
+        });
+
+        expect(result.current.posts).toHaveLength(1);
+        expect(result.current.posts[0].id).toBe("fast-post");
+        expect(result.current.isLoading).toBe(false);
+    });
+
+    it("carries the original params into loadMore instead of rebuilding them", async () => {
+        let page2Tag: string | null = "not-sent";
+        const page1 = Array.from({ length: 20 }, (_, i) => ({
+            ...mockPost,
+            id: `tagged-${i}`,
+        }));
+
+        server.use(
+            http.get(`${BASE}/posts`, ({ request }) => {
+                const url = new URL(request.url);
+                if (Number(url.searchParams.get("page") ?? "1") === 1) {
+                    return HttpResponse.json({ data: page1 });
+                }
+                page2Tag = url.searchParams.get("tag");
+                return HttpResponse.json({ data: [mockPost] });
+            }),
+        );
+
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts({ tag: "react" });
+        });
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(page2Tag).toBe("react");
+    });
 });

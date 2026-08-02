@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { feedApi } from "../api/feed.api";
@@ -36,19 +36,37 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
         el.style.height = `${el.scrollHeight}px`;
     };
 
+    // Object URLs must be revoked or every attachment leaks for the life of the
+    // page. Created and released in handlers rather than an effect, so React
+    // StrictMode's double render cannot mint a second set and orphan the first.
+    const previewsRef = useRef<string[]>([]);
+    useEffect(() => {
+        previewsRef.current = previews;
+    }, [previews]);
+    useEffect(
+        () => () =>
+            previewsRef.current.forEach((url) => URL.revokeObjectURL(url)),
+        [],
+    );
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = Array.from(e.target.files || []);
-        const merged = [...files, ...selected].slice(0, MAX_FILES);
-        setFiles(merged);
-        setPreviews(merged.map((f) => URL.createObjectURL(f)));
+        const added = selected.slice(0, Math.max(0, MAX_FILES - files.length));
+        // Only new files get a URL. Re-mapping every merged file, as this used
+        // to, minted a fresh URL for ones that already had a preview and leaked
+        // the old one on every attachment.
+        const addedUrls = added.map((file) => URL.createObjectURL(file));
+
+        setFiles((prev) => [...prev, ...added]);
+        setPreviews((prev) => [...prev, ...addedUrls]);
         e.target.value = "";
     };
 
     const removeFile = (index: number) => {
-        const newFiles = files.filter((_, i) => i !== index);
-        const newPreviews = previews.filter((_, i) => i !== index);
-        setFiles(newFiles);
-        setPreviews(newPreviews);
+        const url = previews[index];
+        if (url) URL.revokeObjectURL(url);
+        setFiles((prev) => prev.filter((_, i) => i !== index));
+        setPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async () => {
@@ -77,6 +95,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                 mediaUrls,
             );
             onPostCreated(post);
+            previews.forEach((url) => URL.revokeObjectURL(url));
             setContent("");
             setFiles([]);
             setPreviews([]);
