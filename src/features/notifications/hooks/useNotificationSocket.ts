@@ -5,9 +5,13 @@ import { useToastStore } from "../../../shared/store/toast.store";
 import { translate } from "../../../shared/i18n/translate";
 import type { RealtimeNotificationPayload } from "../api/notification.types";
 
+// The API registers its realtime routes under the same `/api/v1` prefix as
+// every REST endpoint — `register(realtimeRoutes, { prefix: "/api/v1/realtime" })`
+// with a `GET /ws` inside it. Omitting the prefix here meant the socket dialled
+// a path the server does not serve, so it never connected on any environment.
 const WS_URL = import.meta.env.PROD
-    ? "wss://api.developernetwork.net/realtime/ws"
-    : "ws://localhost:8080/realtime/ws";
+    ? "wss://api.developernetwork.net/api/v1/realtime/ws"
+    : "ws://localhost:8080/api/v1/realtime/ws";
 
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_MAX_MS = 30_000;

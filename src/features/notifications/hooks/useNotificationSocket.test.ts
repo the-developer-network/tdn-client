@@ -100,6 +100,20 @@ describe("useNotificationSocket", () => {
         });
     });
 
+    // The API mounts realtimeRoutes at prefix "/api/v1/realtime" and declares
+    // GET "/ws" inside it. This URL is written out by hand rather than derived
+    // from the API client's base URL, so it can drift from it silently — pin it.
+    it("connects to the path the API actually serves", async () => {
+        localStorage.setItem("access_token", "jwt-123");
+        useAuthStore.setState({ isAuthenticated: true, token: "jwt-123" });
+
+        renderHook(() => useNotificationSocket());
+
+        await waitFor(() => expect(sockets).toHaveLength(1));
+
+        expect(sockets[0].url).toBe("ws://localhost:8080/api/v1/realtime/ws");
+    });
+
     it("does not connect when unauthenticated", () => {
         renderHook(() => useNotificationSocket());
 
