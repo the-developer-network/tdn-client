@@ -4,6 +4,7 @@ import { commentApi } from "../api/comment.api";
 import { feedApi } from "../../feed/api/feed.api";
 import type { Comment } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface CommentBoxProps {
     postId: string;
@@ -18,8 +19,9 @@ export function CommentBox({
     postId,
     parentId,
     onCommentCreated,
-    placeholder = "Write a comment...",
+    placeholder,
 }: CommentBoxProps) {
+    const { t } = useI18n();
     const [content, setContent] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
@@ -87,7 +89,7 @@ export function CommentBox({
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        placeholder={placeholder}
+                        placeholder={placeholder ?? t("commentBox.placeholder")}
                         rows={2}
                         className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none text-[15px] leading-relaxed"
                     />
@@ -176,10 +178,10 @@ export function CommentBox({
                             className="bg-white text-black text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {isUploading
-                                ? "Uploading..."
+                                ? t("commentBox.uploading")
                                 : isSubmitting
-                                  ? "Posting..."
-                                  : "Reply"}
+                                  ? t("commentBox.posting")
+                                  : t("commentBox.reply")}
                         </button>
                     </div>
                 </div>

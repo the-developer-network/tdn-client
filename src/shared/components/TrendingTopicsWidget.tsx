@@ -1,26 +1,28 @@
 import { useNavigate } from "react-router-dom";
 import { useTrends } from "../../features/trends/hooks/useTrends";
+import { useI18n } from "../hooks/useI18n";
 
 export function TrendingTopicsWidget() {
     const { trends, isLoading, error } = useTrends();
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     return (
         <div className="pt-4 px-4">
             <div className="bg-zinc-900/60 border border-white/10 rounded-2xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-white/10">
                     <h2 className="text-lg font-bold text-white">
-                        Trending Topics
+                        {t("trending.title")}
                     </h2>
                     <p className="text-xs text-white/40 mt-0.5">
-                        Popular on TDN right now
+                        {t("trending.subtitle")}
                     </p>
                 </div>
 
                 <div className="divide-y divide-white/5">
                     {isLoading && (
                         <p className="px-4 py-3 text-sm text-white/40">
-                            Loading...
+                            {t("trending.loading")}
                         </p>
                     )}
                     {error && (
@@ -30,7 +32,7 @@ export function TrendingTopicsWidget() {
                     )}
                     {!isLoading && !error && trends.length === 0 && (
                         <p className="px-4 py-3 text-sm text-white/40">
-                            No trends yet.
+                            {t("trending.empty")}
                         </p>
                     )}
                     {trends.slice(0, 7).map((trend) => (
@@ -48,7 +50,8 @@ export function TrendingTopicsWidget() {
                                 #{trend.tag}
                             </p>
                             <p className="text-xs text-white/40 mt-0.5">
-                                {trend.postCount.toLocaleString()} posts
+                                {trend.postCount.toLocaleString()}{" "}
+                                {t("trending.posts")}
                             </p>
                         </div>
                     ))}
@@ -59,7 +62,7 @@ export function TrendingTopicsWidget() {
                         onClick={() => navigate("/explore")}
                         className="text-sm text-blue-400 hover:text-blue-300 cursor-pointer transition-colors"
                     >
-                        Show more
+                        {t("trending.showMore")}
                     </span>
                 </div>
             </div>

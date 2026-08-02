@@ -5,8 +5,10 @@ import { Button } from "../../../../shared/components/ui/Button";
 import { profileApi } from "../../../profile/api/profile.api";
 import { useAuthStore } from "../../../../core/auth/auth.store";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function RecoveryView() {
+    const { t } = useI18n();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { recoveryToken, setStep, closeModal } = useAuthModalStore();
@@ -34,7 +36,7 @@ export function RecoveryView() {
             navigate("/");
         } catch (err) {
             console.error("Recovery error:", err);
-            setError("Account recovery failed. The link may have expired.");
+            setError(t("auth.recoveryFailed"));
         } finally {
             setIsLoading(false);
         }
@@ -59,11 +61,10 @@ export function RecoveryView() {
             </div>
 
             <h2 className="text-2xl font-bold text-white text-center mb-2 tracking-tight">
-                Account Pending Deletion
+                {t("auth.recoveryTitle")}
             </h2>
             <p className="text-white/40 text-center text-sm mb-8 max-w-xs leading-relaxed">
-                Your account is scheduled for deletion. Would you like to
-                recover it and continue where you left off?
+                {t("auth.recoverySubtitle")}
             </p>
 
             {error && (
@@ -80,7 +81,9 @@ export function RecoveryView() {
                     disabled={isLoading}
                     className="py-3"
                 >
-                    {isLoading ? "Recovering..." : "Yes, recover my account"}
+                    {isLoading
+                        ? t("auth.recovering")
+                        : t("auth.recoverAccount")}
                 </Button>
 
                 <Button
@@ -90,12 +93,12 @@ export function RecoveryView() {
                     disabled={isLoading}
                     className="text-white/40 hover:text-white py-2"
                 >
-                    No, go back
+                    {t("auth.recoveryBack")}
                 </Button>
             </div>
 
             <p className="text-white/20 text-xs mt-6 text-center">
-                This recovery link expires in 15 minutes.
+                {t("auth.recoveryExpiry")}
             </p>
         </div>
     );

@@ -5,8 +5,10 @@ import { useAuthStore } from "../../../../core/auth/auth.store";
 import { Button } from "../../../../shared/components/ui/Button";
 import { profileApi } from "../../../profile/api/profile.api";
 import { getErrorMessage } from "../../../../shared/utils/error-handler";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function LoginView() {
+    const { t } = useI18n();
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -66,10 +68,10 @@ export function LoginView() {
     return (
         <div className="w-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight text-center">
-                Enter your password
+                {t("auth.passwordTitle")}
             </h2>
             <p className="text-white/40 text-center mb-8">
-                Logging in as{" "}
+                {t("auth.loggingInAs")}{" "}
                 <span className="text-white/80 font-medium">@{identifier}</span>
             </p>
 
@@ -86,7 +88,7 @@ export function LoginView() {
                         type="password"
                         value={password}
                         onChange={(e) => handlePasswordChange(e.target.value)}
-                        placeholder="Password"
+                        placeholder={t("auth.passwordPlaceholder")}
                         className={`w-full bg-black border ${
                             error ? "border-red-500" : "border-white/20"
                         } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
@@ -99,7 +101,7 @@ export function LoginView() {
                         className="text-blue-500 text-sm cursor-pointer hover:underline transition-all"
                         onClick={() => setStep("forgot-password")}
                     >
-                        Forgot password?
+                        {t("auth.forgotPassword")}
                     </p>
                 </div>
 
@@ -110,7 +112,7 @@ export function LoginView() {
                     onClick={handleLogin}
                     disabled={isLoading || !password}
                 >
-                    {isLoading ? "Logging in..." : "Log in"}
+                    {isLoading ? t("auth.loggingIn") : t("auth.login")}
                 </Button>
 
                 <Button
@@ -119,7 +121,7 @@ export function LoginView() {
                     className="text-white/40 hover:text-white py-2"
                     onClick={() => setStep("identifier")}
                 >
-                    Change account
+                    {t("auth.changeAccount")}
                 </Button>
             </div>
         </div>

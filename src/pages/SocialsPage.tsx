@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
+import { useI18n } from "../shared/hooks/useI18n";
+import type { TranslationKey } from "../shared/i18n/translations";
 
 const InstagramIcon = () => (
     <svg
@@ -31,14 +33,25 @@ const GitHubIcon = () => (
     </svg>
 );
 
-const socials = [
+interface Social {
+    id: string;
+    name: string;
+    handle: string;
+    url: string;
+    descriptionKey: TranslationKey;
+    icon: React.ReactNode;
+    hoverBorder: string;
+    hoverShadow: string;
+    hoverIcon: string;
+}
+
+const socials: Social[] = [
     {
         id: "instagram",
         name: "Instagram",
         handle: "@devnetworknet",
         url: "https://www.instagram.com/devnetworknet/",
-        description:
-            "Our official Instagram account for photos, updates, and community highlights.",
+        descriptionKey: "socials.instagramDescription",
         icon: <InstagramIcon />,
         hoverBorder: "group-hover:border-pink-500/50",
         hoverShadow: "group-hover:shadow-[0_0_24px_rgba(236,72,153,0.12)]",
@@ -49,8 +62,7 @@ const socials = [
         name: "X (Twitter)",
         handle: "@devnetworknet",
         url: "https://x.com/devnetworknet",
-        description:
-            "Our X account for news, announcements, and developer community discussions.",
+        descriptionKey: "socials.xDescription",
         icon: <XIcon />,
         hoverBorder: "group-hover:border-white/30",
         hoverShadow: "group-hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]",
@@ -61,8 +73,7 @@ const socials = [
         name: "GitHub",
         handle: "the-developer-network",
         url: "https://github.com/the-developer-network/",
-        description:
-            "Our GitHub organization for open source projects, contributions, and the developer network.",
+        descriptionKey: "socials.githubDescription",
         icon: <GitHubIcon />,
         hoverBorder: "group-hover:border-violet-500/50",
         hoverShadow: "group-hover:shadow-[0_0_24px_rgba(139,92,246,0.12)]",
@@ -72,6 +83,7 @@ const socials = [
 
 export default function SocialsPage() {
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
@@ -84,15 +96,16 @@ export default function SocialsPage() {
                     >
                         <ArrowLeft size={18} />
                     </button>
-                    <h1 className="text-base font-bold text-white">Socials</h1>
+                    <h1 className="text-base font-bold text-white">
+                        {t("socials.title")}
+                    </h1>
                 </div>
             </div>
 
             <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-6">
                 {/* Intro */}
                 <p className="text-white/40 text-sm leading-relaxed">
-                    Follow us on social media for updates, news, and community
-                    content.
+                    {t("socials.intro")}
                 </p>
 
                 {/* Social Cards */}
@@ -123,7 +136,7 @@ export default function SocialsPage() {
                                     </span>
                                 </div>
                                 <p className="text-white/50 text-sm leading-relaxed">
-                                    {social.description}
+                                    {t(social.descriptionKey)}
                                 </p>
                             </div>
 
@@ -136,7 +149,7 @@ export default function SocialsPage() {
                 </div>
 
                 <div className="border-t border-white/10 pt-6 text-white/25 text-xs">
-                    New social channels will be announced here.
+                    {t("socials.footer")}
                 </div>
             </div>
         </PageShell>

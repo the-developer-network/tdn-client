@@ -3,15 +3,17 @@ import { ArrowLeft, Mail } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { SEO } from "../shared/components/ui/SEO";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function ContactPage() {
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             <SEO
-                title="Contact — TDN"
-                description="Get in touch with the TDN team."
+                title={t("contact.seoTitle")}
+                description={t("contact.seoDescription")}
                 canonical="/contact"
             />
 
@@ -24,25 +26,23 @@ export default function ContactPage() {
                     >
                         <ArrowLeft size={18} />
                     </button>
-                    <h1 className="text-base font-bold text-white">Contact</h1>
+                    <h1 className="text-base font-bold text-white">
+                        {t("contact.title")}
+                    </h1>
                 </div>
             </div>
 
             <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-8 text-white/80 text-sm leading-relaxed">
                 <div>
                     <p className="text-white/40 text-xs mb-6">
-                        Last updated: April 2026
+                        {t("legal.lastUpdated")}
                     </p>
-                    <p>
-                        Have a question, feedback, or need to report an issue?
-                        We'd love to hear from you. Reach out to the TDN team
-                        using the contact information below.
-                    </p>
+                    <p>{t("contact.intro")}</p>
                 </div>
 
                 <section>
                     <h2 className="text-white font-bold text-base mb-4">
-                        General & Support Inquiries
+                        {t("contact.generalTitle")}
                     </h2>
                     <a
                         href="mailto:contact@developernetwork.net"
@@ -54,50 +54,47 @@ export default function ContactPage() {
                         </span>
                     </a>
                     <p className="mt-4 text-white/50">
-                        We aim to respond to all emails within 2–3 business
-                        days.
+                        {t("contact.responseTime")}
                     </p>
                 </section>
 
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        What Can You Contact Us About?
+                        {t("contact.aboutTitle")}
                     </h2>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
-                        <li>Account issues or access problems</li>
-                        <li>Reporting abusive or policy-violating content</li>
-                        <li>Privacy or data requests (GDPR / CCPA)</li>
-                        <li>Bug reports and feature suggestions</li>
-                        <li>Business or partnership inquiries</li>
-                        <li>Advertising-related questions</li>
+                        <li>{t("contact.aboutAccount")}</li>
+                        <li>{t("contact.aboutAbuse")}</li>
+                        <li>{t("contact.aboutPrivacy")}</li>
+                        <li>{t("contact.aboutBugs")}</li>
+                        <li>{t("contact.aboutBusiness")}</li>
+                        <li>{t("contact.aboutAds")}</li>
                     </ul>
                 </section>
 
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        Open Source
+                        {t("contact.openSourceTitle")}
                     </h2>
                     <p className="text-white/70">
-                        TDN is open source. For code contributions, bug reports,
-                        or technical discussions, you can open an issue or pull
-                        request directly in our GitHub repositories.
+                        {t("contact.openSourceBody")}
                     </p>
                 </section>
 
                 <div className="border-t border-white/10 pt-6 text-white/40 text-xs">
-                    TDN — The Developer Network ·{" "}
+                    {t("legal.brand")} ·{" "}
                     <a
                         href="/privacy"
                         className="hover:text-white/60 transition-colors"
                     >
-                        Privacy Policy
+                        {t("legal.privacyTitle")}
                     </a>{" "}
                     ·{" "}
                     <a
                         href="/terms"
                         className="hover:text-white/60 transition-colors"
                     >
-                        Terms of Service
+                        {t("legal.termsTitle")}
                     </a>
                 </div>
             </div>

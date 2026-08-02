@@ -3,8 +3,10 @@ import { useAuthModalStore } from "../../store/auth-modal.store";
 import { authApi } from "../../api/auth-api";
 import { useAuthStore } from "../../../../core/auth/auth.store";
 import { Button } from "../../../../shared/components/ui/Button";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function VerifyEmailView() {
+    const { t } = useI18n();
     const [code, setCode] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isResending, setIsResending] = useState(false);
@@ -27,7 +29,7 @@ export function VerifyEmailView() {
                 closeModal();
             }
         } catch {
-            alert("Invalid verification code. Please try again.");
+            alert(t("auth.invalidCode"));
         } finally {
             setIsLoading(false);
         }
@@ -37,7 +39,7 @@ export function VerifyEmailView() {
         setIsResending(true);
         try {
             await authApi.sendVerification();
-            alert("A new code has been sent to your email.");
+            alert(t("auth.codeResent"));
         } finally {
             setIsResending(false);
         }
@@ -46,11 +48,10 @@ export function VerifyEmailView() {
     return (
         <div className="w-full flex flex-col animate-in fade-in zoom-in duration-300 text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white tracking-tight">
-                Check your email
+                {t("auth.verifyTitle")}
             </h2>
             <p className="text-white/60 mb-8 text-sm leading-relaxed">
-                We sent an 8-digit verification code to your inbox. <br />
-                Enter it below to verify your account.
+                {t("auth.verifySubtitle")}
             </p>
 
             <div className="space-y-6">
@@ -74,7 +75,9 @@ export function VerifyEmailView() {
                         onClick={handleVerify}
                         disabled={isLoading || code.length !== 8}
                     >
-                        {isLoading ? "Verifying..." : "Verify Email"}
+                        {isLoading
+                            ? t("auth.verifying")
+                            : t("auth.verifyEmail")}
                     </Button>
 
                     <Button
@@ -83,7 +86,7 @@ export function VerifyEmailView() {
                         className="text-white/40 hover:text-white"
                         onClick={closeModal}
                     >
-                        Skip for now
+                        {t("auth.skipForNow")}
                     </Button>
                 </div>
 
@@ -92,9 +95,7 @@ export function VerifyEmailView() {
                     onClick={handleResend}
                     className="text-blue-500 text-sm hover:underline disabled:opacity-50"
                 >
-                    {isResending
-                        ? "Sending..."
-                        : "Didn't receive a code? Resend"}
+                    {isResending ? t("auth.resending") : t("auth.resendCode")}
                 </button>
             </div>
         </div>

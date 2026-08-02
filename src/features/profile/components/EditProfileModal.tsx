@@ -5,6 +5,7 @@ import { Button } from "../../../shared/components/ui/Button";
 import { useEditProfile } from "../hooks/useEditProfile";
 import { useUploadAvatar } from "../hooks/useUploadAvatar";
 import { useUploadBanner } from "../hooks/useUploadBanner";
+import { useI18n } from "../../../shared/hooks/useI18n";
 import type { Profile } from "../api/profile.types";
 
 interface EditProfileModalProps {
@@ -26,6 +27,7 @@ export function EditProfileModal({
     onAvatarUpdate,
     onBannerUpdate,
 }: EditProfileModalProps) {
+    const { t } = useI18n();
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -181,19 +183,19 @@ export function EditProfileModal({
 
                 <div className="px-6 space-y-4">
                     <h3 className="text-lg font-bold text-white">
-                        Edit Profile
+                        {t("profile.editProfile")}
                     </h3>
 
                     {/* Full Name */}
                     <div>
                         <label className="block text-xs font-medium text-white/50 mb-1.5">
-                            Full Name
+                            {t("editProfile.fullName")}
                         </label>
                         <input
                             type="text"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            placeholder="Your full name"
+                            placeholder={t("editProfile.fullNamePlaceholder")}
                             maxLength={64}
                             className={inputClass}
                         />
@@ -202,12 +204,12 @@ export function EditProfileModal({
                     {/* Bio */}
                     <div>
                         <label className="block text-xs font-medium text-white/50 mb-1.5">
-                            Bio
+                            {t("editProfile.bio")}
                         </label>
                         <textarea
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
-                            placeholder="Tell the world about yourself"
+                            placeholder={t("editProfile.bioPlaceholder")}
                             maxLength={160}
                             rows={3}
                             className={`${inputClass} resize-none`}
@@ -220,13 +222,13 @@ export function EditProfileModal({
                     {/* Location */}
                     <div>
                         <label className="block text-xs font-medium text-white/50 mb-1.5">
-                            Location
+                            {t("editProfile.location")}
                         </label>
                         <input
                             type="text"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            placeholder="e.g. Istanbul, Turkey"
+                            placeholder={t("editProfile.locationPlaceholder")}
                             maxLength={64}
                             className={inputClass}
                         />
@@ -236,7 +238,7 @@ export function EditProfileModal({
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
                             <label className="text-xs font-medium text-white/50">
-                                Socials
+                                {t("editProfile.socials")}
                             </label>
                             <button
                                 type="button"
@@ -244,14 +246,14 @@ export function EditProfileModal({
                                 className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
                             >
                                 <Plus size={12} />
-                                Add
+                                {t("editProfile.add")}
                             </button>
                         </div>
 
                         <div className="space-y-2">
                             {socials.length === 0 && (
                                 <p className="text-xs text-white/30 py-1">
-                                    No social links added.
+                                    {t("editProfile.noSocials")}
                                 </p>
                             )}
                             {socials.map((entry, i) => (
@@ -269,7 +271,9 @@ export function EditProfileModal({
                                                 e.target.value,
                                             )
                                         }
-                                        placeholder="Label"
+                                        placeholder={t(
+                                            "editProfile.socialLabelPlaceholder",
+                                        )}
                                         maxLength={32}
                                         className="w-24 shrink-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors"
                                     />
@@ -307,14 +311,14 @@ export function EditProfileModal({
                             disabled={isLoading}
                             className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
                         >
-                            Cancel
+                            {t("common.cancel")}
                         </button>
                         <Button
                             onClick={handleSubmit}
                             disabled={isLoading}
                             size="sm"
                         >
-                            {isLoading ? "Saving..." : "Save"}
+                            {isLoading ? t("common.saving") : t("common.save")}
                         </Button>
                     </div>
                 </div>

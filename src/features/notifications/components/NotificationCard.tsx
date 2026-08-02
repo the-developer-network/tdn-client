@@ -1,39 +1,41 @@
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../../../shared/hooks/useI18n";
+import type { TranslationKey } from "../../../shared/i18n/translations";
 import type { Notification, NotificationType } from "../api/notification.types";
 
 interface NotificationCardProps {
     notification: Notification;
 }
 
-function getMessage(type: NotificationType, username: string): string {
-    switch (type) {
-        case "FOLLOW":
-            return `@${username} started following you`;
-        case "NEW_POST":
-            return `@${username} published a new post`;
-        case "LIKE":
-            return `@${username} liked your post`;
-        case "COMMENT":
-            return `@${username} commented on your post`;
-        case "COMMENT_LIKE":
-            return `@${username} liked your comment`;
-    }
-}
+const MESSAGE_KEYS: Record<NotificationType, TranslationKey> = {
+    FOLLOW: "notif.follow",
+    NEW_POST: "notif.newPost",
+    LIKE: "notif.like",
+    COMMENT: "notif.comment",
+    COMMENT_LIKE: "notif.commentLike",
+};
 
-function getRelativeTime(createdAt: string): string {
+type Translate = ReturnType<typeof useI18n>["t"];
+
+function getRelativeTime(
+    createdAt: string,
+    t: Translate,
+    locale: string,
+): string {
     const diff = Date.now() - new Date(createdAt).getTime();
     const minutes = Math.floor(diff / 60_000);
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return t("notif.justNow");
+    if (minutes < 60) return t("notif.minutesAgo", { n: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return t("notif.hoursAgo", { n: hours });
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return new Date(createdAt).toLocaleDateString();
+    if (days < 7) return t("notif.daysAgo", { n: days });
+    return new Date(createdAt).toLocaleDateString(locale);
 }
 
 export function NotificationCard({ notification }: NotificationCardProps) {
     const navigate = useNavigate();
+    const { t, locale } = useI18n();
 
     function handleClick() {
         switch (notification.type) {
@@ -82,10 +84,12 @@ export function NotificationCard({ notification }: NotificationCardProps) {
             {/* Content */}
             <div className="flex-1 min-w-0">
                 <p className="text-white/90 text-[15px] leading-snug">
-                    {getMessage(notification.type, notification.username)}
+                    {t(MESSAGE_KEYS[notification.type], {
+                        username: notification.username,
+                    })}
                 </p>
                 <p className="text-white/40 text-xs mt-1">
-                    {getRelativeTime(notification.createdAt)}
+                    {getRelativeTime(notification.createdAt, t, locale)}
                 </p>
             </div>
 

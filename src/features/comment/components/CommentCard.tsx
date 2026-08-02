@@ -5,6 +5,7 @@ import { useCommentActions } from "../hooks/useCommentActions";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface CommentCardProps {
     comment: Comment;
@@ -36,6 +37,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
     );
 
     const navigate = useNavigate();
+    const { t, locale } = useI18n();
 
     const {
         displayContent,
@@ -113,7 +115,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             <span className="text-white/20">·</span>
                             <span className="text-white/40 text-xs">
                                 {new Date(createdAt).toLocaleDateString(
-                                    "tr-TR",
+                                    locale,
                                     {
                                         day: "numeric",
                                         month: "short",
@@ -139,14 +141,14 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                         className="text-xs text-blue-400 hover:underline disabled:opacity-50"
                                     >
                                         {isTranslatingContent
-                                            ? "Translating..."
-                                            : "Translate comment"}
+                                            ? t("post.translating")
+                                            : t("comment.translate")}
                                     </button>
                                 )}
                                 {isTranslated && (
                                     <>
                                         <span className="text-xs text-white/30">
-                                            Translated
+                                            {t("post.translated")}
                                         </span>
                                         <span className="text-white/20">·</span>
                                         <button
@@ -157,7 +159,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                             }}
                                             className="text-xs text-white/40 hover:underline"
                                         >
-                                            Show original
+                                            {t("post.showOriginal")}
                                         </button>
                                     </>
                                 )}
@@ -174,7 +176,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                             }}
                                             className="text-xs text-white/40 hover:underline"
                                         >
-                                            Dismiss
+                                            {t("post.dismiss")}
                                         </button>
                                     </>
                                 )}
@@ -310,8 +312,8 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                     onClick={handleOpenDeleteModal}
                                     disabled={isDeleteLoading}
                                     className="flex items-center gap-1.5 rounded-full px-2 py-1.5 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                                    aria-label="Delete comment"
-                                    title="Delete comment"
+                                    aria-label={t("comment.deleteTitle")}
+                                    title={t("comment.deleteTitle")}
                                 >
                                     <svg
                                         className="h-4 w-4"
@@ -336,11 +338,10 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
             <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal}>
                 <div className="px-6 pb-6 pt-14">
                     <h3 className="text-lg font-semibold text-white">
-                        Delete comment?
+                        {t("comment.deleteTitle")}
                     </h3>
                     <p className="mt-2 text-sm leading-relaxed text-white/50">
-                        This action cannot be undone. The comment will be
-                        permanently removed.
+                        {t("comment.deleteBody")}
                     </p>
 
                     <div className="mt-6 flex items-center justify-end gap-3">
@@ -350,7 +351,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             disabled={isDeleteLoading}
                             className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
                         >
-                            Cancel
+                            {t("common.cancel")}
                         </button>
                         <button
                             type="button"
@@ -358,7 +359,9 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             disabled={isDeleteLoading}
                             className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-400 disabled:opacity-50"
                         >
-                            {isDeleteLoading ? "Deleting..." : "Delete"}
+                            {isDeleteLoading
+                                ? t("common.deleting")
+                                : t("common.delete")}
                         </button>
                     </div>
                 </div>

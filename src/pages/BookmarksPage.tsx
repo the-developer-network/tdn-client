@@ -7,8 +7,10 @@ import { useBookmarks } from "../features/feed/hooks/useBookmarks";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { CommentList } from "../features/comment/components/CommentList";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function BookmarksPage() {
+    const { t } = useI18n();
     const { posts, isLoading, error, comments, removePost, retry } =
         useBookmarks();
     const navigate = useNavigate();
@@ -30,10 +32,12 @@ export default function BookmarksPage() {
         <PageShell rightRail={<TrendingTopicsWidget />}>
             {/*  Header */}
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4">
-                <h1 className="text-xl font-bold text-white">Bookmarks</h1>
+                <h1 className="text-xl font-bold text-white">
+                    {t("bookmarks.title")}
+                </h1>
                 {/* Username */}
                 <p className="text-sm text-white/40 mt-1">
-                    @{user?.username} (Posts & comments you saved)
+                    @{user?.username} ({t("bookmarks.subtitle")})
                 </p>
             </div>
 
@@ -66,11 +70,10 @@ export default function BookmarksPage() {
                         </svg>
                     </div>
                     <h2 className="text-xl font-bold text-white mb-2">
-                        Save posts for later
+                        {t("bookmarks.emptyTitle")}
                     </h2>
                     <p className="text-white/40 text-[15px] max-w-[250px]">
-                        Don't let the good ones get away! Bookmark posts to
-                        easily find them again in the future.
+                        {t("bookmarks.emptyBody")}
                     </p>
                 </div>
             ) : (

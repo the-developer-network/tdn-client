@@ -5,8 +5,10 @@ import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { profileApi } from "../features/profile/api/profile.api";
 import { useAuthStore } from "../core/auth/auth.store";
 import { authApi } from "../features/auth/api/auth-api";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function OAuthSuccess() {
+    const { t } = useI18n();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { openModal, setRecoveryToken } = useAuthModalStore();
@@ -72,7 +74,7 @@ export default function OAuthSuccess() {
             <div className="flex flex-col items-center gap-4">
                 <div className="w-10 h-10 border-4 border-white/10 border-t-white rounded-full animate-spin" />
                 <p className="text-white/40 font-medium animate-pulse text-sm">
-                    Synchronizing account...
+                    {t("common.syncingAccount")}
                 </p>
             </div>
             <AuthModal />

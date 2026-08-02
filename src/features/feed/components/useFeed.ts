@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { feedApi } from "../api/feed.api";
+import { useI18n } from "../../../shared/hooks/useI18n";
 import type {
     GetPostsParams,
     Post,
@@ -13,6 +14,7 @@ export function useFeed(
     followedOnly: boolean = false,
     categories: PostCategory[] = [],
 ) {
+    const { t } = useI18n();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -35,38 +37,41 @@ export function useFeed(
         categoriesRef.current = categories;
     }, [categories]);
 
-    const fetchPosts = useCallback(async (arg?: PostType | GetPostsParams) => {
-        setIsLoading(true);
-        setError(null);
-        setLoadMoreError(null);
-        pageRef.current = 1;
-        lastFetchParamsRef.current = arg;
-        try {
-            const params: GetPostsParams =
-                typeof arg === "string"
-                    ? {
-                          page: 1,
-                          limit: PAGE_LIMIT,
-                          type: arg,
-                          followedOnly: followedOnlyRef.current,
-                          categories: categoriesRef.current,
-                      }
-                    : {
-                          page: 1,
-                          limit: PAGE_LIMIT,
-                          followedOnly: followedOnlyRef.current,
-                          categories: categoriesRef.current,
-                          ...arg,
-                      };
-            const data = await feedApi.getPosts(params);
-            setPosts(data);
-            setHasMore(data.length === PAGE_LIMIT);
-        } catch {
-            setError("Posts could not be loaded.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const fetchPosts = useCallback(
+        async (arg?: PostType | GetPostsParams) => {
+            setIsLoading(true);
+            setError(null);
+            setLoadMoreError(null);
+            pageRef.current = 1;
+            lastFetchParamsRef.current = arg;
+            try {
+                const params: GetPostsParams =
+                    typeof arg === "string"
+                        ? {
+                              page: 1,
+                              limit: PAGE_LIMIT,
+                              type: arg,
+                              followedOnly: followedOnlyRef.current,
+                              categories: categoriesRef.current,
+                          }
+                        : {
+                              page: 1,
+                              limit: PAGE_LIMIT,
+                              followedOnly: followedOnlyRef.current,
+                              categories: categoriesRef.current,
+                              ...arg,
+                          };
+                const data = await feedApi.getPosts(params);
+                setPosts(data);
+                setHasMore(data.length === PAGE_LIMIT);
+            } catch {
+                setError(t("postList.error"));
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [t],
+    );
 
     const loadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
@@ -84,11 +89,11 @@ export function useFeed(
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;
         } catch {
-            setLoadMoreError("Failed to load more posts.");
+            setLoadMoreError(t("postList.loadMoreError"));
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, hasMore, activeCategory]);
+    }, [isLoadingMore, hasMore, activeCategory, t]);
 
     const changeCategory = useCallback(
         (type: PostType) => {

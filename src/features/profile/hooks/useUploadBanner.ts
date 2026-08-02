@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { profileApi } from "../api/profile.api";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -9,13 +10,14 @@ interface UseUploadBannerOptions {
 }
 
 export function useUploadBanner({ onSuccess }: UseUploadBannerOptions) {
+    const { t } = useI18n();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     async function upload(file: File) {
         if (file.size > MAX_SIZE) {
-            setError("File is too large. Maximum size is 5 MB.");
+            setError(t("editProfile.uploadTooLarge"));
             return;
         }
 

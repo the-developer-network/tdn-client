@@ -4,12 +4,14 @@ import { Button } from "../components/ui/Button";
 import logo from "../assets/images/logo.png";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
 import { useNotificationStore } from "../../features/notifications/store/notification.store";
+import { useI18n } from "../hooks/useI18n";
 
 export function Sidebar() {
     const { isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
     const { openModal, setStep } = useAuthModalStore();
     const unreadCount = useNotificationStore((state) => state.unreadCount);
+    const { t } = useI18n();
 
     function handleProfileClick() {
         if (!isAuthenticated) {
@@ -34,26 +36,26 @@ export function Sidebar() {
 
                 {/* Navigation Links */}
                 <nav className="flex flex-col gap-y-1">
-                    <NavItem to="/" label="Home" icon={<HomeIcon />} />
+                    <NavItem to="/" label={t("nav.home")} icon={<HomeIcon />} />
                     <NavItem
                         to="/explore"
-                        label="Explore"
+                        label={t("explore.title")}
                         icon={<ExploreIcon />}
                     />
                     <NavItem
                         to="/notifications"
-                        label="Notifications"
+                        label={t("nav.notifications")}
                         icon={<BellIcon />}
                         badge={unreadCount}
                     />
                     <NavItem
                         to="/follows"
-                        label="Follows"
+                        label={t("nav.follows")}
                         icon={<UsersIcon />}
                     />
                     <NavItem
                         to="/bookmarks"
-                        label="Bookmarks"
+                        label={t("nav.bookmarks")}
                         icon={<BookmarkIcon />}
                     />
                     <button
@@ -63,7 +65,9 @@ export function Sidebar() {
                         <span className="w-6 h-6 transition-transform group-hover:scale-110">
                             <ProfileIcon />
                         </span>
-                        <span className="text-xl hidden xl:block">Profile</span>
+                        <span className="text-xl hidden xl:block">
+                            {t("nav.profile")}
+                        </span>
                     </button>
                 </nav>
             </div>
@@ -122,7 +126,7 @@ export function Sidebar() {
                             }}
                             className="absolute -top-12 left-0 w-full bg-zinc-900 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all hover:bg-zinc-800 text-left shadow-xl"
                         >
-                            Settings
+                            {t("nav.settings")}
                         </button>
                     </div>
                 ) : (
@@ -131,7 +135,7 @@ export function Sidebar() {
                         size="full"
                         onClick={() => useAuthModalStore.getState().openModal()}
                     >
-                        Sign In
+                        {t("nav.signIn")}
                     </Button>
                 )}
             </div>
@@ -142,25 +146,25 @@ export function Sidebar() {
                     to="/privacy"
                     className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
                 >
-                    Privacy
+                    {t("auth.privacy")}
                 </Link>
                 <Link
                     to="/terms"
                     className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
                 >
-                    Terms
+                    {t("auth.terms")}
                 </Link>
                 <Link
                     to="/contact"
                     className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
                 >
-                    Contact
+                    {t("nav.contact")}
                 </Link>
                 <Link
                     to="/socials"
                     className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
                 >
-                    Socials
+                    {t("nav.social")}
                 </Link>
             </div>
         </aside>

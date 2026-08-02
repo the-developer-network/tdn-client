@@ -7,10 +7,12 @@ import { PostList } from "../features/feed/components/PostList";
 import { useFeed } from "../features/feed/components/useFeed";
 import { useTrends } from "../features/trends/hooks/useTrends";
 import { useTagSearch } from "../features/trends/hooks/useTagSearch";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function ExplorePage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { t } = useI18n();
     const tag = searchParams.get("tag");
 
     const {
@@ -79,7 +81,7 @@ export default function ExplorePage() {
                                     #{tag}
                                 </h1>
                                 <p className="text-xs text-white/40 mt-0.5">
-                                    Posts tagged with #{tag}
+                                    {t("explore.postsTaggedSubtitle", { tag })}
                                 </p>
                             </div>
                         </div>
@@ -102,7 +104,7 @@ export default function ExplorePage() {
                     <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
                         <div className="px-4 pt-4 pb-3">
                             <h1 className="text-xl font-bold text-white mb-3">
-                                Explore
+                                {t("explore.title")}
                             </h1>
                             <div ref={searchRef} className="relative">
                                 <Search
@@ -113,7 +115,7 @@ export default function ExplorePage() {
                                     type="text"
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search tags..."
+                                    placeholder={t("explore.searchPlaceholder")}
                                     className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors"
                                 />
                                 {showDropdown && (
@@ -126,8 +128,9 @@ export default function ExplorePage() {
                                         {!searchLoading &&
                                             results.length === 0 && (
                                                 <p className="px-4 py-3 text-sm text-white/40">
-                                                    No tags found for &ldquo;
-                                                    {query}&rdquo;
+                                                    {t("explore.noTagsFound", {
+                                                        query,
+                                                    })}
                                                 </p>
                                             )}
                                         {!searchLoading &&
@@ -149,7 +152,9 @@ export default function ExplorePage() {
                                                         </p>
                                                         <span className="ml-auto text-xs text-white/40">
                                                             {r.postCount.toLocaleString()}{" "}
-                                                            posts
+                                                            {t(
+                                                                "trending.posts",
+                                                            )}
                                                         </span>
                                                     </div>
                                                     {r.category && (
@@ -169,10 +174,10 @@ export default function ExplorePage() {
                         <div className="flex items-center gap-2 mb-4">
                             <TrendingUp size={16} className="text-white/50" />
                             <h2 className="text-base font-bold text-white">
-                                Trending Topics
+                                {t("explore.trendingTopics")}
                             </h2>
                             <span className="text-xs text-white/30 ml-1">
-                                · last 7 days
+                                · {t("explore.lastDays")}
                             </span>
                         </div>
 
@@ -208,7 +213,7 @@ export default function ExplorePage() {
                                         </div>
                                         <p className="text-xs text-white/40">
                                             {trend.postCount.toLocaleString()}{" "}
-                                            posts
+                                            {t("trending.posts")}
                                         </p>
                                     </button>
                                 ))}

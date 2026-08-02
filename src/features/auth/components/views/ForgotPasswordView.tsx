@@ -2,14 +2,16 @@ import { useState } from "react";
 import { useAuthModalStore } from "../../store/auth-modal.store";
 import { authApi } from "../../api/auth-api";
 import { Button } from "../../../../shared/components/ui/Button";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function ForgotPasswordView() {
+    const { t } = useI18n();
     const { setStep, setIdentifier } = useAuthModalStore();
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     const handleRequestCode = async () => {
-        if (!email.includes("@")) return alert("Please enter a valid email.");
+        if (!email.includes("@")) return alert(t("auth.invalidEmail"));
 
         setIsLoading(true);
         try {
@@ -17,7 +19,7 @@ export function ForgotPasswordView() {
             setIdentifier(email);
             setStep("reset-password");
         } catch {
-            alert("Email not found or system error.");
+            alert(t("auth.emailNotFound"));
         } finally {
             setIsLoading(false);
         }
@@ -26,11 +28,10 @@ export function ForgotPasswordView() {
     return (
         <div className="w-full flex flex-col animate-in fade-in duration-300">
             <h2 className="text-2xl font-bold mb-4 text-white text-center">
-                Forgot Password?
+                {t("auth.forgotTitle")}
             </h2>
             <p className="text-white/40 text-center mb-8 text-sm">
-                Enter your email address and we'll send you a code to reset your
-                password.
+                {t("auth.forgotSubtitle")}
             </p>
 
             <div className="space-y-4">
@@ -38,7 +39,7 @@ export function ForgotPasswordView() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@mail.com"
+                    placeholder={t("auth.forgotEmailPlaceholder")}
                     className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all"
                     autoFocus
                 />
@@ -49,14 +50,14 @@ export function ForgotPasswordView() {
                     onClick={handleRequestCode}
                     disabled={isLoading || !email}
                 >
-                    {isLoading ? "Sending..." : "Send Code"}
+                    {isLoading ? t("auth.sending") : t("auth.sendCode")}
                 </Button>
 
                 <button
                     onClick={() => setStep("login")}
                     className="text-white/40 text-sm hover:text-white w-full py-2"
                 >
-                    Back to Login
+                    {t("auth.backToLogin")}
                 </button>
             </div>
         </div>

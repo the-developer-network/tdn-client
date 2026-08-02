@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useAuthModalStore } from "../../store/auth-modal.store";
 import { authApi } from "../../api/auth-api";
 import { Button } from "../../../../shared/components/ui/Button";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function ResetPasswordView() {
+    const { t } = useI18n();
     const { identifier, setStep } = useAuthModalStore();
     const [otp, setOtp] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -19,10 +21,10 @@ export function ResetPasswordView() {
                 otp,
                 newPassword,
             });
-            alert("Your password has been reset successfully.");
+            alert(t("auth.resetSuccess"));
             setStep("login");
         } catch {
-            alert("Invalid code or request failed.");
+            alert(t("auth.resetFailed"));
         } finally {
             setIsLoading(false);
         }
@@ -31,10 +33,10 @@ export function ResetPasswordView() {
     return (
         <div className="w-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-2xl font-bold mb-2 text-white text-center">
-                Reset Password
+                {t("auth.resetTitle")}
             </h2>
             <p className="text-white/40 text-center mb-8 text-sm">
-                Check your inbox for the code sent to <b>{identifier}</b>
+                {t("auth.resetSubtitle")} <b>{identifier}</b>
             </p>
 
             <div className="space-y-4">
@@ -42,7 +44,7 @@ export function ResetPasswordView() {
                     type="text"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
-                    placeholder="Enter OTP Code"
+                    placeholder={t("auth.otpPlaceholder")}
                     className="w-full bg-black border border-white/20 rounded-md p-4 text-center font-mono text-xl text-white focus:border-blue-500 outline-none"
                 />
 
@@ -50,7 +52,7 @@ export function ResetPasswordView() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New Password"
+                    placeholder={t("auth.newPasswordPlaceholder")}
                     className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none"
                 />
 
@@ -60,7 +62,7 @@ export function ResetPasswordView() {
                     onClick={handleReset}
                     disabled={isLoading || !otp || !newPassword}
                 >
-                    {isLoading ? "Resetting..." : "Update Password"}
+                    {isLoading ? t("auth.resetting") : t("auth.updatePassword")}
                 </Button>
             </div>
         </div>

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef } from "react";
 import { PostCard } from "./PostCard";
 import { AdPlaceholderCard } from "./AdPlaceholderCard";
 import { Button } from "../../../shared/components/ui/Button";
+import { useI18n } from "../../../shared/hooks/useI18n";
 import type { Post } from "../api/feed.types";
 
 const AD_INTERVAL = 5;
@@ -32,6 +33,7 @@ export function PostList({
     onRetryLoadMore,
 }: PostListProps) {
     const sentinelRef = useRef<HTMLDivElement>(null);
+    const { t } = useI18n();
 
     useEffect(() => {
         if (isLoading || !hasMore || isLoadingMore) return;
@@ -63,7 +65,7 @@ export function PostList({
                 <p className="text-red-400/60 text-sm">{error}</p>
                 {onRetry && (
                     <Button variant="outline" size="sm" onClick={onRetry}>
-                        Try Again
+                        {t("postList.tryAgain")}
                     </Button>
                 )}
             </div>
@@ -73,7 +75,7 @@ export function PostList({
     if (posts.length === 0) {
         return (
             <div className="p-10 text-center text-white/30 italic text-sm">
-                Category Empty
+                {t("postList.empty")}
             </div>
         );
     }
@@ -100,7 +102,7 @@ export function PostList({
                             size="sm"
                             onClick={onRetryLoadMore}
                         >
-                            Try Again
+                            {t("postList.tryAgain")}
                         </Button>
                     )}
                 </div>
@@ -112,7 +114,7 @@ export function PostList({
             )}
             {!hasMore && (
                 <div className="p-6 text-center text-white/20 text-xs">
-                    No more posts
+                    {t("postList.noMore")}
                 </div>
             )}
         </div>

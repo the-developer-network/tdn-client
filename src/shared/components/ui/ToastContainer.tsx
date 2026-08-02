@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useToastStore } from "../../store/toast.store";
+import { useI18n } from "../../hooks/useI18n";
 
 const typeStyles = {
     error: "bg-zinc-900 border-red-500/40 text-red-400",
@@ -9,6 +10,7 @@ const typeStyles = {
 
 export function ToastContainer() {
     const { toasts, removeToast } = useToastStore();
+    const { t } = useI18n();
 
     if (toasts.length === 0) return null;
 
@@ -23,7 +25,7 @@ export function ToastContainer() {
                     <button
                         onClick={() => removeToast(toast.id)}
                         className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
-                        aria-label="Dismiss"
+                        aria-label={t("common.dismiss")}
                     >
                         <X size={14} />
                     </button>

@@ -3,9 +3,11 @@ import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { SuggestionCard } from "../features/profile/components/SuggestionCard";
 import { useSuggestions } from "../features/profile/hooks/useSuggestions";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function FollowsPage() {
     const { suggestions, isLoading, error, refetch } = useSuggestions(10);
+    const { t } = useI18n();
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
@@ -13,17 +15,17 @@ export default function FollowsPage() {
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-white">
-                        Who to Follow
+                        {t("follows.title")}
                     </h1>
                     <p className="text-sm text-white/40 mt-1">
-                        Developers you might want to follow
+                        {t("follows.subtitle")}
                     </p>
                 </div>
                 <button
                     onClick={refetch}
                     disabled={isLoading}
                     className="p-2 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30"
-                    aria-label="Refresh suggestions"
+                    aria-label={t("follows.title")}
                 >
                     <RefreshCw
                         size={18}
@@ -59,7 +61,7 @@ export default function FollowsPage() {
                         onClick={refetch}
                         className="px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors"
                     >
-                        Try again
+                        {t("follows.tryAgain")}
                     </button>
                 </div>
             )}
@@ -83,10 +85,10 @@ export default function FollowsPage() {
                         </svg>
                     </div>
                     <h2 className="text-xl font-bold text-white mb-2">
-                        No suggestions yet
+                        {t("follows.emptyTitle")}
                     </h2>
                     <p className="text-white/40 text-[15px] max-w-[250px]">
-                        Check back later for personalized recommendations.
+                        {t("follows.emptyBody")}
                     </p>
                 </div>
             )}

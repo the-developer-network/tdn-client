@@ -5,8 +5,10 @@ import { useAuthStore } from "../../../../core/auth/auth.store";
 import { Button } from "../../../../shared/components/ui/Button";
 import { profileApi } from "../../../profile/api/profile.api";
 import { getErrorMessage } from "../../../../shared/utils/error-handler";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function RegisterView() {
+    const { t } = useI18n();
     const { identifier, setStep, closeModal } = useAuthModalStore();
     const { setAuth, updateUser } = useAuthStore();
 
@@ -81,10 +83,10 @@ export function RegisterView() {
     return (
         <div className="w-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight">
-                Create your account
+                {t("auth.registerTitle")}
             </h2>
             <p className="text-white/40 mb-6 text-sm">
-                Join the developer network today.
+                {t("auth.registerSubtitle")}
             </p>
 
             <div className="space-y-4">
@@ -99,7 +101,7 @@ export function RegisterView() {
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleChange("email", e.target.value)}
-                        placeholder="Email"
+                        placeholder={t("auth.emailPlaceholder")}
                         className={`w-full bg-black border ${
                             error && error.includes("email")
                                 ? "border-red-500"
@@ -116,7 +118,7 @@ export function RegisterView() {
                         onChange={(e) =>
                             handleChange("username", e.target.value)
                         }
-                        placeholder="Username"
+                        placeholder={t("auth.usernamePlaceholder")}
                         className={`w-full bg-black border ${
                             error && error.includes("username")
                                 ? "border-red-500"
@@ -133,7 +135,7 @@ export function RegisterView() {
                         onChange={(e) =>
                             handleChange("password", e.target.value)
                         }
-                        placeholder="Password"
+                        placeholder={t("auth.passwordPlaceholder")}
                         className={`w-full bg-black border ${
                             error && error.includes("password")
                                 ? "border-red-500"
@@ -154,7 +156,7 @@ export function RegisterView() {
                         !formData.password
                     }
                 >
-                    {isLoading ? "Creating account..." : "Register"}
+                    {isLoading ? t("auth.creatingAccount") : t("auth.register")}
                 </Button>
 
                 <Button
@@ -163,7 +165,7 @@ export function RegisterView() {
                     className="text-white/40 hover:text-white py-2"
                     onClick={() => setStep("identifier")}
                 >
-                    Back
+                    {t("auth.back")}
                 </Button>
             </div>
         </div>

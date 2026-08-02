@@ -9,10 +9,12 @@ import { CommentBox } from "../features/comment/components/CommentBox";
 import { useComments } from "../features/comment/hooks/useComments";
 import { CommentList } from "../features/comment/components/CommentList";
 import { SEO } from "../shared/components/ui/SEO";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function PostDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     const [post, setPost] = useState<Post | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +80,7 @@ export default function PostDetailPage() {
                     </svg>
                 </button>
                 <h2 className="text-xl font-bold text-white tracking-wide">
-                    Post
+                    {t("page.post")}
                 </h2>
             </div>
 
@@ -110,7 +112,7 @@ export default function PostDetailPage() {
                 </div>
             ) : (
                 <div className="p-8 text-center text-white/40">
-                    Post not found.
+                    {t("page.postNotFound")}
                 </div>
             )}
         </PageShell>

@@ -13,10 +13,12 @@ import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import type { Profile } from "../features/profile/api/profile.types";
 import { SEO } from "../shared/components/ui/SEO";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function ProfilePage() {
     const { username } = useParams<{ username: string }>();
     const navigate = useNavigate();
+    const { t, locale } = useI18n();
 
     const [followModal, setFollowModal] = useState<
         "followers" | "following" | null
@@ -114,7 +116,7 @@ export default function ProfilePage() {
                         )}
                         <p className="text-xs text-white/40">
                             {posts.length > 0
-                                ? `${posts.length} posts`
+                                ? `${posts.length} ${t("profile.posts")}`
                                 : "\u00a0"}
                         </p>
                     </div>
@@ -122,7 +124,7 @@ export default function ProfilePage() {
                         <button
                             onClick={() => navigate("/settings")}
                             className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
-                            aria-label="Settings"
+                            aria-label={t("profile.settings")}
                         >
                             <Settings size={18} />
                         </button>
@@ -182,7 +184,7 @@ export default function ProfilePage() {
                                 onClick={() => setIsEditModalOpen(true)}
                                 className="mt-8 sm:mt-12 rounded-full border border-white/20 px-5 py-1.5 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
                             >
-                                Edit Profile
+                                {t("profile.editProfile")}
                             </button>
                         ) : (
                             <button
@@ -197,8 +199,8 @@ export default function ProfilePage() {
                                 {followLoading
                                     ? "..."
                                     : isFollowing
-                                      ? "Following"
-                                      : "Follow"}
+                                      ? t("profile.following")
+                                      : t("profile.follow")}
                             </button>
                         )}
                     </div>
@@ -228,10 +230,10 @@ export default function ProfilePage() {
                             {displayProfile.createdAt && (
                                 <span className="flex items-center gap-1">
                                     <Calendar size={12} />
-                                    Joined{" "}
+                                    {t("profile.joined")}{" "}
                                     {new Date(
                                         displayProfile.createdAt,
-                                    ).toLocaleDateString("en-US", {
+                                    ).toLocaleDateString(locale, {
                                         month: "long",
                                         year: "numeric",
                                     })}
@@ -267,7 +269,9 @@ export default function ProfilePage() {
                                         displayProfile.followingCount ?? 0
                                     ).toLocaleString()}
                                 </span>{" "}
-                                <span className="text-white/40">Following</span>
+                                <span className="text-white/40">
+                                    {t("profile.followingCount")}
+                                </span>
                             </button>
                             <button
                                 onClick={() => setFollowModal("followers")}
@@ -276,7 +280,9 @@ export default function ProfilePage() {
                                 <span className="font-bold text-white">
                                     {followersCount.toLocaleString()}
                                 </span>{" "}
-                                <span className="text-white/40">Followers</span>
+                                <span className="text-white/40">
+                                    {t("profile.followers")}
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -302,7 +308,7 @@ export default function ProfilePage() {
                         onClick={loadMore}
                         className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
                     >
-                        Load more
+                        {t("common.loadMore")}
                     </button>
                 </div>
             )}
