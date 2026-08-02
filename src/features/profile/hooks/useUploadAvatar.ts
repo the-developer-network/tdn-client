@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { profileApi } from "../api/profile.api";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { useI18n } from "../../../shared/hooks/useI18n";
@@ -15,6 +15,23 @@ export function useUploadAvatar({ onSuccess }: UseUploadAvatarOptions) {
     const [error, setError] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+    // The preview stays on screen after a successful upload, so it can only be
+    // released when it is replaced or the hook unmounts — never on success.
+    const objectUrlRef = useRef<string | null>(null);
+
+    function setPreview(url: string | null) {
+        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = url;
+        setPreviewUrl(url);
+    }
+
+    useEffect(
+        () => () => {
+            if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+        },
+        [],
+    );
+
     async function upload(file: File) {
         if (file.size > MAX_SIZE) {
             setError(t("editProfile.uploadTooLarge"));
@@ -22,7 +39,7 @@ export function useUploadAvatar({ onSuccess }: UseUploadAvatarOptions) {
         }
 
         setError(null);
-        setPreviewUrl(URL.createObjectURL(file));
+        setPreview(URL.createObjectURL(file));
         setIsLoading(true);
 
         try {
@@ -30,7 +47,7 @@ export function useUploadAvatar({ onSuccess }: UseUploadAvatarOptions) {
             onSuccess(res.avatarUrl);
         } catch (err) {
             setError(getErrorMessage(err));
-            setPreviewUrl(null);
+            setPreview(null);
         } finally {
             setIsLoading(false);
         }

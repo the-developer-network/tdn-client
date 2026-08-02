@@ -28,6 +28,7 @@ export function useFeed(
     const lastFetchParamsRef = useRef<PostType | GetPostsParams | undefined>(
         undefined,
     );
+    const requestIdRef = useRef(0);
 
     useEffect(() => {
         followedOnlyRef.current = followedOnly;
@@ -37,6 +38,32 @@ export function useFeed(
         categoriesRef.current = categories;
     }, [categories]);
 
+    // Page 2 has to repeat whatever narrowed page 1, so both go through here.
+    // Rebuilding `loadMore` from `activeCategory` alone dropped a `tag` filter
+    // and appended unrelated posts.
+    const buildParams = useCallback(
+        (
+            arg: PostType | GetPostsParams | undefined,
+            page: number,
+        ): GetPostsParams =>
+            typeof arg === "string"
+                ? {
+                      page,
+                      limit: PAGE_LIMIT,
+                      type: arg,
+                      followedOnly: followedOnlyRef.current,
+                      categories: categoriesRef.current,
+                  }
+                : {
+                      page,
+                      limit: PAGE_LIMIT,
+                      followedOnly: followedOnlyRef.current,
+                      categories: categoriesRef.current,
+                      ...arg,
+                  },
+        [],
+    );
+
     const fetchPosts = useCallback(
         async (arg?: PostType | GetPostsParams) => {
             setIsLoading(true);
@@ -44,56 +71,49 @@ export function useFeed(
             setLoadMoreError(null);
             pageRef.current = 1;
             lastFetchParamsRef.current = arg;
+
+            // Switching tabs quickly leaves several requests in flight. Only
+            // the newest may write state, otherwise a slow earlier response
+            // can land last and show posts from the tab you just left.
+            const requestId = ++requestIdRef.current;
+
             try {
-                const params: GetPostsParams =
-                    typeof arg === "string"
-                        ? {
-                              page: 1,
-                              limit: PAGE_LIMIT,
-                              type: arg,
-                              followedOnly: followedOnlyRef.current,
-                              categories: categoriesRef.current,
-                          }
-                        : {
-                              page: 1,
-                              limit: PAGE_LIMIT,
-                              followedOnly: followedOnlyRef.current,
-                              categories: categoriesRef.current,
-                              ...arg,
-                          };
-                const data = await feedApi.getPosts(params);
+                const data = await feedApi.getPosts(buildParams(arg, 1));
+                if (requestId !== requestIdRef.current) return;
                 setPosts(data);
                 setHasMore(data.length === PAGE_LIMIT);
             } catch {
+                if (requestId !== requestIdRef.current) return;
                 setError(t("postList.error"));
             } finally {
-                setIsLoading(false);
+                if (requestId === requestIdRef.current) setIsLoading(false);
             }
         },
-        [t],
+        [t, buildParams],
     );
 
     const loadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
         setIsLoadingMore(true);
         const nextPage = pageRef.current + 1;
+        const requestId = requestIdRef.current;
         try {
-            const data = await feedApi.getPosts({
-                page: nextPage,
-                limit: PAGE_LIMIT,
-                type: activeCategory,
-                followedOnly: followedOnlyRef.current,
-                categories: categoriesRef.current,
-            });
+            const data = await feedApi.getPosts(
+                buildParams(lastFetchParamsRef.current, nextPage),
+            );
+            // A tab switch during the request makes this page belong to a feed
+            // the user has already left; appending it would mix the two.
+            if (requestId !== requestIdRef.current) return;
             setPosts((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;
         } catch {
+            if (requestId !== requestIdRef.current) return;
             setLoadMoreError(t("postList.loadMoreError"));
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, hasMore, activeCategory, t]);
+    }, [isLoadingMore, hasMore, t, buildParams]);
 
     const changeCategory = useCallback(
         (type: PostType) => {

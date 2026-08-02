@@ -31,6 +31,7 @@ vi.mock("franc-min", () => ({ franc: vi.fn() }));
 import { franc } from "franc-min";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
 import { useAuthStore } from "../../core/auth/auth.store";
+import { useLanguageStore } from "../store/language.store";
 import { useTranslation } from "./useTranslation";
 
 const BASE = "http://localhost:8080/api/v1";
@@ -44,7 +45,8 @@ beforeEach(() => {
     localStorage.clear();
     useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
     useAuthModalStore.getState().reset();
-    // Default: franc detects Spanish → "es" ≠ "en" (jsdom navigator.language)
+    useLanguageStore.setState({ locale: "en" });
+    // Default: franc detects Spanish → "es" ≠ "en" (the selected app locale)
     vi.mocked(franc).mockReturnValue("spa");
 });
 
@@ -143,5 +145,51 @@ describe("useTranslation", () => {
         expect(result.current.translateError).toBeTruthy();
         expect(result.current.isTranslated).toBe(false);
         expect(result.current.isTranslating).toBe(false);
+    });
+
+    describe("target language follows the app locale, not the browser", () => {
+        it("hides translate when the post is already in the selected locale", () => {
+            vi.mocked(franc).mockReturnValue("tur");
+            useLanguageStore.setState({ locale: "tr" });
+
+            const { result } = renderHook(() => useTranslation(FOREIGN_TEXT));
+
+            expect(result.current.showTranslate).toBe(false);
+        });
+
+        it("offers translate when the post is not in the selected locale", () => {
+            vi.mocked(franc).mockReturnValue("tur");
+            useLanguageStore.setState({ locale: "en" });
+
+            const { result } = renderHook(() => useTranslation(FOREIGN_TEXT));
+
+            expect(result.current.showTranslate).toBe(true);
+        });
+
+        it("requests the selected locale as targetLang", async () => {
+            useAuthStore.setState({
+                user: mockUser,
+                token: "tok",
+                isAuthenticated: true,
+            });
+            useLanguageStore.setState({ locale: "tr" });
+
+            let body: { targetLang?: string } = {};
+            server.use(
+                http.post(`${BASE}/translate`, async ({ request }) => {
+                    body = (await request.json()) as { targetLang?: string };
+                    return HttpResponse.json({
+                        data: { translatedText: "çevrildi" },
+                    });
+                }),
+            );
+
+            const { result } = renderHook(() => useTranslation(FOREIGN_TEXT));
+            await act(async () => {
+                await result.current.handleTranslate();
+            });
+
+            expect(body.targetLang).toBe("tr");
+        });
     });
 });

@@ -20,7 +20,12 @@ interface WsMessage {
 
 export function useNotificationSocket() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const token = useAuthStore((state) => state.token);
+    // `auth.store` persists only { user, isAuthenticated }, so after a reload
+    // the store's token is null while the JWT is still in localStorage — the
+    // source of truth the API client reads on every request. Keep the store
+    // field as a dependency so a fresh login retriggers the effect, but fall
+    // back to storage so a reloaded session still connects.
+    const storeToken = useAuthStore((state) => state.token);
     const incrementUnread = useNotificationStore(
         (state) => state.incrementUnread,
     );
@@ -30,6 +35,8 @@ export function useNotificationSocket() {
     const activeRef = useRef(false);
 
     useEffect(() => {
+        const token = storeToken ?? localStorage.getItem("access_token");
+
         if (!isAuthenticated || !token) {
             activeRef.current = false;
             if (retryTimerRef.current) {
@@ -114,5 +121,5 @@ export function useNotificationSocket() {
             wsRef.current?.close();
             wsRef.current = null;
         };
-    }, [isAuthenticated, token, incrementUnread]);
+    }, [isAuthenticated, storeToken, incrementUnread]);
 }

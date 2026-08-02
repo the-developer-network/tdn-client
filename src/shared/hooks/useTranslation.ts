@@ -4,6 +4,7 @@ import { api } from "../../core/api/client";
 import { getErrorMessage } from "../utils/error-handler";
 import { useAuthStore } from "../../core/auth/auth.store";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
+import { useLanguageStore } from "../store/language.store";
 
 // ISO 639-3 → ISO 639-1 (BCP47 short)
 const ISO3_TO_ISO1: Record<string, string> = {
@@ -131,7 +132,10 @@ export function useTranslation(content: string): UseTranslationReturn {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const openModal = useAuthModalStore((s) => s.openModal);
 
-    const userLang = navigator.language.split("-")[0].toLowerCase();
+    // The language the reader chose in settings, not the browser's. Using
+    // `navigator.language` here meant switching the interface to English still
+    // offered — and requested — Turkish translations.
+    const userLang = useLanguageStore((s) => s.locale);
 
     const showTranslate = useMemo(() => {
         if (content.trim().length < 10) return false;
