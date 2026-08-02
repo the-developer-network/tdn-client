@@ -18,9 +18,15 @@ export interface Profile {
 }
 
 export interface UpdateProfileBody {
+    /**
+     * The API validates this as `minLength: 2` with no null variant, so it can
+     * be changed but not cleared — omit it rather than sending an empty value.
+     */
     fullName?: string;
-    bio?: string;
-    location?: string;
+    /** `null` clears the field; omitting it leaves the stored value alone. */
+    bio?: string | null;
+    /** `null` clears the field; omitting it leaves the stored value alone. */
+    location?: string | null;
     socials?: Record<string, string>;
 }
 
