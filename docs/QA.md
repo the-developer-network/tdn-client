@@ -44,8 +44,13 @@ src/
     auth/
       auth.store.test.ts
   features/
-    auth/store/
-      auth-modal.store.test.ts
+    auth/
+      store/
+        auth-modal.store.test.ts
+      components/
+        AuthModal.test.tsx
+        views/
+          RegisterView.test.tsx
     feed/
       hooks/
         usePostActions.test.ts
@@ -567,6 +572,21 @@ it("renders empty state", () => {
 | `step: "login"`        | `LoginView` content visible       |
 | `step: "register"`     | `RegisterView` content visible    |
 | `step: "verify-email"` | `VerifyEmailView` content visible |
+
+#### `RegisterView` (`src/features/auth/components/views/RegisterView.test.tsx`)
+
+4 tests. Registration is two calls — `POST /auth/register` followed by an automatic `POST /auth/login` — and the halves fail differently, so mock them separately.
+
+Field-level highlighting reads `validation[0].instancePath` (`"/username"`), the only place the API names the offending field; `getErrorMessage` returns just the message, which never does. Handlers must therefore return whole RFC 7807 problem documents, not bare strings.
+
+| Scenario                             | Assert                                                              |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| 400 with `instancePath: "/username"` | Username input reddened, email untouched                            |
+| Register succeeds, auto-login 500s   | `step === "login"`, `identifier` set to the new username            |
+| Happy path                           | `step === "verify-email"`; token stored; auth store signed in       |
+| Whitespace-only username             | Submit stays disabled                                               |
+
+> `type="email"` inputs run the HTML value sanitization algorithm, so jsdom strips whitespace from that field on its own — only the text inputs need a trimmed guard.
 
 ---
 
