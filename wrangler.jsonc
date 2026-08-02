@@ -6,7 +6,11 @@
   "observability": {
     "enabled": true,
   },
+  // `binding` is what exposes env.ASSETS to worker/index.ts. Without it the
+  // Worker still runs but env.ASSETS is undefined, so every request that
+  // reaches the Worker throws before it can serve anything.
   "assets": {
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
   },
   "compatibility_flags": ["nodejs_compat"],
