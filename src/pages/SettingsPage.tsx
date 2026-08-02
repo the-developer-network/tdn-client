@@ -485,10 +485,27 @@ function DangerZoneSection() {
     const navigate = useNavigate();
     const { handleDelete, isLoading, error } = useDeleteAccount();
     const [showConfirm, setShowConfirm] = useState(false);
+    const [password, setPassword] = useState("");
+    const [localError, setLocalError] = useState<string | null>(null);
 
     async function handleLogout() {
         await logout();
         navigate("/");
+    }
+
+    function closeConfirm() {
+        setShowConfirm(false);
+        setPassword("");
+        setLocalError(null);
+    }
+
+    async function handleConfirmDelete() {
+        if (!password) {
+            setLocalError(t("settings.deleteAccountPasswordRequired"));
+            return;
+        }
+        setLocalError(null);
+        await handleDelete(password);
     }
 
     return (
@@ -529,27 +546,47 @@ function DangerZoneSection() {
                         {t("settings.delete")}
                     </button>
                 </div>
-                {error && <p className="text-sm text-red-400">{error}</p>}
             </div>
 
-            <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)}>
+            <Modal isOpen={showConfirm} onClose={closeConfirm}>
                 <div className="p-6">
                     <h3 className="text-lg font-bold text-white mb-2">
                         {t("settings.deleteAccountTitle")}
                     </h3>
-                    <p className="text-sm text-white/60 mb-6">
+                    <p className="text-sm text-white/60 mb-4">
                         {t("settings.deleteAccountBody")}
                     </p>
-                    <div className="flex gap-3">
+                    <label
+                        htmlFor="delete-account-password"
+                        className="block text-sm text-white/60 mb-2"
+                    >
+                        {t("settings.deleteAccountPasswordLabel")}
+                    </label>
+                    <input
+                        id="delete-account-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder={t(
+                            "settings.deleteAccountPasswordPlaceholder",
+                        )}
+                        className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm mb-2"
+                    />
+                    {(localError ?? error) && (
+                        <p className="text-sm text-red-400 mb-2">
+                            {localError ?? error}
+                        </p>
+                    )}
+                    <div className="flex gap-3 mt-4">
                         <Button
                             variant="secondary"
                             size="md"
-                            onClick={() => setShowConfirm(false)}
+                            onClick={closeConfirm}
                         >
                             {t("settings.cancel")}
                         </Button>
                         <button
-                            onClick={() => void handleDelete()}
+                            onClick={() => void handleConfirmDelete()}
                             disabled={isLoading}
                             className="flex-1 py-2.5 px-4 rounded-full text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >

@@ -20,3 +20,7 @@ export interface UpdatePasswordBody {
     currentPassword: string;
     newPassword: string;
 }
+
+export interface DeleteAccountBody {
+    password: string;
+}

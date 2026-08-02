@@ -10,12 +10,12 @@ export function useDeleteAccount() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function handleDelete() {
+    async function handleDelete(password: string) {
         setIsLoading(true);
         setError(null);
 
         try {
-            await settingsApi.deleteAccount();
+            await settingsApi.deleteAccount({ password });
             await logout();
             navigate("/");
         } catch (err) {
