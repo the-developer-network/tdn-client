@@ -6,6 +6,7 @@ import { useEditProfile } from "../hooks/useEditProfile";
 import { useUploadAvatar } from "../hooks/useUploadAvatar";
 import { useUploadBanner } from "../hooks/useUploadBanner";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { getSafeImageSrc } from "../../../shared/utils/image-src";
 import type { Profile } from "../api/profile.types";
 
 interface EditProfileModalProps {
@@ -77,31 +78,9 @@ export function EditProfileModal({
 
     const fallbackAvatar = `https://ui-avatars.com/api/?name=${profile.username}&size=80`;
 
-    function getSafeImageSrc(src: string | null | undefined, fallback: string) {
-        if (!src) return fallback;
-        if (src.startsWith("/")) return src;
-
-        try {
-            const parsed = new URL(src, window.location.origin);
-            if (
-                parsed.protocol === "https:" ||
-                parsed.protocol === "http:" ||
-                parsed.protocol === "blob:"
-            ) {
-                return src;
-            }
-        } catch {
-            return fallback;
-        }
-
-        return fallback;
-    }
-
-    const currentAvatar = getSafeImageSrc(
-        avatarPreview || profile.avatarUrl,
-        fallbackAvatar,
-    );
-    const currentBanner = bannerPreview || profile.bannerUrl;
+    const currentAvatar =
+        getSafeImageSrc(avatarPreview || profile.avatarUrl) ?? fallbackAvatar;
+    const currentBanner = getSafeImageSrc(bannerPreview || profile.bannerUrl);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>

@@ -6,6 +6,7 @@ import type { Post, PostType } from "../api/feed.types";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { getSafeImageSrc } from "../../../shared/utils/image-src";
 
 interface PostBoxProps {
     onPostCreated: (post: Post) => void;
@@ -125,36 +126,41 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                         <div
                             className={`grid gap-1 rounded-2xl overflow-hidden ${previews.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
                         >
-                            {previews.map((url, i) => (
-                                <div
-                                    key={i}
-                                    className="relative aspect-video bg-white/5"
-                                >
-                                    <img
-                                        src={url}
-                                        className="w-full h-full object-cover"
-                                        alt=""
-                                    />
-                                    <button
-                                        onClick={() => removeFile(i)}
-                                        className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black rounded-full p-1 transition-colors"
+                            {previews.map((url, i) => {
+                                const safeUrl = getSafeImageSrc(url);
+                                return (
+                                    <div
+                                        key={i}
+                                        className="relative aspect-video bg-white/5"
                                     >
-                                        <svg
-                                            className="w-3.5 h-3.5 text-white"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M6 18L18 6M6 6l12 12"
+                                        {safeUrl && (
+                                            <img
+                                                src={safeUrl}
+                                                className="w-full h-full object-cover"
+                                                alt=""
                                             />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
+                                        )}
+                                        <button
+                                            onClick={() => removeFile(i)}
+                                            className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black rounded-full p-1 transition-colors"
+                                        >
+                                            <svg
+                                                className="w-3.5 h-3.5 text-white"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M6 18L18 6M6 6l12 12"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
