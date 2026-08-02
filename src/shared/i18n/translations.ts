@@ -251,6 +251,8 @@ const en = {
     "auth.newPasswordPlaceholder": "New Password",
     "auth.updatePassword": "Update Password",
     "auth.resetting": "Resetting...",
+    "auth.otpLengthError": "Enter the 8-character code sent to your email.",
+    "auth.passwordTooShort": "Password must be at least 8 characters.",
     "auth.recoveryTitle": "Account Pending Deletion",
     "auth.recoverySubtitle":
         "Your account is scheduled for deletion. Would you like to recover it and continue where you left off?",
@@ -721,6 +723,8 @@ const tr: Record<TranslationKey, string> = {
     "auth.newPasswordPlaceholder": "Yeni Şifre",
     "auth.updatePassword": "Şifreyi Güncelle",
     "auth.resetting": "Sıfırlanıyor...",
+    "auth.otpLengthError": "E-postanıza gönderilen 8 karakterlik kodu girin.",
+    "auth.passwordTooShort": "Şifre en az 8 karakter olmalı.",
     "auth.recoveryTitle": "Hesap Silinme Bekliyor",
     "auth.recoverySubtitle":
         "Hesabınız silinmek üzere zamanlandı. Kurtarmak ve kaldığınız yerden devam etmek ister misiniz?",
