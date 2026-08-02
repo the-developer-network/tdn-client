@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Calendar, LinkIcon, Settings } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
@@ -13,6 +13,7 @@ import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import type { Profile } from "../features/profile/api/profile.types";
 import { SEO } from "../shared/components/ui/SEO";
+import { Button } from "../shared/components/ui/Button";
 import { useI18n } from "../shared/hooks/useI18n";
 
 export default function ProfilePage() {
@@ -33,6 +34,7 @@ export default function ProfilePage() {
         profile,
         isLoading: profileLoading,
         error: profileError,
+        retry: retryProfile,
     } = useProfile(username ?? "");
 
     useEffect(() => {
@@ -74,6 +76,20 @@ export default function ProfilePage() {
         retry: retryPosts,
         removePost,
     } = useUserPosts(username ?? "");
+
+    // A session error is handled by reopening the auth modal above, so it must
+    // not also render as an inline failure.
+    const hasProfileError =
+        !!profileError &&
+        !profileLoading &&
+        !/token|expired|session|unauthorized/i.test(profileError);
+
+    // The profile and its posts are two requests with one common cause of
+    // failure, so a single retry has to restart both.
+    const handleRetry = useCallback(() => {
+        retryProfile();
+        retryPosts();
+    }, [retryProfile, retryPosts]);
 
     const displayProfile = useMemo(
         () => localProfile ?? profile,
@@ -132,14 +148,16 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Profile error */}
-            {profileError &&
-                !profileLoading &&
-                !/token|expired|session|unauthorized/i.test(profileError) && (
-                    <div className="p-10 text-center text-red-400/60 text-sm">
-                        {profileError}
-                    </div>
-                )}
+            {/* Profile error — the page-level failure state. The posts list is
+                hidden below so its identical error does not render twice. */}
+            {hasProfileError && (
+                <div className="p-10 text-center flex flex-col items-center gap-4">
+                    <p className="text-red-400/60 text-sm">{profileError}</p>
+                    <Button variant="outline" size="sm" onClick={handleRetry}>
+                        {t("common.tryAgain")}
+                    </Button>
+                </div>
+            )}
 
             {/* Profile skeleton */}
             {profileLoading && (
@@ -289,34 +307,39 @@ export default function ProfilePage() {
                 </>
             )}
 
-            {/* Posts list */}
-            <PostList
-                posts={posts}
-                isLoading={postsLoading && posts.length === 0}
-                isLoadingMore={isLoadingMore}
-                hasMore={hasMore}
-                error={postsError}
-                onPostDeleted={removePost}
-                onLoadMore={loadMore}
-                onRetry={retryPosts}
-            />
+            {/* Posts list — suppressed while the profile itself is failing, so
+                only the page-level error above is shown. */}
+            {!hasProfileError && (
+                <>
+                    <PostList
+                        posts={posts}
+                        isLoading={postsLoading && posts.length === 0}
+                        isLoadingMore={isLoadingMore}
+                        hasMore={hasMore}
+                        error={postsError}
+                        onPostDeleted={removePost}
+                        onLoadMore={loadMore}
+                        onRetry={retryPosts}
+                    />
 
-            {/* Load more */}
-            {hasMore && !isLoadingMore && posts.length > 0 && (
-                <div className="flex justify-center py-6">
-                    <button
-                        onClick={loadMore}
-                        className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
-                    >
-                        {t("common.loadMore")}
-                    </button>
-                </div>
-            )}
+                    {/* Load more */}
+                    {hasMore && !isLoadingMore && posts.length > 0 && (
+                        <div className="flex justify-center py-6">
+                            <button
+                                onClick={loadMore}
+                                className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
+                            >
+                                {t("common.loadMore")}
+                            </button>
+                        </div>
+                    )}
 
-            {isLoadingMore && (
-                <div className="flex justify-center py-6">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                </div>
+                    {isLoadingMore && (
+                        <div className="flex justify-center py-6">
+                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Followers / Following modal */}
