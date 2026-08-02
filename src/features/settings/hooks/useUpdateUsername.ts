@@ -9,7 +9,10 @@ export function useUpdateUsername() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    async function handleSubmit(newUsername: string) {
+    // Returns whether the update went through. Callers cannot read `error`
+    // straight after awaiting this — that closure still holds the value from
+    // the render the submit started in.
+    async function handleSubmit(newUsername: string): Promise<boolean> {
         setIsLoading(true);
         setError(null);
         setSuccess(false);
@@ -18,8 +21,10 @@ export function useUpdateUsername() {
             await settingsApi.updateUsername({ newUsername });
             updateUser({ username: newUsername });
             setSuccess(true);
+            return true;
         } catch (err) {
             setError(getErrorMessage(err));
+            return false;
         } finally {
             setIsLoading(false);
         }

@@ -7,7 +7,9 @@ export function useUpdateEmail() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    async function handleSubmit(newEmail: string) {
+    // Returns whether the update went through — see the note in
+    // useUpdateUsername for why `error` cannot be read straight after awaiting.
+    async function handleSubmit(newEmail: string): Promise<boolean> {
         setIsLoading(true);
         setError(null);
         setSuccess(false);
@@ -15,8 +17,10 @@ export function useUpdateEmail() {
         try {
             await settingsApi.updateEmail({ newEmail });
             setSuccess(true);
+            return true;
         } catch (err) {
             setError(getErrorMessage(err));
+            return false;
         } finally {
             setIsLoading(false);
         }

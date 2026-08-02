@@ -204,8 +204,8 @@ function ChangeUsernameSection() {
     async function handleFormSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!newUsername.trim()) return;
-        await handleSubmit(newUsername.trim());
-        if (!error) setNewUsername("");
+        const updated = await handleSubmit(newUsername.trim());
+        if (updated) setNewUsername("");
     }
 
     return (
@@ -249,8 +249,8 @@ function ChangeEmailSection() {
     async function handleFormSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!newEmail.trim()) return;
-        await handleSubmit(newEmail.trim());
-        if (!error) setNewEmail("");
+        const updated = await handleSubmit(newEmail.trim());
+        if (updated) setNewEmail("");
     }
 
     return (
@@ -305,8 +305,8 @@ function ChangePasswordSection() {
             setLocalError(t("settings.passwordTooShort"));
             return;
         }
-        await handleSubmit(currentPassword, newPassword);
-        if (!error) {
+        const updated = await handleSubmit(currentPassword, newPassword);
+        if (updated) {
             setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");

@@ -85,6 +85,7 @@ src/
     CommentDetailPage.test.tsx
     BookmarksPage.test.tsx
     NotificationsPage.test.tsx
+    SettingsPage.test.tsx
 
 e2e/
   fixtures.ts
@@ -561,6 +562,17 @@ it("redirects unauthenticated users to /", () => {
 | Category tab click                   | API called with correct `type` param    |
 | "Following" toggle — unauthenticated | Auth modal opened                       |
 | "Following" toggle — authenticated   | `followedOnly=true` appended to request |
+
+**`SettingsPage`** (`src/pages/SettingsPage.test.tsx`)
+
+2 tests covering the form-reset rule the three mutation sections share. `handleSubmit` resolves to a boolean; the sections must branch on that, never on the `error` returned by the hook — after `await`, that binding still holds the value from the render the submit started in, so it reports the previous attempt's outcome.
+
+MSW fails the first `PATCH /users/me/username` and accepts every one after it, so a single render covers both transitions.
+
+| Scenario                       | Assert                                            |
+| ------------------------------ | ------------------------------------------------- |
+| Update fails (409)             | Error rendered; the typed username is still there |
+| Success straight after failure | Success rendered; the field is cleared            |
 
 ---
 
