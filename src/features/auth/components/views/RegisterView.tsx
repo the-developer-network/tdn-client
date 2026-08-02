@@ -6,10 +6,28 @@ import { Button } from "../../../../shared/components/ui/Button";
 import { profileApi } from "../../../profile/api/profile.api";
 import { getErrorMessage } from "../../../../shared/utils/error-handler";
 import { useI18n } from "../../../../shared/hooks/useI18n";
+import type { ApiErrorResponse } from "../../../../core/api/api-types";
+
+const FIELDS = ["email", "username", "password"] as const;
+type Field = (typeof FIELDS)[number];
+
+/**
+ * Picks out the field the API rejected. Validation entries name it in
+ * `instancePath` ("/username") and never in the message — "must NOT have fewer
+ * than 3 characters" reads the same whichever field it came from, and the
+ * conflict on an existing account ("A user with these details already
+ * exists.") names no field at all.
+ */
+function fieldFromError(err: unknown): Field | null {
+    if (!err || typeof err !== "object" || !("validation" in err)) return null;
+    const path = (err as ApiErrorResponse).validation?.[0]?.instancePath ?? "";
+    return FIELDS.find((field) => path === `/${field}`) ?? null;
+}
 
 export function RegisterView() {
     const { t } = useI18n();
-    const { identifier, setStep, closeModal } = useAuthModalStore();
+    const { identifier, setStep, setIdentifier, closeModal } =
+        useAuthModalStore();
     const { setAuth, updateUser } = useAuthStore();
 
     const isEmailInput = identifier.includes("@");
@@ -24,15 +42,21 @@ export function RegisterView() {
     // UI States
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorField, setErrorField] = useState<Field | null>(null);
 
     // Input Değişim Takibi
     const handleChange = (field: keyof typeof formData, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
-        if (error) setError(null); // Kullanıcı düzeltme yapmaya başlayınca hatayı gizle
+        // Kullanıcı düzeltme yapmaya başlayınca hatayı gizle
+        if (error) {
+            setError(null);
+            setErrorField(null);
+        }
     };
 
     const handleRegister = async () => {
         setError(null);
+        setErrorField(null);
         setIsLoading(true);
 
         const payload = {
@@ -41,11 +65,21 @@ export function RegisterView() {
             password: formData.password,
         };
 
+        // 1. ADIM: Kayıt Ol
         try {
-            // 1. ADIM: Kayıt Ol
             await authApi.register(payload);
+        } catch (err: unknown) {
+            setError(getErrorMessage(err));
+            setErrorField(fieldFromError(err));
+            setIsLoading(false);
+            return;
+        }
 
-            // 2. ADIM: Otomatik Giriş Yap
+        // 2. ADIM: Otomatik Giriş Yap. Hesap artık var, dolayısıyla buradan
+        // sonraki bir hata kullanıcıyı bu forma geri bırakamaz — tekrar
+        // gönderilmesi kesin olarak 409 döner. Şifresi elimizde olduğu için
+        // giriş adımına devrediyoruz.
+        try {
             const data = await authApi.login(
                 payload.username,
                 payload.password,
@@ -73,8 +107,9 @@ export function RegisterView() {
                 closeModal();
             }
         } catch (err: unknown) {
-            const message = getErrorMessage(err);
-            setError(message);
+            console.error("Auto-login after register failed:", err);
+            setIdentifier(payload.username);
+            setStep("login");
         } finally {
             setIsLoading(false);
         }
@@ -103,7 +138,7 @@ export function RegisterView() {
                         onChange={(e) => handleChange("email", e.target.value)}
                         placeholder={t("auth.emailPlaceholder")}
                         className={`w-full bg-black border ${
-                            error && error.includes("email")
+                            errorField === "email"
                                 ? "border-red-500"
                                 : "border-white/20"
                         } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
@@ -120,7 +155,7 @@ export function RegisterView() {
                         }
                         placeholder={t("auth.usernamePlaceholder")}
                         className={`w-full bg-black border ${
-                            error && error.includes("username")
+                            errorField === "username"
                                 ? "border-red-500"
                                 : "border-white/20"
                         } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
@@ -137,7 +172,7 @@ export function RegisterView() {
                         }
                         placeholder={t("auth.passwordPlaceholder")}
                         className={`w-full bg-black border ${
-                            error && error.includes("password")
+                            errorField === "password"
                                 ? "border-red-500"
                                 : "border-white/20"
                         } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
@@ -151,8 +186,8 @@ export function RegisterView() {
                     onClick={handleRegister}
                     disabled={
                         isLoading ||
-                        !formData.email ||
-                        !formData.username ||
+                        !formData.email.trim() ||
+                        !formData.username.trim() ||
                         !formData.password
                     }
                 >
