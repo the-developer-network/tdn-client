@@ -224,4 +224,104 @@ describe("apiClient", () => {
             expect(localStorage.getItem("access_token")).toBeNull();
         });
     });
+
+    // The isPublic path retries without the Authorization header so the request
+    // still resolves anonymously. That retry used to call fetch directly, which
+    // skipped both the timeout and the NetworkError wrapping.
+    describe("401 — isPublic anonymous retry", () => {
+        it("returns the anonymous response when the retry succeeds", async () => {
+            localStorage.setItem("access_token", "expired-token");
+            let hit = 0;
+            server.use(
+                http.get(`${BASE}/posts`, () => {
+                    hit += 1;
+                    if (hit === 1)
+                        return new HttpResponse(null, { status: 401 });
+                    return HttpResponse.json({ data: [{ id: "public-1" }] });
+                }),
+                http.post(`${BASE}/auth/refresh`, () =>
+                    HttpResponse.json({ data: { accessToken: "fresh" } }),
+                ),
+            );
+
+            const result = await api.get<{ id: string }[]>("/posts", {
+                isPublic: true,
+            });
+
+            expect(result).toEqual([{ id: "public-1" }]);
+        });
+
+        it("reports a dropped connection on the retry as a NetworkError", async () => {
+            localStorage.setItem("access_token", "expired-token");
+            let hit = 0;
+            server.use(
+                http.get(`${BASE}/posts`, () => {
+                    hit += 1;
+                    if (hit === 1)
+                        return new HttpResponse(null, { status: 401 });
+                    return HttpResponse.error();
+                }),
+                http.post(`${BASE}/auth/refresh`, () =>
+                    HttpResponse.json({ data: { accessToken: "fresh" } }),
+                ),
+            );
+
+            const result = await api
+                .get("/posts", { isPublic: true })
+                .catch((e: unknown) => e);
+
+            // A raw TypeError here would surface to the user as "an unexpected
+            // error" rather than a connection problem.
+            expect(result).toBeInstanceOf(NetworkError);
+        });
+
+        it("times out the retry instead of hanging forever", async () => {
+            vi.useFakeTimers();
+            localStorage.setItem("access_token", "expired-token");
+
+            let call = 0;
+            vi.spyOn(globalThis, "fetch").mockImplementation(
+                (
+                    _url: RequestInfo | URL,
+                    init?: RequestInit,
+                ): Promise<Response> => {
+                    call += 1;
+                    if (call === 1) {
+                        return Promise.resolve(
+                            new Response(null, { status: 401 }),
+                        );
+                    }
+                    return new Promise<Response>((_resolve, reject) => {
+                        init?.signal?.addEventListener("abort", () =>
+                            reject(
+                                new DOMException(
+                                    "The user aborted a request.",
+                                    "AbortError",
+                                ),
+                            ),
+                        );
+                    });
+                },
+            );
+
+            let settled = false;
+            const caught = api.get<unknown>("/posts", { isPublic: true }).then(
+                (value) => {
+                    settled = true;
+                    return value;
+                },
+                (err: unknown) => {
+                    settled = true;
+                    return err;
+                },
+            );
+
+            await vi.advanceTimersByTimeAsync(15_001);
+
+            expect(settled).toBe(true);
+            expect(await caught).toBeInstanceOf(NetworkError);
+
+            vi.useRealTimers();
+        });
+    });
 });
