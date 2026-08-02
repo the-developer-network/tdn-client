@@ -68,7 +68,7 @@ Feature API modules (`*.api.ts`) are plain object literals of typed thunks that 
 Zustand 5 only — no Context API, Redux, React Query, or SWR. Local ephemeral state uses `useState`.
 
 - `useAuthStore` (`src/core/auth/auth.store.ts`) — `persist` under key `tdn-auth-storage`, `partialize`d to `{ user, isAuthenticated }`. The JWT itself lives in `localStorage.access_token`, written by `setAuth`/refresh and read directly by the API client on every request.
-- `useAuthModalStore` — step machine: `identifier → login | register → verify-email`, plus `forgot-password → reset-password` and `account-recovery`. `openModal()` resets `step` to `"initial"`, so `setStep(...)` must come _before_ `openModal()` (the codebase does this in `usePostActions`).
+- `useAuthModalStore` — step machine: `identifier → login | register → verify-email`, plus `forgot-password → reset-password` and `account-recovery`. `openModal(step?)` **sets** `step`, defaulting to `"initial"`, so calling `setStep(...)` beforehand has no effect — pass the step as the argument instead. Guards want the default: `LoginView` only renders a password field and reads `identifier` from the store, so it cannot be opened cold; `"initial"` renders `IdentifierView`, which collects the identifier and routes on to login or register.
 - `useNotificationStore`, `useToastStore` (4 s auto-dismiss), `useLanguageStore` (persisted as `tdn-language`).
 
 `useNotificationSocket` (mounted in `AppInit`) holds a WebSocket to `/realtime/ws`, authenticating with a post-open `{ event: "auth", token }` frame and reconnecting with exponential backoff (max 5 retries, paused while `navigator.onLine` is false).
@@ -83,7 +83,7 @@ This is distinct from `useTranslation` (`src/shared/hooks/useTranslation.ts`), w
 
 - Always render explicit **loading**, **error** (with retry), and **empty** states — never silently render nothing.
 - Mutations are **optimistic**: snapshot previous state, apply, roll back in `catch`. Like/bookmark also toast the error; follow rolls back silently.
-- Guard mutations with `if (!isAuthenticated) { setStep(...); openModal(); return; }`.
+- Guard mutations with `if (!isAuthenticated) { openModal(); return; }`.
 - Pages compose `PageShell` (`Sidebar` + `main` + optional `rightRail` + `AuthModal` + `BottomNav`).
 - Reuse `Button` / `Modal` from `src/shared/components/ui/`.
 - No barrel `index.ts` files — import from the source file.

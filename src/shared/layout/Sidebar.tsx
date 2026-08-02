@@ -9,13 +9,12 @@ import { useI18n } from "../hooks/useI18n";
 export function Sidebar() {
     const { isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
     const unreadCount = useNotificationStore((state) => state.unreadCount);
     const { t } = useI18n();
 
     function handleProfileClick() {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }

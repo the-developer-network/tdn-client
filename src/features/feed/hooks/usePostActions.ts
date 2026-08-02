@@ -25,13 +25,12 @@ export function usePostActions(
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }
@@ -59,7 +58,6 @@ export function usePostActions(
         e.stopPropagation();
 
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }
@@ -98,7 +96,6 @@ export function usePostActions(
 
     const handleDelete = async () => {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return false;
         }

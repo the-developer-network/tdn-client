@@ -24,13 +24,12 @@ export function useCommentActions(
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
     const { t } = useI18n();
 
     const handleDelete = async () => {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return false;
         }
@@ -55,7 +54,6 @@ export function useCommentActions(
         e.stopPropagation();
 
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }
@@ -85,7 +83,6 @@ export function useCommentActions(
         e.stopPropagation();
 
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }

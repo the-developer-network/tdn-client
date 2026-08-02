@@ -16,7 +16,7 @@ export default function NotificationsPage() {
     const navigate = useNavigate();
     const { t } = useI18n();
     const { isAuthenticated } = useAuthStore();
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
     const {
         notifications,
         unreadCount,
@@ -27,13 +27,12 @@ export default function NotificationsPage() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             navigate("/", { replace: true });
             return;
         }
         fetch();
-    }, [isAuthenticated, navigate, openModal, setStep, fetch]);
+    }, [isAuthenticated, navigate, openModal, fetch]);
 
     if (!isAuthenticated) return null;
 

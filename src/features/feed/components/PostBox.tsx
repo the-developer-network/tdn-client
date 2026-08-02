@@ -25,7 +25,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { user, isAuthenticated } = useAuthStore();
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
     const { t } = useI18n();
 
@@ -73,7 +73,6 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
         if ((!content.trim() && files.length === 0) || isSubmitting) return;
 
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }

@@ -25,6 +25,20 @@ describe("useAuthModalStore", () => {
 
             expect(useAuthModalStore.getState().step).toBe("initial");
         });
+
+        // Auth guards used to run `setStep("login"); openModal();`, which does
+        // nothing — openModal writes the step, it does not preserve it. The
+        // default is what guards want anyway: LoginView renders only a password
+        // field and reads `identifier` from the store, so it cannot be opened
+        // cold. Pinned so the dead pattern is not reintroduced.
+        it("overwrites a step set immediately before it", () => {
+            const { setStep, openModal } = useAuthModalStore.getState();
+
+            setStep("login");
+            openModal();
+
+            expect(useAuthModalStore.getState().step).toBe("initial");
+        });
     });
 
     describe("closeModal", () => {
