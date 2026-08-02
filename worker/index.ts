@@ -286,14 +286,16 @@ export default {
         const url = new URL(request.url);
         const pathname = url.pathname;
 
+        // Generated routes are matched before the extension check below, which
+        // would otherwise treat "/sitemap.xml" as a static file and look for an
+        // asset that does not exist.
+        if (pathname === "/sitemap.xml") {
+            return handleSitemap();
+        }
+
         // Static assets pass through unchanged
         if (/\.\w{2,5}$/.test(pathname)) {
             return env.ASSETS.fetch(request);
-        }
-
-        // Sitemap
-        if (pathname === "/sitemap.xml") {
-            return handleSitemap();
         }
 
         // All other routes: SPA shell with OG meta injection
