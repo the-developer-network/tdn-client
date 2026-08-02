@@ -54,6 +54,7 @@ src/
           IdentifierView.test.tsx
           LoginView.test.tsx
           RegisterView.test.tsx
+          ResetPasswordView.test.tsx
           VerifyEmailView.test.tsx
     feed/
       hooks/
@@ -210,16 +211,16 @@ it("unknown input → fallback message", () => {
 
 8 tests. The framework-free translator used outside React render (utils, socket callbacks). `translateWith(locale, key, vars?)` is pure; `translate(key, vars?)` reads the current locale from `useLanguageStore`.
 
-| Scenario                                    | Assert                                             |
-| ------------------------------------------- | -------------------------------------------------- |
-| `translateWith("en" \| "tr", "nav.home")`    | `"Home"` / `"Ana Sayfa"`                            |
-| `{{var}}` interpolation                      | `notif.follow` + `{ username: "ada" }` → `"@ada …"` |
-| Numeric var                                  | `notif.unread` + `{ n: 3 }` → `"3 unread"`          |
-| Var missing from the map                     | placeholder preserved → `"{{n}} unread"`            |
-| No `vars` argument                           | string returned untouched                           |
-| Key absent from both locales                 | returns the raw key                                 |
-| `translate()` after `setLocale("tr")`        | resolves against the new locale                     |
-| Table parity                                 | every `en` key exists in `tr`; no empty `tr` values  |
+| Scenario                                  | Assert                                              |
+| ----------------------------------------- | --------------------------------------------------- |
+| `translateWith("en" \| "tr", "nav.home")` | `"Home"` / `"Ana Sayfa"`                            |
+| `{{var}}` interpolation                   | `notif.follow` + `{ username: "ada" }` → `"@ada …"` |
+| Numeric var                               | `notif.unread` + `{ n: 3 }` → `"3 unread"`          |
+| Var missing from the map                  | placeholder preserved → `"{{n}} unread"`            |
+| No `vars` argument                        | string returned untouched                           |
+| Key absent from both locales              | returns the raw key                                 |
+| `translate()` after `setLocale("tr")`     | resolves against the new locale                     |
+| Table parity                              | every `en` key exists in `tr`; no empty `tr` values |
 
 > The parity test is the runtime safety net behind the compile-time guarantee: `TranslationKey` is derived from `en`, so a key added to `en` breaks `tsc` until `tr` defines it too.
 
@@ -227,12 +228,12 @@ it("unknown input → fallback message", () => {
 
 5 tests. Needs the `localStorage` stub for the same reason as above.
 
-| Scenario                     | Assert                                            |
-| ---------------------------- | ------------------------------------------------- |
-| Default locale               | `locale === "en"`; `t("nav.home") === "Home"`      |
-| `setLocale("tr")` inside `act` | hook re-renders; `t("nav.home") === "Ana Sayfa"` |
-| Re-render without locale change | `t` keeps referential identity (`useCallback`)  |
-| Interpolation through `t`    | `t("notif.unread", { n: 5 }) === "5 unread"`       |
+| Scenario                        | Assert                                           |
+| ------------------------------- | ------------------------------------------------ |
+| Default locale                  | `locale === "en"`; `t("nav.home") === "Home"`    |
+| `setLocale("tr")` inside `act`  | hook re-renders; `t("nav.home") === "Ana Sayfa"` |
+| Re-render without locale change | `t` keeps referential identity (`useCallback`)   |
+| Interpolation through `t`       | `t("notif.unread", { n: 5 }) === "5 unread"`     |
 
 > `t` identity is asserted because hooks depend on it (`useComments`, `useFeed` list `t` in their `useCallback`/`useEffect` deps); an unstable `t` would refetch on every render.
 
@@ -438,9 +439,7 @@ it("online event after offline → true", () => {
 // Both vi.hoisted and vi.mock are hoisted before imports — safe to combine.
 vi.hoisted(() => {
     const _map = new Map<string, string>();
-    vi.stubGlobal("localStorage", {
-        /* Map-backed stub */
-    });
+    vi.stubGlobal("localStorage", {/* Map-backed stub */});
 });
 vi.mock("franc-min", () => ({ franc: vi.fn() }));
 
@@ -531,11 +530,11 @@ HttpResponse.json(
 );
 ```
 
-| Scenario                          | Assert                                                              |
-| --------------------------------- | ------------------------------------------------------------------- |
-| `handleDelete("hunter2")`         | Request body is exactly `{ password: "hunter2" }`                   |
-| Success (204)                     | `isAuthenticated=false`; `navigate("/")` called; `error=null`       |
-| Wrong password (400)              | `error` = `detail`; `isLoading=false`; session kept; no navigation  |
+| Scenario                  | Assert                                                             |
+| ------------------------- | ------------------------------------------------------------------ |
+| `handleDelete("hunter2")` | Request body is exactly `{ password: "hunter2" }`                  |
+| Success (204)             | `isAuthenticated=false`; `navigate("/")` called; `error=null`      |
+| Wrong password (400)      | `error` = `detail`; `isLoading=false`; session kept; no navigation |
 
 ---
 
@@ -584,12 +583,12 @@ it("renders empty state", () => {
 
 The form is `noValidate`: a `type="email"` field inside a form otherwise triggers native constraint validation, which blocks submit before any handler runs. Without it the malformed-address test can never see the app's own message, and neither can a user.
 
-| Scenario                     | Assert                                              |
-| ---------------------------- | ----------------------------------------------------- |
-| 429 from the API             | `detail` rendered; step unchanged                     |
-| Address with no `@`          | Inline message; no request made at all                |
-| Enter in the field           | Advances to `reset-password`                          |
-| 204                          | Step `reset-password`; `identifier` set to the address |
+| Scenario            | Assert                                                 |
+| ------------------- | ------------------------------------------------------ |
+| 429 from the API    | `detail` rendered; step unchanged                      |
+| Address with no `@` | Inline message; no request made at all                 |
+| Enter in the field  | Advances to `reset-password`                           |
+| 204                 | Step `reset-password`; `identifier` set to the address |
 
 #### `IdentifierView` (`src/features/auth/components/views/IdentifierView.test.tsx`)
 
@@ -597,13 +596,13 @@ The form is `noValidate`: a `type="email"` field inside a form otherwise trigger
 
 `BASE_URL` is exported from the API client, so under Vitest (`import.meta.env.PROD === false`) the OAuth redirect is expected to point at `localhost:8080`.
 
-| Scenario                       | Assert                                                     |
-| ------------------------------ | ------------------------------------------------------------ |
-| `"  alice "` typed             | Request carries `"alice"`; store keeps `"alice"`; step `login` |
-| Enter in the field             | Advances without touching the button                          |
-| `/auth/check` 500s             | `detail` rendered; step unchanged                             |
-| Unknown identifier             | Step `register`                                               |
-| Google button                  | `location.href` is the API base + `/oauth/google`             |
+| Scenario           | Assert                                                         |
+| ------------------ | -------------------------------------------------------------- |
+| `"  alice "` typed | Request carries `"alice"`; store keeps `"alice"`; step `login` |
+| Enter in the field | Advances without touching the button                           |
+| `/auth/check` 500s | `detail` rendered; step unchanged                              |
+| Unknown identifier | Step `register`                                                |
+| Google button      | `location.href` is the API base + `/oauth/google`              |
 
 #### `LoginView` (`src/features/auth/components/views/LoginView.test.tsx`)
 
@@ -611,15 +610,15 @@ The form is `noValidate`: a `type="email"` field inside a form otherwise trigger
 
 `Button` declares no default `type`, so inside the form every button submits unless it opts out — one test pins that the change-account button does not log the user in.
 
-| Scenario                              | Assert                                                     |
-| ------------------------------------- | ----------------------------------------------------------- |
-| Email identifier                      | Rendered verbatim, no `@` prefix                            |
-| Username identifier                   | Rendered as `@name`                                         |
-| Enter in the password field           | Signs in; token stored                                      |
-| Change-account button                 | `step === "identifier"`; no login attempted                 |
-| Happy path, unverified email          | `step === "verify-email"`                                   |
-| 403 carrying `recoveryToken`          | `step === "account-recovery"`; token kept in the store      |
-| 401                                   | `detail` rendered; step unchanged; store still signed out   |
+| Scenario                     | Assert                                                    |
+| ---------------------------- | --------------------------------------------------------- |
+| Email identifier             | Rendered verbatim, no `@` prefix                          |
+| Username identifier          | Rendered as `@name`                                       |
+| Enter in the password field  | Signs in; token stored                                    |
+| Change-account button        | `step === "identifier"`; no login attempted               |
+| Happy path, unverified email | `step === "verify-email"`                                 |
+| 403 carrying `recoveryToken` | `step === "account-recovery"`; token kept in the store    |
+| 401                          | `detail` rendered; step unchanged; store still signed out |
 
 > The API spreads `AccountPendingDeletionError` into the problem document, so `recoveryToken` sits at the top level beside `status` — mock it there, not nested.
 
@@ -629,14 +628,32 @@ The form is `noValidate`: a `type="email"` field inside a form otherwise trigger
 
 Field-level highlighting reads `validation[0].instancePath` (`"/username"`), the only place the API names the offending field; `getErrorMessage` returns just the message, which never does. Handlers must therefore return whole RFC 7807 problem documents, not bare strings.
 
-| Scenario                             | Assert                                                              |
-| ------------------------------------ | ------------------------------------------------------------------- |
-| 400 with `instancePath: "/username"` | Username input reddened, email untouched                            |
-| Register succeeds, auto-login 500s   | `step === "login"`, `identifier` set to the new username            |
-| Happy path                           | `step === "verify-email"`; token stored; auth store signed in       |
-| Whitespace-only username             | Submit stays disabled                                               |
+| Scenario                             | Assert                                                        |
+| ------------------------------------ | ------------------------------------------------------------- |
+| 400 with `instancePath: "/username"` | Username input reddened, email untouched                      |
+| Register succeeds, auto-login 500s   | `step === "login"`, `identifier` set to the new username      |
+| Happy path                           | `step === "verify-email"`; token stored; auth store signed in |
+| Whitespace-only username             | Submit stays disabled                                         |
 
 > `type="email"` inputs run the HTML value sanitization algorithm, so jsdom strips whitespace from that field on its own — only the text inputs need a trimmed guard.
+
+#### `ResetPasswordView` (`src/features/auth/components/views/ResetPasswordView.test.tsx`)
+
+7 tests. `POST /auth/reset-password` takes an OTP of **exactly** 8 characters and a password of at least 8, and answers 204. Both limits are schema constraints, so the view checks them itself — a short password otherwise comes back as a validation error the user reads as a bad code.
+
+Success leaves the view immediately (`step: "login"`), so the confirmation is asserted against `useToastStore.getState()`, not the DOM.
+
+| Scenario                      | Assert                                                      |
+| ----------------------------- | ----------------------------------------------------------- |
+| 3-character code              | Length message inline; no request made at all               |
+| 7-character code              | Length message inline; no request — the API would reject it |
+| Password under 8 characters   | Password message inline; no request made                    |
+| 400 for an OAuth-only account | `detail` rendered inline; step unchanged                    |
+| Enter in the password field   | Submits                                                     |
+| Code typed with whitespace    | Request body carries the bare 8 characters                  |
+| 204                           | Success toast queued; step `login`                          |
+
+> The code field strips whitespace in `onChange` rather than trimming at submit: `maxLength={8}` measures the raw DOM value, so a leading space typed into a trim-at-submit field would eat one of the eight characters.
 
 #### `VerifyEmailView` (`src/features/auth/components/views/VerifyEmailView.test.tsx`)
 
@@ -644,14 +661,14 @@ Field-level highlighting reads `validation[0].instancePath` (`"/username"`), the
 
 One test renders inside `<StrictMode>` to reproduce the double-invoked mount effect the real app runs under, and asserts a single request goes out.
 
-| Scenario                        | Assert                                                    |
-| ------------------------------- | ----------------------------------------------------------- |
-| Send-on-mount is rate limited   | `detail` rendered                                            |
-| Wrong code                      | `detail` rendered inline; modal stays open; user unverified  |
-| Resend fails                    | `detail` rendered — the call used to reject unhandled        |
-| Mounted in `StrictMode`         | Exactly one send request                                     |
-| Enter in the code field         | Verifies                                                     |
-| Good code                       | `isEmailVerified` true; modal closed                         |
+| Scenario                      | Assert                                                      |
+| ----------------------------- | ----------------------------------------------------------- |
+| Send-on-mount is rate limited | `detail` rendered                                           |
+| Wrong code                    | `detail` rendered inline; modal stays open; user unverified |
+| Resend fails                  | `detail` rendered — the call used to reject unhandled       |
+| Mounted in `StrictMode`       | Exactly one send request                                    |
+| Enter in the code field       | Verifies                                                    |
+| Good code                     | `isEmailVerified` true; modal closed                        |
 
 ---
 
