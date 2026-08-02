@@ -1,5 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
+import { STATIC_ROUTES } from "./static-routes";
+
 const API_BASE = "https://api.developernetwork.net/api/v1";
 const SITE_URL = "https://developernetwork.net";
 const SITE_NAME = "TDN - The Developer Network";
@@ -180,13 +182,6 @@ async function handlePage(url: URL, env: Env): Promise<Response> {
         },
     });
 }
-
-const STATIC_ROUTES = [
-    { url: "/", changefreq: "always", priority: "1.0" },
-    { url: "/explore", changefreq: "hourly", priority: "0.9" },
-    { url: "/terms-of-service", changefreq: "monthly", priority: "0.3" },
-    { url: "/privacy-policy", changefreq: "monthly", priority: "0.3" },
-];
 
 function escapeXml(str: string): string {
     return str
