@@ -71,10 +71,20 @@ export function useEditProfile({
             }
         }
 
+        // PATCH treats an omitted field as "leave unchanged", so sending
+        // `undefined` for an emptied input made clearing a field impossible —
+        // the value came straight back on the refetch. The API accepts null on
+        // bio and location precisely to clear them.
+        const trimmedBio = bio.trim();
+        const trimmedLocation = location.trim();
+
         const body: UpdateProfileBody = {
+            // No null variant and `minLength: 2` server-side, so an emptied
+            // full name is omitted rather than sent as a value that would fail
+            // validation.
             fullName: fullName.trim() || undefined,
-            bio: bio.trim() || undefined,
-            location: location.trim() || undefined,
+            bio: trimmedBio || null,
+            location: trimmedLocation || null,
             socials: socialsRecord,
         };
 
