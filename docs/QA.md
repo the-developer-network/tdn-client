@@ -71,6 +71,9 @@ src/
     profile/
       hooks/
         useFollowAction.test.ts
+    settings/
+      hooks/
+        useDeleteAccount.test.ts
   shared/
     store/
       toast.store.test.ts
@@ -496,6 +499,33 @@ server.use(
 | `loadMore()` when `hasMore=true`    | Page 2 fetched; posts appended; `hasMore` updated     |
 | `changeCategory("TECH_NEWS")`       | `activeCategory` updated; new fetch triggered         |
 | `addPost()` then `removePost()`     | List mutated immediately; no API call                 |
+
+#### `useDeleteAccount` (`src/features/settings/hooks/useDeleteAccount.test.ts`)
+
+3 tests. `DELETE /users/me` is body-carrying: the backend validates `{ password }` against `SoftDeleteUserSchema` and re-verifies it before soft-deleting, so the MSW handler mirrors that contract and answers 400 when the body is missing.
+
+**Requires `vi.hoisted` localStorage stub** (`apiClient` and `useAuthStore` both reach `localStorage`). `react-router-dom` is mocked for `useNavigate` instead of wrapping in `MemoryRouter`, since the hook only navigates.
+
+```ts
+// Errors come back as RFC 7807 problem documents — getErrorMessage reads
+// `detail`, so a `{ message }` body would surface "an unexpected error".
+HttpResponse.json(
+    {
+        type: "about:blank",
+        title: "Bad Request",
+        status: 400,
+        detail: "Invalid password.",
+        instance: "/api/v1/users/me",
+    },
+    { status: 400 },
+);
+```
+
+| Scenario                          | Assert                                                              |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `handleDelete("hunter2")`         | Request body is exactly `{ password: "hunter2" }`                   |
+| Success (204)                     | `isAuthenticated=false`; `navigate("/")` called; `error=null`       |
+| Wrong password (400)              | `error` = `detail`; `isLoading=false`; session kept; no navigation  |
 
 ---
 

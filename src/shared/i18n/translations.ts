@@ -196,6 +196,10 @@ const en = {
     "settings.deleteAccountTitle": "Delete your account?",
     "settings.deleteAccountBody":
         "Your account will be deactivated immediately. You have 30 days to log back in and recover it before it is permanently deleted.",
+    "settings.deleteAccountPasswordLabel": "Enter your password to confirm.",
+    "settings.deleteAccountPasswordPlaceholder": "Password",
+    "settings.deleteAccountPasswordRequired":
+        "Please enter your password to confirm.",
     "settings.deleteAccountConfirm": "Yes, delete my account",
     "settings.deleting": "Deleting…",
     "settings.cancel": "Cancel",
@@ -662,6 +666,10 @@ const tr: Record<TranslationKey, string> = {
     "settings.deleteAccountTitle": "Hesabınızı silin mi?",
     "settings.deleteAccountBody":
         "Hesabınız hemen devre dışı bırakılacak. Kalıcı silinmeden önce giriş yaparak kurtarmanız için 30 günün var.",
+    "settings.deleteAccountPasswordLabel": "Onaylamak için şifrenizi girin.",
+    "settings.deleteAccountPasswordPlaceholder": "Şifre",
+    "settings.deleteAccountPasswordRequired":
+        "Onaylamak için lütfen şifrenizi girin.",
     "settings.deleteAccountConfirm": "Evet, hesabımı sil",
     "settings.deleting": "Siliniyor…",
     "settings.cancel": "İptal",

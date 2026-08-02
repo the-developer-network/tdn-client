@@ -4,6 +4,7 @@ import type {
     UpdateUsernameBody,
     UpdateEmailBody,
     UpdatePasswordBody,
+    DeleteAccountBody,
 } from "./settings.types";
 
 export const settingsApi = {
@@ -18,5 +19,8 @@ export const settingsApi = {
     updatePassword: (body: UpdatePasswordBody) =>
         api.patch<null>("/users/me/password", body),
 
-    deleteAccount: () => api.delete<null>("/users/me"),
+    // The account is only soft-deleted after the password is re-verified, so
+    // DELETE /users/me carries a body — omitting it is rejected as invalid.
+    deleteAccount: (body: DeleteAccountBody) =>
+        api.delete<null>("/users/me", { body: JSON.stringify(body) }),
 };
