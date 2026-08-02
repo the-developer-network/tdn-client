@@ -16,15 +16,14 @@ export default function BookmarksPage() {
     const navigate = useNavigate();
 
     const { user, isAuthenticated } = useAuthStore();
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
 
     useEffect(() => {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             navigate("/", { replace: true });
         }
-    }, [isAuthenticated, navigate, openModal, setStep]);
+    }, [isAuthenticated, navigate, openModal]);
 
     if (!isAuthenticated) return null;
 

@@ -9,12 +9,11 @@ export function BottomNav() {
     const unreadCount = useNotificationStore((state) => state.unreadCount);
     const { isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
-    const { setStep, openModal } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
     const { t } = useI18n();
 
     function handleProfileClick() {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }

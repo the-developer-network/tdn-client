@@ -27,11 +27,10 @@ export function useFollowAction(
     const [isLoading, setIsLoading] = useState(false);
 
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const { openModal, setStep } = useAuthModalStore();
+    const { openModal } = useAuthModalStore();
 
     async function handleFollow() {
         if (!isAuthenticated) {
-            setStep("login");
             openModal();
             return;
         }
