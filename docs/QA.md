@@ -53,6 +53,7 @@ src/
           IdentifierView.test.tsx
           LoginView.test.tsx
           RegisterView.test.tsx
+          VerifyEmailView.test.tsx
     feed/
       hooks/
         usePostActions.test.ts
@@ -622,6 +623,21 @@ Field-level highlighting reads `validation[0].instancePath` (`"/username"`), the
 | Whitespace-only username             | Submit stays disabled                                               |
 
 > `type="email"` inputs run the HTML value sanitization algorithm, so jsdom strips whitespace from that field on its own — only the text inputs need a trimmed guard.
+
+#### `VerifyEmailView` (`src/features/auth/components/views/VerifyEmailView.test.tsx`)
+
+6 tests. The view requests a code the moment it mounts, so **every** test needs a `/auth/send-verification` handler, even ones that never touch resend.
+
+One test renders inside `<StrictMode>` to reproduce the double-invoked mount effect the real app runs under, and asserts a single request goes out.
+
+| Scenario                        | Assert                                                    |
+| ------------------------------- | ----------------------------------------------------------- |
+| Send-on-mount is rate limited   | `detail` rendered                                            |
+| Wrong code                      | `detail` rendered inline; modal stays open; user unverified  |
+| Resend fails                    | `detail` rendered — the call used to reject unhandled        |
+| Mounted in `StrictMode`         | Exactly one send request                                     |
+| Enter in the code field         | Verifies                                                     |
+| Good code                       | `isEmailVerified` true; modal closed                         |
 
 ---
 
