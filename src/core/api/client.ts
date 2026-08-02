@@ -36,11 +36,43 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
+/**
+ * Every request leaves through here so the 15 s budget and the `NetworkError`
+ * wrapping apply to all of them. Calling `fetch` directly skips both: the
+ * request can hang indefinitely, and a connection failure surfaces as a raw
+ * `TypeError`, which `getErrorMessage` reports as "an unexpected error"
+ * instead of a connection problem.
+ */
+const fetchWithTimeout = async (
+    endpoint: string,
+    init: RequestInit = {},
+): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+        return await fetch(`${BASE_URL}${endpoint}`, {
+            ...init,
+            credentials: "include",
+            signal: controller.signal,
+        });
+    } catch (err) {
+        const isAbort =
+            err instanceof DOMException && err.name === "AbortError";
+        throw new NetworkError(
+            isAbort ? "Request timed out" : "Network request failed",
+        );
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
 const attemptTokenRefresh = async (): Promise<string | null> => {
     try {
-        const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+        // A hang here would leave `isRefreshing` true forever and strand every
+        // queued request, so this needs the timeout more than most.
+        const refreshRes = await fetchWithTimeout("/auth/refresh", {
             method: "POST",
-            credentials: "include",
         });
 
         if (refreshRes.ok) {
@@ -83,37 +115,19 @@ export const apiClient = async <T>(
         headers.set("Authorization", `Bearer ${token}`);
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-    let response: Response;
-    try {
-        response = await fetch(`${BASE_URL}${endpoint}`, {
-            ...fetchOptions,
-            headers,
-            credentials: "include",
-            signal: controller.signal,
-        });
-    } catch (err) {
-        clearTimeout(timeoutId);
-        const isAbort =
-            err instanceof DOMException && err.name === "AbortError";
-        throw new NetworkError(
-            isAbort ? "Request timed out" : "Network request failed",
-        );
-    } finally {
-        clearTimeout(timeoutId);
-    }
+    const response = await fetchWithTimeout(endpoint, {
+        ...fetchOptions,
+        headers,
+    });
 
     if (response.status === 401 && !_retry) {
         // Public endpoints: retry without token so the request succeeds
         // as unauthenticated, then attempt a background refresh.
         if (isPublic) {
             headers.delete("Authorization");
-            const retryRes = await fetch(`${BASE_URL}${endpoint}`, {
+            const retryRes = await fetchWithTimeout(endpoint, {
                 ...fetchOptions,
                 headers,
-                credentials: "include",
             });
 
             // Background refresh so subsequent authenticated calls work
