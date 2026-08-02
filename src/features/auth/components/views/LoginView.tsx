@@ -89,7 +89,6 @@ export function LoginView() {
                 }}
                 className="space-y-4"
             >
-                {/* Hata Mesajı Kutusu */}
                 {error && (
                     <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm py-3 px-4 rounded-md animate-in shake-in duration-300">
                         {error}
