@@ -22,6 +22,11 @@ export function LoginView() {
         if (error) setError(null);
     };
 
+    // An identifier can be a username or an email; only the former is a handle.
+    const displayIdentifier = identifier.includes("@")
+        ? identifier
+        : `@${identifier}`;
+
     const handleLogin = async () => {
         setError(null);
         setIsLoading(true);
@@ -72,10 +77,18 @@ export function LoginView() {
             </h2>
             <p className="text-white/40 text-center mb-8">
                 {t("auth.loggingInAs")}{" "}
-                <span className="text-white/80 font-medium">@{identifier}</span>
+                <span className="text-white/80 font-medium">
+                    {displayIdentifier}
+                </span>
             </p>
 
-            <div className="space-y-4">
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleLogin();
+                }}
+                className="space-y-4"
+            >
                 {/* Hata Mesajı Kutusu */}
                 {error && (
                     <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm py-3 px-4 rounded-md animate-in shake-in duration-300">
@@ -92,6 +105,7 @@ export function LoginView() {
                         className={`w-full bg-black border ${
                             error ? "border-red-500" : "border-white/20"
                         } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
+                        autoComplete="current-password"
                         autoFocus
                     />
                 </div>
@@ -105,17 +119,20 @@ export function LoginView() {
                     </p>
                 </div>
 
+                {/* `Button` sets no default type, so inside a form every one of
+                    them submits unless it says otherwise. */}
                 <Button
+                    type="submit"
                     variant="primary"
                     size="full"
                     className="mt-4 py-3"
-                    onClick={handleLogin}
                     disabled={isLoading || !password}
                 >
                     {isLoading ? t("auth.loggingIn") : t("auth.login")}
                 </Button>
 
                 <Button
+                    type="button"
                     variant="ghost"
                     size="full"
                     className="text-white/40 hover:text-white py-2"
@@ -123,7 +140,7 @@ export function LoginView() {
                 >
                     {t("auth.changeAccount")}
                 </Button>
-            </div>
+            </form>
         </div>
     );
 }
