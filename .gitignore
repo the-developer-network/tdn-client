@@ -33,3 +33,6 @@ dist-ssr
 playwright-report/
 test-results/
 !.env.example
+
+# AI Files
+.claude/settings.local.json
