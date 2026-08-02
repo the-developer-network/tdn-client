@@ -50,6 +50,7 @@ src/
       components/
         AuthModal.test.tsx
         views/
+          ForgotPasswordView.test.tsx
           IdentifierView.test.tsx
           LoginView.test.tsx
           RegisterView.test.tsx
@@ -576,6 +577,19 @@ it("renders empty state", () => {
 | `step: "login"`        | `LoginView` content visible       |
 | `step: "register"`     | `RegisterView` content visible    |
 | `step: "verify-email"` | `VerifyEmailView` content visible |
+
+#### `ForgotPasswordView` (`src/features/auth/components/views/ForgotPasswordView.test.tsx`)
+
+4 tests. `/auth/forgot-password` answers 204 whether or not the address is registered — deliberate anti-enumeration — so there is no "not found" case to test, only transport failures and the advance to the reset step.
+
+The form is `noValidate`: a `type="email"` field inside a form otherwise triggers native constraint validation, which blocks submit before any handler runs. Without it the malformed-address test can never see the app's own message, and neither can a user.
+
+| Scenario                     | Assert                                              |
+| ---------------------------- | ----------------------------------------------------- |
+| 429 from the API             | `detail` rendered; step unchanged                     |
+| Address with no `@`          | Inline message; no request made at all                |
+| Enter in the field           | Advances to `reset-password`                          |
+| 204                          | Step `reset-password`; `identifier` set to the address |
 
 #### `IdentifierView` (`src/features/auth/components/views/IdentifierView.test.tsx`)
 
