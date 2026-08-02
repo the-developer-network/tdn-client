@@ -40,7 +40,7 @@
         "react-dom": "^19.2.6",
         "react-helmet-async": "^3.0.0",
         "react-router-dom": "^7.15.1",
-        "tailwindcss": "^4.3.0",
+        "tailwindcss": "^4.3.3",
         "zustand": "^5.0.12"
     },
     "devDependencies": {
