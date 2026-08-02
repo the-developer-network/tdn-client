@@ -33,15 +33,15 @@
         "node": ">25"
     },
     "dependencies": {
-        "@tailwindcss/vite": "^4.3.0",
+        "@tailwindcss/vite": "^4.3.3",
         "franc-min": "^6.2.0",
-        "lucide-react": "^1.16.0",
+        "lucide-react": "^1.27.0",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
         "react-helmet-async": "^3.0.0",
-        "react-router-dom": "^7.15.1",
+        "react-router-dom": "^7.18.2",
         "tailwindcss": "^4.3.3",
-        "zustand": "^5.0.12"
+        "zustand": "^5.0.14"
     },
     "devDependencies": {
         "@babel/core": "^7.29.0",
