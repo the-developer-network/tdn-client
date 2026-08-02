@@ -1,108 +1,36 @@
 version: 2
 
-# Dependencies are assigned to the FIRST group whose patterns they match, so
-# the specific ecosystem groups below must stay above the catch-all groups.
-#
-# Ecosystem groups cover every update type, so a major lands as one coherent
-# PR together with its peers (e.g. react + react-dom + @types/react).
-# The catch-all groups are limited to minor/patch, so a major for anything
-# outside a named group still opens on its own and gets reviewed properly.
+# One batched PR per ecosystem per month, rather than a PR per dependency
+# or per ecosystem group. Majors are split into their own PR so a breaking
+# upgrade never blocks a batch of routine patches.
 updates:
     - package-ecosystem: "npm"
       directory: "/"
       schedule:
-          interval: "weekly"
-          day: "monday"
-      open-pull-requests-limit: 10
+          interval: "monthly"
+      open-pull-requests-limit: 5
       labels:
           - "dependencies"
       commit-message:
           prefix: "chore(deps)"
           prefix-development: "chore(deps-dev)"
       groups:
-          react:
+          dependencies:
               patterns:
-                  - "react"
-                  - "react-dom"
-                  - "react-router*"
-                  - "react-helmet-async"
-                  - "@types/react"
-                  - "@types/react-dom"
-                  - "@types/react-router-dom"
-                  - "babel-plugin-react-compiler"
-
-          # `tailwindcss` and `@tailwindcss/vite` are released in lockstep and
-          # previously opened as two separate PRs for the same version bump.
-          tailwind:
-              patterns:
-                  - "tailwindcss"
-                  - "@tailwindcss/*"
-
-          cloudflare:
-              patterns:
-                  - "wrangler"
-                  - "@cloudflare/*"
-
-          build:
-              patterns:
-                  - "vite"
-                  - "vite-*"
-                  - "@vitejs/*"
-                  - "@rolldown/*"
-                  - "@babel/*"
-                  - "@types/babel__core"
-
-          # `vitest` and `@vitest/coverage-v8` must move together — the
-          # coverage provider is version-locked to the runner.
-          testing:
-              patterns:
-                  - "vitest"
-                  - "@vitest/*"
-                  - "@testing-library/*"
-                  - "@playwright/test"
-                  - "jsdom"
-                  - "msw"
-
-          # `typescript-eslint` is the singular meta-package; the previous
-          # `@typescript-eslint/*` pattern matched nothing, which is why it
-          # kept opening on its own.
-          linting:
-              patterns:
-                  - "eslint"
-                  - "eslint-*"
-                  - "@eslint/*"
-                  - "typescript-eslint"
-                  - "@typescript-eslint/*"
-                  - "prettier"
-                  - "husky"
-                  - "lint-staged"
-                  - "globals"
-
-          typescript:
-              patterns:
-                  - "typescript"
-                  - "@types/node"
-
-          # Catch-alls for the long tail (zustand, lucide-react, franc-min, …).
-          # Minor and patch only, so majors stay individually reviewable.
-          production-dependencies:
-              dependency-type: "production"
+                  - "*"
               update-types:
                   - "minor"
                   - "patch"
-
-          development-dependencies:
-              dependency-type: "development"
+          major-updates:
+              patterns:
+                  - "*"
               update-types:
-                  - "minor"
-                  - "patch"
+                  - "major"
 
-    # CI actions were not covered before, so they never received updates.
     - package-ecosystem: "github-actions"
       directory: "/"
       schedule:
-          interval: "weekly"
-          day: "monday"
+          interval: "monthly"
       open-pull-requests-limit: 5
       labels:
           - "dependencies"
