@@ -3,7 +3,7 @@ import type { ApiErrorResponse, ApiResponse } from "./api-types";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
-const BASE_URL = import.meta.env.PROD
+export const BASE_URL = import.meta.env.PROD
     ? "https://api.developernetwork.net/api/v1"
     : "http://localhost:8080/api/v1";
 

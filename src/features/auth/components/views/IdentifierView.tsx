@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthModalStore } from "../../store/auth-modal.store";
 import { authApi } from "../../api/auth-api";
+import { BASE_URL } from "../../../../core/api/client";
 import { Button } from "../../../../shared/components/ui/Button";
+import { getErrorMessage } from "../../../../shared/utils/error-handler";
 import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function IdentifierView() {
     const [value, setValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { setStep, setIdentifier, closeModal } = useAuthModalStore();
     const navigate = useNavigate();
     const { t } = useI18n();
@@ -18,26 +21,33 @@ export function IdentifierView() {
     }
 
     const handleNext = async () => {
-        if (!value) return;
+        // The API resolves an identifier by exact match, so surrounding
+        // whitespace — which phone keyboards hand out freely — would look like
+        // an account that does not exist and send the user off to register one
+        // they already have.
+        const identifier = value.trim();
+        if (!identifier) return;
+
         setIsLoading(true);
+        setError(null);
         try {
-            const response = await authApi.checkIdentifier(value);
-            setIdentifier(value);
+            const response = await authApi.checkIdentifier(identifier);
+            setIdentifier(identifier);
 
             if (response.check) {
                 setStep("login");
             } else {
                 setStep("register");
             }
-        } catch (error) {
-            console.error("Check failed:", error);
+        } catch (err) {
+            setError(getErrorMessage(err));
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleSocialLogin = (provider: "google" | "github") => {
-        window.location.href = `https://api.developernetwork.net/api/v1/oauth/${provider}`;
+        window.location.href = `${BASE_URL}/oauth/${provider}`;
     };
 
     return (
@@ -71,25 +81,43 @@ export function IdentifierView() {
                 </div>
 
                 {/* Direct Input Field */}
-                <div className="space-y-4">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleNext();
+                    }}
+                    className="space-y-4"
+                >
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm py-3 px-4 rounded-md">
+                            {error}
+                        </div>
+                    )}
+
                     <input
                         type="text"
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
                         placeholder={t("auth.identifierPlaceholder")}
+                        // A capitalised first letter misses the account just as
+                        // surely as a stray space does.
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        autoComplete="username"
                         className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/30"
                     />
 
                     <Button
+                        type="submit"
                         variant="primary"
                         size="full"
                         className="py-3"
-                        onClick={handleNext}
-                        disabled={isLoading || !value}
+                        disabled={isLoading || !value.trim()}
                     >
                         {isLoading ? t("auth.checking") : t("auth.next")}
                     </Button>
-                </div>
+                </form>
             </div>
 
             <p className="mt-8 text-[12px] text-white/40 leading-relaxed text-center">

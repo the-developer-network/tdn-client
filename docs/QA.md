@@ -50,6 +50,7 @@ src/
       components/
         AuthModal.test.tsx
         views/
+          IdentifierView.test.tsx
           LoginView.test.tsx
           RegisterView.test.tsx
     feed/
@@ -574,6 +575,20 @@ it("renders empty state", () => {
 | `step: "login"`        | `LoginView` content visible       |
 | `step: "register"`     | `RegisterView` content visible    |
 | `step: "verify-email"` | `VerifyEmailView` content visible |
+
+#### `IdentifierView` (`src/features/auth/components/views/IdentifierView.test.tsx`)
+
+5 tests. The handler for `/auth/check` answers from an explicit list of registered identifiers and records what it was asked, which is what makes the trimming assertion possible — mirror the API's exact match rather than returning a fixed `check: true`.
+
+`BASE_URL` is exported from the API client, so under Vitest (`import.meta.env.PROD === false`) the OAuth redirect is expected to point at `localhost:8080`.
+
+| Scenario                       | Assert                                                     |
+| ------------------------------ | ------------------------------------------------------------ |
+| `"  alice "` typed             | Request carries `"alice"`; store keeps `"alice"`; step `login` |
+| Enter in the field             | Advances without touching the button                          |
+| `/auth/check` 500s             | `detail` rendered; step unchanged                             |
+| Unknown identifier             | Step `register`                                               |
+| Google button                  | `location.href` is the API base + `/oauth/google`             |
 
 #### `LoginView` (`src/features/auth/components/views/LoginView.test.tsx`)
 
