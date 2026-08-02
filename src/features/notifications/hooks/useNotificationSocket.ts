@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useNotificationStore } from "../store/notification.store";
 import { useToastStore } from "../../../shared/store/toast.store";
+import { translate } from "../../../shared/i18n/translate";
 import type { RealtimeNotificationPayload } from "../api/notification.types";
 
 const WS_URL = import.meta.env.PROD
@@ -75,8 +76,7 @@ export function useNotificationSocket() {
                 if (retryCountRef.current >= MAX_RETRIES) {
                     useToastStore.getState().addToast({
                         type: "info",
-                        message:
-                            "Real-time notifications are currently unavailable.",
+                        message: translate("common.notificationsUnavailable"),
                     });
                     return;
                 }

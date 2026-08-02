@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function PrivacyPolicyPage() {
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
@@ -18,7 +20,7 @@ export default function PrivacyPolicyPage() {
                         <ArrowLeft size={18} />
                     </button>
                     <h1 className="text-base font-bold text-white">
-                        Privacy Policy
+                        {t("legal.privacyTitle")}
                     </h1>
                 </div>
             </div>
@@ -26,212 +28,139 @@ export default function PrivacyPolicyPage() {
             <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-8 text-white/80 text-sm leading-relaxed">
                 <div>
                     <p className="text-white/40 text-xs mb-4">
-                        Last updated: April 2026
+                        {t("legal.lastUpdated")}
                     </p>
-                    <p>
-                        Your privacy is important to us. This Privacy Policy
-                        explains what information TDN (The Developer Network)
-                        collects, how we use it, and the choices you have. By
-                        using TDN, you agree to the practices described in this
-                        policy.
-                    </p>
+                    <p>{t("privacy.intro")}</p>
                 </div>
 
                 {/* 1 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        1. Information We Collect
+                        {t("privacy.s1Title")}
                     </h2>
                     <p className="mb-3 font-medium text-white/60">
-                        When you register with an email and password:
+                        {t("privacy.s1EmailLead")}
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-white/70 mb-4">
-                        <li>Email address</li>
-                        <li>Username</li>
-                        <li>
-                            Password — stored as a secure one-way hash (argon2).
-                            We never store or transmit your plain-text password.
-                        </li>
+                        <li>{t("privacy.s1Email")}</li>
+                        <li>{t("privacy.s1Username")}</li>
+                        <li>{t("privacy.s1Password")}</li>
                     </ul>
                     <p className="mb-3 font-medium text-white/60">
-                        When you register or sign in with Google or GitHub:
+                        {t("privacy.s1OauthLead")}
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-white/70 mb-4">
-                        <li>Email address (provided by the OAuth provider)</li>
-                        <li>Display name (if available)</li>
-                        <li>Profile picture URL (if available)</li>
+                        <li>{t("privacy.s1OauthEmail")}</li>
+                        <li>{t("privacy.s1OauthName")}</li>
+                        <li>{t("privacy.s1OauthAvatar")}</li>
                     </ul>
-                    <p className="text-white/60">
-                        We do not receive, request, or store your Google or
-                        GitHub password. These services do not share it — and we
-                        never ask for it.
-                    </p>
+                    <p className="text-white/60">{t("privacy.s1OauthNote")}</p>
                 </section>
 
                 {/* 2 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        2. How We Use Your Information
+                        {t("privacy.s2Title")}
                     </h2>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
-                        <li>To create and manage your account</li>
-                        <li>
-                            To allow you to post content, follow users, and
-                            interact with the community
-                        </li>
-                        <li>
-                            To send transactional emails such as email
-                            verification and password reset
-                        </li>
-                        <li>
-                            To detect and prevent abuse, spam, or policy
-                            violations
-                        </li>
-                        <li>To improve and maintain the platform</li>
+                        <li>{t("privacy.s2Account")}</li>
+                        <li>{t("privacy.s2Interact")}</li>
+                        <li>{t("privacy.s2Email")}</li>
+                        <li>{t("privacy.s2Abuse")}</li>
+                        <li>{t("privacy.s2Improve")}</li>
                     </ul>
-                    <p className="mt-3">
-                        We do not sell your personal data to third parties. We
-                        do not use your data for advertising profiling.
-                    </p>
+                    <p className="mt-3">{t("privacy.s2Note")}</p>
                 </section>
 
                 {/* 3 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        3. Cookies & Local Storage
+                        {t("privacy.s3Title")}
                     </h2>
-                    <p className="mb-3">
-                        By using TDN, you agree to our use of cookies and
-                        browser local storage. We use these technologies to:
-                    </p>
+                    <p className="mb-3">{t("privacy.s3Lead")}</p>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
-                        <li>
-                            Keep you signed in across sessions (authentication
-                            tokens)
-                        </li>
-                        <li>Remember your preferences and interface state</li>
-                        <li>
-                            Maintain security by validating your session on each
-                            request
-                        </li>
+                        <li>{t("privacy.s3SignedIn")}</li>
+                        <li>{t("privacy.s3Prefs")}</li>
+                        <li>{t("privacy.s3Security")}</li>
                     </ul>
                 </section>
 
                 {/* 4 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        4. Security
+                        {t("privacy.s4Title")}
                     </h2>
-                    <p className="mb-3">
-                        We take security seriously. Here's what we do to protect
-                        your data:
-                    </p>
+                    <p className="mb-3">{t("privacy.s4Lead")}</p>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
-                        <li>
-                            Passwords are hashed using bcrypt — a one-way
-                            algorithm. Even in the unlikely event of a data
-                            breach, your password cannot be recovered from the
-                            stored hash.
-                        </li>
-                        <li>
-                            Authentication uses short-lived JWT access tokens
-                            paired with secure refresh tokens.
-                        </li>
-                        <li>
-                            All traffic between your browser and our servers is
-                            encrypted via HTTPS/TLS.
-                        </li>
-                        <li>
-                            TDN is open source — our client-side code is
-                            publicly auditable. We believe transparency
-                            strengthens trust.
-                        </li>
+                        <li>{t("privacy.s4Hash")}</li>
+                        <li>{t("privacy.s4Jwt")}</li>
+                        <li>{t("privacy.s4Tls")}</li>
+                        <li>{t("privacy.s4OpenSource")}</li>
                     </ul>
                 </section>
 
                 {/* 5 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        5. Data Retention
+                        {t("privacy.s5Title")}
                     </h2>
-                    <p>
-                        Your account data is retained as long as your account is
-                        active. If you delete your account, your personal
-                        information will be removed from our systems within a
-                        reasonable period, except where retention is required by
-                        law. Some content you posted (e.g. comments) may remain
-                        in anonymized form.
-                    </p>
+                    <p>{t("privacy.s5Body")}</p>
                 </section>
 
                 {/* 6 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        6. Third-Party Services
+                        {t("privacy.s6Title")}
                     </h2>
-                    <p className="mb-3">
-                        TDN integrates with the following third-party services:
-                    </p>
+                    <p className="mb-3">{t("privacy.s6Lead")}</p>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
                         <li>
-                            <span className="text-white/80">Google OAuth</span>{" "}
-                            — for sign-in. Governed by Google's Privacy Policy.
-                        </li>
-                        <li>
-                            <span className="text-white/80">GitHub OAuth</span>{" "}
-                            — for sign-in. Governed by GitHub's Privacy Policy.
+                            <span className="text-white/80">
+                                {t("privacy.s6Google")}
+                            </span>{" "}
+                            {t("privacy.s6GoogleBody")}
                         </li>
                         <li>
                             <span className="text-white/80">
-                                Cloudflare Workers
+                                {t("privacy.s6Github")}
                             </span>{" "}
-                            — for platform hosting and delivery.
+                            {t("privacy.s6GithubBody")}
+                        </li>
+                        <li>
+                            <span className="text-white/80">
+                                {t("privacy.s6Cloudflare")}
+                            </span>{" "}
+                            {t("privacy.s6CloudflareBody")}
                         </li>
                     </ul>
-                    <p className="mt-3">
-                        Each of these services has its own privacy policy. We
-                        encourage you to review them.
-                    </p>
+                    <p className="mt-3">{t("privacy.s6Note")}</p>
                 </section>
 
                 {/* 7 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        7. Your Rights
+                        {t("privacy.s7Title")}
                     </h2>
-                    <p className="mb-3">You have the right to:</p>
+                    <p className="mb-3">{t("privacy.s7Lead")}</p>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
-                        <li>Access the personal data we hold about you</li>
-                        <li>
-                            Correct inaccurate information through your profile
-                            settings
-                        </li>
-                        <li>Delete your account and associated data</li>
-                        <li>
-                            Object to processing of your data where applicable
-                        </li>
+                        <li>{t("privacy.s7Access")}</li>
+                        <li>{t("privacy.s7Correct")}</li>
+                        <li>{t("privacy.s7Delete")}</li>
+                        <li>{t("privacy.s7Object")}</li>
                     </ul>
-                    <p className="mt-3">
-                        To exercise these rights, use the account settings or
-                        contact us through the platform.
-                    </p>
+                    <p className="mt-3">{t("privacy.s7Note")}</p>
                 </section>
 
                 {/* 8 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        8. Changes to This Policy
+                        {t("privacy.s8Title")}
                     </h2>
-                    <p>
-                        We may update this Privacy Policy from time to time. We
-                        will notify users of significant changes through the
-                        platform. Continued use after updates constitutes
-                        acceptance of the revised policy.
-                    </p>
+                    <p>{t("privacy.s8Body")}</p>
                 </section>
 
                 <div className="border-t border-white/10 pt-6 text-white/40 text-xs">
-                    Questions about your privacy? Email us at{" "}
+                    {t("privacy.footer")}{" "}
                     <a
                         href="mailto:contact@developernetwork.net"
                         className="hover:text-white/60 transition-colors"

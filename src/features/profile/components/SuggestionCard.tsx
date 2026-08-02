@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useFollowAction } from "../hooks/useFollowAction";
+import { useI18n } from "../../../shared/hooks/useI18n";
 import type { SuggestedUser } from "../api/profile.types";
 
 interface SuggestionCardProps {
@@ -8,6 +9,7 @@ interface SuggestionCardProps {
 
 export function SuggestionCard({ user }: SuggestionCardProps) {
     const navigate = useNavigate();
+    const { t } = useI18n();
     const { isFollowing, followersCount, isLoading, handleFollow } =
         useFollowAction(user.userId, user.isFollowing, user.followersCount);
 
@@ -62,7 +64,9 @@ export function SuggestionCard({ user }: SuggestionCardProps) {
                                     : "bg-white text-black hover:bg-white/90"
                             }`}
                         >
-                            {isFollowing ? "Following" : "Follow"}
+                            {isFollowing
+                                ? t("profile.following")
+                                : t("profile.follow")}
                         </button>
                     )}
                 </div>
@@ -75,7 +79,9 @@ export function SuggestionCard({ user }: SuggestionCardProps) {
 
                 <p className="text-white/40 text-xs mt-1.5">
                     {followersCount}{" "}
-                    {followersCount === 1 ? "follower" : "followers"}
+                    {followersCount === 1
+                        ? t("profile.follower")
+                        : t("profile.followerPlural")}
                 </p>
             </div>
         </div>

@@ -18,29 +18,32 @@ import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import type { PostCategory, PostType } from "../features/feed/api/feed.types";
 import { ProfileSearchDropdown } from "../features/profile/components/ProfileSearchDropdown";
 import { SEO } from "../shared/components/ui/SEO";
+import { useI18n } from "../shared/hooks/useI18n";
+import type { TranslationKey } from "../shared/i18n/translations";
 
-const CATEGORIES: { label: string; value: PostType }[] = [
-    { label: "Community", value: "COMMUNITY" },
-    { label: "News", value: "TECH_NEWS" },
-    { label: "Updates", value: "SYSTEM_UPDATE" },
-    { label: "Jobs", value: "JOB_POSTING" },
+const CATEGORIES: { labelKey: TranslationKey; value: PostType }[] = [
+    { labelKey: "feed.community", value: "COMMUNITY" },
+    { labelKey: "feed.news", value: "TECH_NEWS" },
+    { labelKey: "feed.updates", value: "SYSTEM_UPDATE" },
+    { labelKey: "feed.jobs", value: "JOB_POSTING" },
 ];
 
 const FOLLOWED_ONLY_TABS: PostType[] = ["TECH_NEWS", "SYSTEM_UPDATE"];
 
 const FILTER_CATEGORIES: {
-    label: string;
+    labelKey: TranslationKey;
     value: PostCategory;
     Icon: LucideIcon;
 }[] = [
-    { label: "Frontend", value: "FRONTEND", Icon: Monitor },
-    { label: "Backend", value: "BACKEND", Icon: Server },
-    { label: "Mobile", value: "MOBILE", Icon: Smartphone },
-    { label: "Game", value: "GAME", Icon: Gamepad2 },
-    { label: "AI", value: "AI", Icon: Sparkles },
+    { labelKey: "feed.frontend", value: "FRONTEND", Icon: Monitor },
+    { labelKey: "feed.backend", value: "BACKEND", Icon: Server },
+    { labelKey: "feed.mobile", value: "MOBILE", Icon: Smartphone },
+    { labelKey: "feed.game", value: "GAME", Icon: Gamepad2 },
+    { labelKey: "feed.ai", value: "AI", Icon: Sparkles },
 ];
 
 export default function FeedPage() {
+    const { t } = useI18n();
     const [followedOnly, setFollowedOnly] = useState(false);
     const [selectedCategories, setSelectedCategories] = useState<
         PostCategory[]
@@ -115,7 +118,7 @@ export default function FeedPage() {
                 <div className="flex w-full border-b border-white/5">
                     {CATEGORIES.map((cat) => (
                         <button
-                            key={cat.label}
+                            key={cat.value}
                             onClick={() => handleCategoryChange(cat.value)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
                                 activeCategory === cat.value
@@ -123,7 +126,7 @@ export default function FeedPage() {
                                     : "text-white/40 hover:text-white/70"
                             }`}
                         >
-                            {cat.label}
+                            {t(cat.labelKey)}
                             {activeCategory === cat.value && (
                                 <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-white rounded-full" />
                             )}
@@ -143,10 +146,10 @@ export default function FeedPage() {
                             }`}
                         >
                             <Users size={13} />
-                            Following
+                            {t("feed.following")}
                         </button>
                         <div className="w-px h-4 bg-white/10 shrink-0" />
-                        {FILTER_CATEGORIES.map(({ label, value, Icon }) => (
+                        {FILTER_CATEGORIES.map(({ labelKey, value, Icon }) => (
                             <button
                                 key={value}
                                 onClick={() => handleToggleCategory(value)}
@@ -157,7 +160,7 @@ export default function FeedPage() {
                                 }`}
                             >
                                 <Icon size={13} />
-                                {label}
+                                {t(labelKey)}
                             </button>
                         ))}
                     </div>

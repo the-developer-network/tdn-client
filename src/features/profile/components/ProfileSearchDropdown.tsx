@@ -2,9 +2,11 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Loader } from "lucide-react";
 import { useProfileSearch } from "../hooks/useProfileSearch";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 export function ProfileSearchDropdown() {
     const navigate = useNavigate();
+    const { t } = useI18n();
     const { query, setQuery, results, isLoading, clear } = useProfileSearch();
     const [isFocused, setIsFocused] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +55,7 @@ export function ProfileSearchDropdown() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsFocused(true)}
-                    placeholder="Search profiles..."
+                    placeholder={t("search.placeholder")}
                     className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-[16px] sm:text-sm text-white placeholder-white/30 outline-none focus:border-white/30 focus:bg-white/8 transition-colors"
                 />
             </div>
@@ -62,12 +64,12 @@ export function ProfileSearchDropdown() {
                 <div className="absolute top-full mt-1 left-0 right-0 bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-50">
                     {isLoading && results.length === 0 && (
                         <div className="px-4 py-3 text-sm text-white/40">
-                            Searching...
+                            {t("search.searching")}
                         </div>
                     )}
                     {!isLoading && results.length === 0 && (
                         <div className="px-4 py-3 text-sm text-white/40">
-                            No profiles found.
+                            {t("search.noResults")}
                         </div>
                     )}
                     {results.map((profile) => (
@@ -96,7 +98,7 @@ export function ProfileSearchDropdown() {
                             </div>
                             <div className="ml-auto text-xs text-white/30 shrink-0">
                                 {profile.followersCount.toLocaleString()}{" "}
-                                followers
+                                {t("profile.followerPlural")}
                             </div>
                         </button>
                     ))}

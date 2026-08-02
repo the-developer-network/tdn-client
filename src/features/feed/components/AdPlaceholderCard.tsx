@@ -1,14 +1,17 @@
 import { Mail } from "lucide-react";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 export function AdPlaceholderCard() {
+    const { t } = useI18n();
+
     return (
         <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between mb-3">
                 <span className="text-[9px] uppercase tracking-wider text-white/20">
-                    Promotion
+                    {t("ad.promotion")}
                 </span>
                 <span className="text-[9px] uppercase tracking-wider border border-white/10 rounded-full px-2 py-0.5 text-white/20">
-                    Ad
+                    {t("ad.label")}
                 </span>
             </div>
             <a
@@ -20,10 +23,10 @@ export function AdPlaceholderCard() {
                 </div>
                 <div className="min-w-0">
                     <p className="text-sm font-medium text-white">
-                        Want to reach developers?
+                        {t("ad.cta")}
                     </p>
                     <p className="text-xs text-white/50 mt-0.5">
-                        Advertise on TDN —{" "}
+                        {t("ad.contact")}{" "}
                         <span className="text-blue-400">
                             contact@developernetwork.net
                         </span>

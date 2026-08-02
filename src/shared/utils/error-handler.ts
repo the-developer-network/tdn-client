@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NetworkError } from "../../core/api/api-types";
+import { translate } from "../i18n/translate";
 import type { ApiErrorResponse } from "../../core/api/api-types";
 
 export function isNetworkError(err: unknown): err is NetworkError {
@@ -13,16 +14,16 @@ function isApiErrorResponse(err: any): err is ApiErrorResponse {
 export const getErrorMessage = (err: unknown): string => {
     if (isNetworkError(err)) {
         return err.message === "Request timed out"
-            ? "Request timed out. Please check your connection."
-            : "Unable to connect. Please check your internet connection.";
+            ? translate("error.timeout")
+            : translate("error.network");
     }
 
     if (isApiErrorResponse(err)) {
         if (err.validation && err.validation.length > 0) {
             return err.validation[0].message;
         }
-        return err.detail || err.title || "An API error occurred.";
+        return err.detail || err.title || translate("error.api");
     }
 
-    return "An unexpected error occurred.";
+    return translate("error.unexpected");
 };

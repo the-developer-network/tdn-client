@@ -7,10 +7,12 @@ import type { Comment } from "../features/comment/api/comment.types";
 import { CommentCard } from "../features/comment/components/CommentCard";
 import { useCommentReplies } from "../features/comment/hooks/useCommentReplies";
 import { CommentBox } from "../features/comment/components/CommentBox";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function CommentDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     const [comment, setComment] = useState<Comment | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function CommentDetailPage() {
                 const data = await commentApi.getCommentById(id);
                 setComment(data);
             } catch {
-                setError("Comment could not be loaded.");
+                setError(t("page.commentError"));
             } finally {
                 setIsLoading(false);
             }
@@ -56,7 +58,7 @@ export default function CommentDetailPage() {
 
         fetchReplies();
         fetchComment();
-    }, [id, fetchReplies]);
+    }, [id, fetchReplies, t]);
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
@@ -83,12 +85,14 @@ export default function CommentDetailPage() {
                 </button>
 
                 <h2 className="text-xl font-bold text-white tracking-wide">
-                    Comment
+                    {t("page.comment")}
                 </h2>
             </div>
 
             {isLoading ? (
-                <div className="p-8 text-white/40">Loading...</div>
+                <div className="p-8 text-white/40">
+                    {t("page.loadingComment")}
+                </div>
             ) : error ? (
                 <div className="p-8 text-red-400/60">{error}</div>
             ) : comment ? (
@@ -110,7 +114,7 @@ export default function CommentDetailPage() {
                     />
                     {repliesLoading ? (
                         <div className="p-8 text-white/40">
-                            Loading replies...
+                            {t("page.loadingReplies")}
                         </div>
                     ) : repliesError ? (
                         <div className="p-8 text-red-400/60">
@@ -127,7 +131,9 @@ export default function CommentDetailPage() {
                     )}
                 </>
             ) : (
-                <div className="p-8 text-white/40">Comment not found.</div>
+                <div className="p-8 text-white/40">
+                    {t("page.commentNotFound")}
+                </div>
             )}
         </PageShell>
     );

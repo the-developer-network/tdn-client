@@ -5,6 +5,7 @@ import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { shareContent } from "../../../shared/utils/share";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { useToastStore } from "../../../shared/store/toast.store";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 export function useCommentActions(
     initialLiked: boolean,
@@ -25,6 +26,7 @@ export function useCommentActions(
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { openModal, setStep } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
+    const { t } = useI18n();
 
     const handleDelete = async () => {
         if (!isAuthenticated) {
@@ -110,13 +112,13 @@ export function useCommentActions(
 
         const commentUrl = `${window.location.origin}/comments/${commentId}`;
         const result = await shareContent({
-            title: "Comment",
-            text: "Check out this comment!",
+            title: t("page.comment"),
+            text: t("comment.shareText"),
             url: commentUrl,
         });
 
         if (result === "copied") {
-            addToast({ type: "info", message: "Link copied to clipboard!" });
+            addToast({ type: "info", message: t("common.linkCopied") });
         }
     };
 

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useFollowList } from "../hooks/useFollowList";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface FollowListModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ export function FollowListModal({
     type,
 }: FollowListModalProps) {
     const navigate = useNavigate();
+    const { t } = useI18n();
     const { users, isLoading, error } = useFollowList(username, type, isOpen);
 
     function handleUserClick(targetUsername: string) {
@@ -26,8 +28,10 @@ export function FollowListModal({
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="pt-14 pb-2">
-                <h2 className="px-6 pb-3 text-base font-bold text-white border-b border-white/10 capitalize">
-                    {type}
+                <h2 className="px-6 pb-3 text-base font-bold text-white border-b border-white/10">
+                    {type === "followers"
+                        ? t("profile.followers")
+                        : t("profile.followingCount")}
                 </h2>
 
                 <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
@@ -46,8 +50,8 @@ export function FollowListModal({
                     {!isLoading && !error && users.length === 0 && (
                         <p className="px-6 py-10 text-sm text-white/40 text-center">
                             {type === "followers"
-                                ? "No followers yet."
-                                : "Not following anyone yet."}
+                                ? t("followList.noFollowers")
+                                : t("followList.noFollowing")}
                         </p>
                     )}
 
@@ -81,7 +85,7 @@ export function FollowListModal({
                                 </div>
                                 {user.isFollowing && !user.isMe && (
                                     <span className="ml-auto shrink-0 text-xs text-white/40 border border-white/10 rounded-full px-2 py-0.5">
-                                        Following
+                                        {t("profile.following")}
                                     </span>
                                 )}
                             </button>

@@ -5,6 +5,7 @@ import { feedApi } from "../api/feed.api";
 import type { Post, PostType } from "../api/feed.types";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface PostBoxProps {
     onPostCreated: (post: Post) => void;
@@ -25,6 +26,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     const { user, isAuthenticated } = useAuthStore();
     const { openModal, setStep } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
+    const { t } = useI18n();
 
     const autoResize = () => {
         const el = textareaRef.current;
@@ -111,8 +113,8 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                         }}
                         placeholder={
                             isAuthenticated
-                                ? "What are you building today?"
-                                : "Sign in to share your thoughts..."
+                                ? t("postBox.placeholder")
+                                : t("postBox.placeholderGuest")
                         }
                         rows={3}
                         className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
@@ -188,7 +190,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                                 <span className="text-sm">
                                     {files.length > 0
                                         ? `${files.length}/${MAX_FILES}`
-                                        : "Media"}
+                                        : t("postBox.media")}
                                 </span>
                             </button>
                         </div>
@@ -202,10 +204,10 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                             className="bg-white text-black text-sm font-semibold px-5 py-2 rounded-full hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {isUploading
-                                ? "Uploading..."
+                                ? t("postBox.uploading")
                                 : isSubmitting
-                                  ? "Posting..."
-                                  : "Post"}
+                                  ? t("postBox.posting")
+                                  : t("postBox.post")}
                         </button>
                     </div>
                 </div>

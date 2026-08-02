@@ -5,6 +5,7 @@ import { usePostActions } from "../hooks/usePostActions";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 const BADGE_STYLES: Record<PostType, string> = {
     TECH_NEWS: "border-white/20 text-white/60 bg-white/5",
@@ -34,6 +35,7 @@ export function PostCard({
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
     const navigate = useNavigate();
+    const { t, locale } = useI18n();
 
     const {
         displayContent,
@@ -127,7 +129,7 @@ export function PostCard({
                             <span className="text-white/20">·</span>
                             <span className="text-white/40 text-sm">
                                 {new Date(createdAt).toLocaleDateString(
-                                    "tr-TR",
+                                    locale,
                                     {
                                         day: "numeric",
                                         month: "short",
@@ -158,14 +160,14 @@ export function PostCard({
                                         className="text-xs text-blue-400 hover:underline disabled:opacity-50"
                                     >
                                         {isTranslatingContent
-                                            ? "Translating..."
-                                            : "Translate post"}
+                                            ? t("post.translating")
+                                            : t("post.translate")}
                                     </button>
                                 )}
                                 {isTranslated && (
                                     <>
                                         <span className="text-xs text-white/30">
-                                            Translated
+                                            {t("post.translated")}
                                         </span>
                                         <span className="text-white/20">·</span>
                                         <button
@@ -176,7 +178,7 @@ export function PostCard({
                                             }}
                                             className="text-xs text-white/40 hover:underline"
                                         >
-                                            Show original
+                                            {t("post.showOriginal")}
                                         </button>
                                     </>
                                 )}
@@ -193,7 +195,7 @@ export function PostCard({
                                             }}
                                             className="text-xs text-white/40 hover:underline"
                                         >
-                                            Dismiss
+                                            {t("post.dismiss")}
                                         </button>
                                     </>
                                 )}
@@ -320,8 +322,8 @@ export function PostCard({
                                     onClick={handleOpenDeleteModal}
                                     disabled={isDeleteLoading}
                                     className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                                    aria-label="Delete post"
-                                    title="Delete post"
+                                    aria-label={t("post.deleteTitle")}
+                                    title={t("post.deleteTitle")}
                                 >
                                     <svg
                                         className="w-4 h-4"
@@ -346,11 +348,10 @@ export function PostCard({
             <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal}>
                 <div className="px-6 pb-6 pt-14">
                     <h3 className="text-lg font-semibold text-white">
-                        Delete post?
+                        {t("post.deleteTitle")}
                     </h3>
                     <p className="mt-2 text-sm leading-relaxed text-white/50">
-                        This action cannot be undone. The post will be
-                        permanently removed.
+                        {t("post.deleteBody")}
                     </p>
 
                     <div className="mt-6 flex items-center justify-end gap-3">
@@ -360,7 +361,7 @@ export function PostCard({
                             disabled={isDeleteLoading}
                             className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
                         >
-                            Cancel
+                            {t("common.cancel")}
                         </button>
                         <button
                             type="button"
@@ -368,7 +369,9 @@ export function PostCard({
                             disabled={isDeleteLoading}
                             className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-400 disabled:opacity-50"
                         >
-                            {isDeleteLoading ? "Deleting..." : "Delete"}
+                            {isDeleteLoading
+                                ? t("common.deleting")
+                                : t("common.delete")}
                         </button>
                     </div>
                 </div>

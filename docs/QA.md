@@ -191,6 +191,38 @@ it("unknown input → fallback message", () => {
 });
 ```
 
+> `getErrorMessage` resolves its fallback strings through `translate()`, which reads `useLanguageStore`. That store is persisted, so this spec needs the `vi.hoisted` Map-backed `localStorage` stub. Assertions above hold because the store defaults to `en` under jsdom.
+
+#### `translate` / `translateWith` (`src/shared/i18n/translate.ts`)
+
+8 tests. The framework-free translator used outside React render (utils, socket callbacks). `translateWith(locale, key, vars?)` is pure; `translate(key, vars?)` reads the current locale from `useLanguageStore`.
+
+| Scenario                                    | Assert                                             |
+| ------------------------------------------- | -------------------------------------------------- |
+| `translateWith("en" \| "tr", "nav.home")`    | `"Home"` / `"Ana Sayfa"`                            |
+| `{{var}}` interpolation                      | `notif.follow` + `{ username: "ada" }` → `"@ada …"` |
+| Numeric var                                  | `notif.unread` + `{ n: 3 }` → `"3 unread"`          |
+| Var missing from the map                     | placeholder preserved → `"{{n}} unread"`            |
+| No `vars` argument                           | string returned untouched                           |
+| Key absent from both locales                 | returns the raw key                                 |
+| `translate()` after `setLocale("tr")`        | resolves against the new locale                     |
+| Table parity                                 | every `en` key exists in `tr`; no empty `tr` values  |
+
+> The parity test is the runtime safety net behind the compile-time guarantee: `TranslationKey` is derived from `en`, so a key added to `en` breaks `tsc` until `tr` defines it too.
+
+#### `useI18n` (`src/shared/hooks/useI18n.ts`)
+
+5 tests. Needs the `localStorage` stub for the same reason as above.
+
+| Scenario                     | Assert                                            |
+| ---------------------------- | ------------------------------------------------- |
+| Default locale               | `locale === "en"`; `t("nav.home") === "Home"`      |
+| `setLocale("tr")` inside `act` | hook re-renders; `t("nav.home") === "Ana Sayfa"` |
+| Re-render without locale change | `t` keeps referential identity (`useCallback`)  |
+| Interpolation through `t`    | `t("notif.unread", { n: 5 }) === "5 unread"`       |
+
+> `t` identity is asserted because hooks depend on it (`useComments`, `useFeed` list `t` in their `useCallback`/`useEffect` deps); an unstable `t` would refetch on every render.
+
 ---
 
 ### Layer 3 — API Client (`src/core/api/client.ts`)

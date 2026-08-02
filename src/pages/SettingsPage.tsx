@@ -12,11 +12,15 @@ import { useUpdatePassword } from "../features/settings/hooks/useUpdatePassword"
 import { useDeleteAccount } from "../features/settings/hooks/useDeleteAccount";
 import { authApi } from "../features/auth/api/auth-api";
 import { getErrorMessage } from "../shared/utils/error-handler";
+import { useLanguageStore } from "../shared/store/language.store";
+import { useI18n } from "../shared/hooks/useI18n";
 import type { AccountInfo } from "../features/settings/api/settings.types";
+import type { Locale } from "../shared/store/language.store";
 
 export default function SettingsPage() {
     const { isAuthenticated } = useAuthStore();
     const navigate = useNavigate();
+    const { t } = useI18n();
     const {
         accountInfo,
         isLoading: infoLoading,
@@ -35,9 +39,11 @@ export default function SettingsPage() {
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4">
-                <h1 className="text-xl font-bold text-white">Settings</h1>
+                <h1 className="text-xl font-bold text-white">
+                    {t("settings.title")}
+                </h1>
                 <p className="text-sm text-white/40 mt-1">
-                    Manage your account
+                    {t("settings.subtitle")}
                 </p>
             </div>
 
@@ -50,6 +56,7 @@ export default function SettingsPage() {
                 {accountInfo && !accountInfo.isEmailVerified && (
                     <VerifyEmailSection onVerified={refetchAccountInfo} />
                 )}
+                <LanguageSection />
                 <ChangeUsernameSection />
                 <ChangeEmailSection />
                 <ChangePasswordSection />
@@ -88,6 +95,38 @@ function StatusMessage({
         return <p className="text-sm text-green-400 mt-2">{successText}</p>;
     return null;
 }
+function LanguageSection() {
+    const { t } = useI18n();
+    const { locale, setLocale } = useLanguageStore();
+
+    const options: { value: Locale; label: string }[] = [
+        { value: "en", label: t("settings.english") },
+        { value: "tr", label: t("settings.turkish") },
+    ];
+
+    return (
+        <SectionCard title={t("settings.language")}>
+            <p className="text-sm text-white/50 mb-4">
+                {t("settings.languageSubtitle")}
+            </p>
+            <div className="flex gap-3">
+                {options.map((opt) => (
+                    <button
+                        key={opt.value}
+                        onClick={() => setLocale(opt.value)}
+                        className={`px-5 py-2 rounded-full text-sm font-semibold border transition-colors ${
+                            locale === opt.value
+                                ? "bg-white text-black border-white"
+                                : "bg-transparent text-white/60 border-white/20 hover:border-white/40 hover:text-white"
+                        }`}
+                    >
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
+        </SectionCard>
+    );
+}
 
 function AccountInfoSection({
     accountInfo,
@@ -98,29 +137,40 @@ function AccountInfoSection({
     isLoading: boolean;
     error: string | null;
 }) {
+    const { t } = useI18n();
+
     return (
-        <SectionCard title="Account Info">
+        <SectionCard title={t("settings.accountInfo")}>
             {isLoading && (
-                <p className="text-sm text-white/40">Loading account info…</p>
+                <p className="text-sm text-white/40">
+                    {t("settings.accountInfoLoading")}
+                </p>
             )}
             {error && <p className="text-sm text-red-400">{error}</p>}
             {accountInfo && (
                 <div className="space-y-3">
                     <InfoRow
-                        label="Username"
+                        label={t("settings.username")}
                         value={`@${accountInfo.username}`}
                     />
-                    <InfoRow label="Email" value={accountInfo.email} />
                     <InfoRow
-                        label="Email Verified"
-                        value={accountInfo.isEmailVerified ? "Yes" : "No"}
+                        label={t("settings.email")}
+                        value={accountInfo.email}
                     />
                     <InfoRow
-                        label="Sign-in Methods"
+                        label={t("settings.emailVerified")}
+                        value={
+                            accountInfo.isEmailVerified
+                                ? t("settings.yes")
+                                : t("settings.no")
+                        }
+                    />
+                    <InfoRow
+                        label={t("settings.signInMethods")}
                         value={accountInfo.providers.join(", ") || "—"}
                     />
                     <InfoRow
-                        label="Member Since"
+                        label={t("settings.memberSince")}
                         value={new Date(
                             accountInfo.createdAt,
                         ).toLocaleDateString(undefined, {
@@ -147,6 +197,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function ChangeUsernameSection() {
+    const { t } = useI18n();
     const { handleSubmit, isLoading, error, success } = useUpdateUsername();
     const [newUsername, setNewUsername] = useState("");
 
@@ -158,7 +209,7 @@ function ChangeUsernameSection() {
     }
 
     return (
-        <SectionCard title="Change Username">
+        <SectionCard title={t("settings.changeUsername")}>
             <form
                 onSubmit={(e) => void handleFormSubmit(e)}
                 className="space-y-3"
@@ -167,7 +218,7 @@ function ChangeUsernameSection() {
                     type="text"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
-                    placeholder="New username"
+                    placeholder={t("settings.newUsernamePlaceholder")}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
                 />
                 <Button
@@ -176,12 +227,14 @@ function ChangeUsernameSection() {
                     size="md"
                     disabled={isLoading || !newUsername.trim()}
                 >
-                    {isLoading ? "Saving…" : "Update Username"}
+                    {isLoading
+                        ? t("settings.saving")
+                        : t("settings.updateUsername")}
                 </Button>
                 <StatusMessage
                     error={error}
                     success={success}
-                    successText="Username updated successfully."
+                    successText={t("settings.usernameSuccess")}
                 />
             </form>
         </SectionCard>
@@ -189,6 +242,7 @@ function ChangeUsernameSection() {
 }
 
 function ChangeEmailSection() {
+    const { t } = useI18n();
     const { handleSubmit, isLoading, error, success } = useUpdateEmail();
     const [newEmail, setNewEmail] = useState("");
 
@@ -200,7 +254,7 @@ function ChangeEmailSection() {
     }
 
     return (
-        <SectionCard title="Change Email">
+        <SectionCard title={t("settings.changeEmail")}>
             <form
                 onSubmit={(e) => void handleFormSubmit(e)}
                 className="space-y-3"
@@ -209,7 +263,7 @@ function ChangeEmailSection() {
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="New email address"
+                    placeholder={t("settings.newEmailPlaceholder")}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
                 />
                 <Button
@@ -218,12 +272,14 @@ function ChangeEmailSection() {
                     size="md"
                     disabled={isLoading || !newEmail.trim()}
                 >
-                    {isLoading ? "Saving…" : "Update Email"}
+                    {isLoading
+                        ? t("settings.saving")
+                        : t("settings.updateEmail")}
                 </Button>
                 <StatusMessage
                     error={error}
                     success={success}
-                    successText="Email updated. Check your inbox to verify your new address."
+                    successText={t("settings.emailSuccess")}
                 />
             </form>
         </SectionCard>
@@ -231,6 +287,7 @@ function ChangeEmailSection() {
 }
 
 function ChangePasswordSection() {
+    const { t } = useI18n();
     const { handleSubmit, isLoading, error, success } = useUpdatePassword();
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -241,11 +298,11 @@ function ChangePasswordSection() {
         e.preventDefault();
         setLocalError(null);
         if (newPassword !== confirmPassword) {
-            setLocalError("Passwords do not match.");
+            setLocalError(t("settings.passwordMismatch"));
             return;
         }
         if (newPassword.length < 8) {
-            setLocalError("Password must be at least 8 characters.");
+            setLocalError(t("settings.passwordTooShort"));
             return;
         }
         await handleSubmit(currentPassword, newPassword);
@@ -257,7 +314,7 @@ function ChangePasswordSection() {
     }
 
     return (
-        <SectionCard title="Change Password">
+        <SectionCard title={t("settings.changePassword")}>
             <form
                 onSubmit={(e) => void handleFormSubmit(e)}
                 className="space-y-3"
@@ -266,21 +323,21 @@ function ChangePasswordSection() {
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Current password"
+                    placeholder={t("settings.currentPasswordPlaceholder")}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
                 />
                 <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New password (min 8 characters)"
+                    placeholder={t("settings.newPasswordPlaceholder")}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
                 />
                 <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={t("settings.confirmPasswordPlaceholder")}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
                 />
                 <Button
@@ -294,12 +351,14 @@ function ChangePasswordSection() {
                         !confirmPassword
                     }
                 >
-                    {isLoading ? "Saving…" : "Update Password"}
+                    {isLoading
+                        ? t("settings.saving")
+                        : t("settings.updatePassword")}
                 </Button>
                 <StatusMessage
                     error={localError ?? error}
                     success={success}
-                    successText="Password updated successfully."
+                    successText={t("settings.passwordSuccess")}
                 />
             </form>
         </SectionCard>
@@ -307,6 +366,7 @@ function ChangePasswordSection() {
 }
 
 function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
+    const { t } = useI18n();
     const { updateUser } = useAuthStore();
     const [step, setStep] = useState<"idle" | "sent">("idle");
     const [code, setCode] = useState("");
@@ -349,10 +409,9 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
     }
 
     return (
-        <SectionCard title="Verify Email">
+        <SectionCard title={t("settings.verifyEmail")}>
             <p className="text-sm text-white/50 mb-4">
-                Your email address is not verified. Verify it to secure your
-                account.
+                {t("settings.verifyEmailBody")}
             </p>
 
             {step === "idle" ? (
@@ -363,7 +422,9 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
                         onClick={() => void handleSendCode()}
                         disabled={isSending}
                     >
-                        {isSending ? "Sending…" : "Send Verification Code"}
+                        {isSending
+                            ? t("settings.sendingCode")
+                            : t("settings.sendVerification")}
                     </Button>
                     {error && <p className="text-sm text-red-400">{error}</p>}
                 </div>
@@ -374,7 +435,7 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
                 >
                     {sendSuccess && (
                         <p className="text-sm text-green-400">
-                            Code sent! Check your inbox.
+                            {t("settings.codeSent")}
                         </p>
                     )}
                     <input
@@ -384,7 +445,7 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
                         onChange={(e) =>
                             setCode(e.target.value.replace(/[^0-9]/g, ""))
                         }
-                        placeholder="8-digit code"
+                        placeholder={t("settings.codeInputPlaceholder")}
                         className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm font-mono tracking-widest text-center"
                         autoFocus
                     />
@@ -395,7 +456,9 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
                             size="md"
                             disabled={isVerifying || code.length !== 8}
                         >
-                            {isVerifying ? "Verifying…" : "Verify"}
+                            {isVerifying
+                                ? t("settings.verifying")
+                                : t("settings.verify")}
                         </Button>
                         <Button
                             type="button"
@@ -404,7 +467,9 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
                             onClick={() => void handleSendCode()}
                             disabled={isSending}
                         >
-                            {isSending ? "Sending…" : "Resend"}
+                            {isSending
+                                ? t("settings.sendingCode")
+                                : t("settings.resend")}
                         </Button>
                     </div>
                     {error && <p className="text-sm text-red-400">{error}</p>}
@@ -415,6 +480,7 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
 }
 
 function DangerZoneSection() {
+    const { t } = useI18n();
     const { isAuthenticated, logout } = useAuthStore();
     const navigate = useNavigate();
     const { handleDelete, isLoading, error } = useDeleteAccount();
@@ -426,15 +492,15 @@ function DangerZoneSection() {
     }
 
     return (
-        <SectionCard title="Danger Zone">
+        <SectionCard title={t("settings.dangerZone")}>
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-sm font-medium text-white">
-                            Log out
+                            {t("settings.logOut")}
                         </p>
                         <p className="text-xs text-white/40 mt-0.5">
-                            Sign out of your account on this device.
+                            {t("settings.logOutSubtitle")}
                         </p>
                     </div>
                     <Button
@@ -443,25 +509,24 @@ function DangerZoneSection() {
                         onClick={() => void handleLogout()}
                         disabled={!isAuthenticated}
                     >
-                        Log out
+                        {t("settings.logOut")}
                     </Button>
                 </div>
 
                 <div className="border-t border-white/10 pt-3 flex items-center justify-between">
                     <div>
                         <p className="text-sm font-medium text-red-400">
-                            Delete Account
+                            {t("settings.deleteAccount")}
                         </p>
                         <p className="text-xs text-white/40 mt-0.5">
-                            Your account will be deactivated. You have 30 days
-                            to recover it before permanent deletion.
+                            {t("settings.deleteAccountSubtitle")}
                         </p>
                     </div>
                     <button
                         onClick={() => setShowConfirm(true)}
                         className="shrink-0 ml-4 px-3 py-1.5 text-sm font-semibold text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors"
                     >
-                        Delete
+                        {t("settings.delete")}
                     </button>
                 </div>
                 {error && <p className="text-sm text-red-400">{error}</p>}
@@ -470,13 +535,10 @@ function DangerZoneSection() {
             <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)}>
                 <div className="p-6">
                     <h3 className="text-lg font-bold text-white mb-2">
-                        Delete your account?
+                        {t("settings.deleteAccountTitle")}
                     </h3>
                     <p className="text-sm text-white/60 mb-6">
-                        Your account will be deactivated immediately. You have{" "}
-                        <span className="text-white font-medium">30 days</span>{" "}
-                        to log back in and recover it before it is permanently
-                        deleted.
+                        {t("settings.deleteAccountBody")}
                     </p>
                     <div className="flex gap-3">
                         <Button
@@ -484,14 +546,16 @@ function DangerZoneSection() {
                             size="md"
                             onClick={() => setShowConfirm(false)}
                         >
-                            Cancel
+                            {t("settings.cancel")}
                         </Button>
                         <button
                             onClick={() => void handleDelete()}
                             disabled={isLoading}
                             className="flex-1 py-2.5 px-4 rounded-full text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >
-                            {isLoading ? "Deleting…" : "Yes, delete my account"}
+                            {isLoading
+                                ? t("settings.deleting")
+                                : t("settings.deleteAccountConfirm")}
                         </button>
                     </div>
                 </div>

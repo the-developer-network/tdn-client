@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { feedApi } from "../api/feed.api";
+import { translate } from "../../../shared/i18n/translate";
 import type { Post } from "../api/feed.types";
 import type { Comment } from "../../comment/api/comment.types";
 
@@ -17,7 +18,7 @@ export function useBookmarks() {
             setPosts(data.posts);
             setComments(data.comments);
         } catch (err) {
-            setError("Bookmarks could not be loaded.");
+            setError(translate("bookmarks.error"));
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -36,7 +37,7 @@ export function useBookmarks() {
             })
             .catch((err) => {
                 if (!cancelled) {
-                    setError("Bookmarks could not be loaded.");
+                    setError(translate("bookmarks.error"));
                     console.error(err);
                 }
             })

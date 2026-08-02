@@ -1,4 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// `getErrorMessage` now reaches the persisted language store, which captures
+// storage at module-evaluation time — the stub must exist before imports run.
+vi.hoisted(() => {
+    const store = new Map<string, string>();
+    const localStorageMock: Storage = {
+        getItem: (key) => store.get(key) ?? null,
+        setItem: (key, value) => void store.set(key, String(value)),
+        removeItem: (key) => void store.delete(key),
+        clear: () => store.clear(),
+        key: (index) => [...store.keys()][index] ?? null,
+        get length() {
+            return store.size;
+        },
+    };
+    Object.defineProperty(globalThis, "localStorage", {
+        value: localStorageMock,
+        writable: true,
+        configurable: true,
+    });
+});
+
 import { NetworkError } from "../../core/api/api-types";
 import { getErrorMessage } from "./error-handler";
 

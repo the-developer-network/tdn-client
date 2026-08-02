@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuthModalStore } from "../../store/auth-modal.store";
 import { authApi } from "../../api/auth-api";
 import { Button } from "../../../../shared/components/ui/Button";
+import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function IdentifierView() {
     const [value, setValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { setStep, setIdentifier, closeModal } = useAuthModalStore();
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     function handleNavigate(path: string) {
         closeModal();
@@ -41,7 +43,7 @@ export function IdentifierView() {
     return (
         <div className="w-full animate-in fade-in zoom-in duration-300">
             <h2 className="text-2xl md:text-3xl font-bold mb-8 text-white tracking-tight text-center">
-                Join TDN today
+                {t("auth.joinTitle")}
             </h2>
 
             <div className="space-y-3.5">
@@ -50,20 +52,20 @@ export function IdentifierView() {
                     onClick={() => handleSocialLogin("google")}
                     className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3 rounded-full hover:bg-zinc-200 transition-all"
                 >
-                    <GoogleIcon /> Sign up with Google
+                    <GoogleIcon /> {t("auth.googleSignUp")}
                 </button>
 
                 <button
                     onClick={() => handleSocialLogin("github")}
                     className="w-full flex items-center justify-center gap-3 bg-zinc-900 text-white font-bold py-3 rounded-full hover:bg-zinc-800 border border-white/10 transition-all"
                 >
-                    <GithubIcon /> Sign up with GitHub
+                    <GithubIcon /> {t("auth.githubSignUp")}
                 </button>
 
                 <div className="flex items-center py-4">
                     <div className="flex-1 h-[1px] bg-white/10"></div>
                     <span className="px-4 text-sm text-white/40 font-medium">
-                        or
+                        {t("auth.or")}
                     </span>
                     <div className="flex-1 h-[1px] bg-white/10"></div>
                 </div>
@@ -74,7 +76,7 @@ export function IdentifierView() {
                         type="text"
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
-                        placeholder="Phone, email, or username"
+                        placeholder={t("auth.identifierPlaceholder")}
                         className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/30"
                     />
 
@@ -85,27 +87,27 @@ export function IdentifierView() {
                         onClick={handleNext}
                         disabled={isLoading || !value}
                     >
-                        {isLoading ? "Checking..." : "Next"}
+                        {isLoading ? t("auth.checking") : t("auth.next")}
                     </Button>
                 </div>
             </div>
 
             <p className="mt-8 text-[12px] text-white/40 leading-relaxed text-center">
-                By signing up, you agree to the{" "}
+                {t("auth.termsPrefix")}{" "}
                 <span
                     className="text-blue-500 hover:underline cursor-pointer"
                     onClick={() => handleNavigate("/terms")}
                 >
-                    Terms of Service
+                    {t("auth.terms")}
                 </span>{" "}
-                and{" "}
+                {t("auth.and")}{" "}
                 <span
                     className="text-blue-500 hover:underline cursor-pointer"
                     onClick={() => handleNavigate("/privacy")}
                 >
-                    Privacy Policy
+                    {t("auth.privacy")}
                 </span>
-                .
+                {t("auth.termsSuffix")}
             </p>
         </div>
     );

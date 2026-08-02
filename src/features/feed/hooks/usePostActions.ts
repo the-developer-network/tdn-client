@@ -5,6 +5,7 @@ import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { shareContent } from "../../../shared/utils/share";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { useToastStore } from "../../../shared/store/toast.store";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 export function usePostActions(
     initialLiked: boolean,
@@ -14,6 +15,7 @@ export function usePostActions(
     postTitle?: string,
     onDeleteSuccess?: () => void,
 ) {
+    const { t } = useI18n();
     const [isLiked, setIsLiked] = useState(initialLiked);
     const [likeCount, setLikeCount] = useState(initialLikeCount);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -84,13 +86,13 @@ export function usePostActions(
         const postUrl = `${window.location.origin}/post/${postId}`;
 
         const result = await shareContent({
-            title: postTitle || "Post",
-            text: "You should check out this post!",
+            title: postTitle || t("page.post"),
+            text: t("post.shareText"),
             url: postUrl,
         });
 
         if (result === "copied") {
-            addToast({ type: "info", message: "Link copied to clipboard!" });
+            addToast({ type: "info", message: t("common.linkCopied") });
         }
     };
 

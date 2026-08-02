@@ -3,12 +3,14 @@ import { Home, Compass, Bell, CircleUser, Bookmark } from "lucide-react";
 import { useNotificationStore } from "../../features/notifications/store/notification.store";
 import { useAuthStore } from "../../core/auth/auth.store";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
+import { useI18n } from "../hooks/useI18n";
 
 export function BottomNav() {
     const unreadCount = useNotificationStore((state) => state.unreadCount);
     const { isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
     const { setStep, openModal } = useAuthModalStore();
+    const { t } = useI18n();
 
     function handleProfileClick() {
         if (!isAuthenticated) {
@@ -29,7 +31,7 @@ export function BottomNav() {
                 }
             >
                 <Home size={22} />
-                <span>Home</span>
+                <span>{t("nav.home")}</span>
             </NavLink>
 
             <NavLink
@@ -39,7 +41,7 @@ export function BottomNav() {
                 }
             >
                 <Compass size={22} />
-                <span>Explore</span>
+                <span>{t("nav.explore")}</span>
             </NavLink>
 
             <NavLink
@@ -56,7 +58,7 @@ export function BottomNav() {
                         </span>
                     )}
                 </span>
-                <span>Notifs</span>
+                <span>{t("nav.notifs")}</span>
             </NavLink>
 
             <NavLink
@@ -66,7 +68,7 @@ export function BottomNav() {
                 }
             >
                 <Bookmark size={22} />
-                <span>Saved</span>
+                <span>{t("nav.saved")}</span>
             </NavLink>
 
             <button
@@ -82,7 +84,7 @@ export function BottomNav() {
                 ) : (
                     <CircleUser size={22} />
                 )}
-                <span>Profile</span>
+                <span>{t("nav.profile")}</span>
             </button>
         </nav>
     );

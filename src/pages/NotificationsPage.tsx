@@ -10,9 +10,11 @@ import { notificationApi } from "../features/notifications/api/notification.api"
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { getErrorMessage } from "../shared/utils/error-handler";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function NotificationsPage() {
     const navigate = useNavigate();
+    const { t } = useI18n();
     const { isAuthenticated } = useAuthStore();
     const { openModal, setStep } = useAuthModalStore();
     const {
@@ -50,11 +52,11 @@ export default function NotificationsPage() {
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-white">
-                        Notifications
+                        {t("notif.title")}
                     </h1>
                     {unreadCount > 0 && (
                         <p className="text-sm text-white/40 mt-1">
-                            {unreadCount} unread
+                            {t("notif.unread", { n: unreadCount })}
                         </p>
                     )}
                 </div>
@@ -62,10 +64,12 @@ export default function NotificationsPage() {
                     <button
                         onClick={handleMarkAllRead}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                        title="Mark all as read"
+                        title={t("notif.markAllRead")}
                     >
                         <CheckCheck size={16} />
-                        <span className="hidden xl:block">Mark all read</span>
+                        <span className="hidden xl:block">
+                            {t("notif.markAllRead")}
+                        </span>
                     </button>
                 )}
             </div>
@@ -96,7 +100,7 @@ export default function NotificationsPage() {
                         onClick={fetch}
                         className="px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors"
                     >
-                        Try again
+                        {t("notif.tryAgain")}
                     </button>
                 </div>
             )}
@@ -120,11 +124,10 @@ export default function NotificationsPage() {
                         </svg>
                     </div>
                     <h2 className="text-xl font-bold text-white mb-2">
-                        No notifications yet
+                        {t("notif.emptyTitle")}
                     </h2>
                     <p className="text-white/40 text-[15px] max-w-[250px]">
-                        When someone follows or interacts with you, you'll see
-                        it here.
+                        {t("notif.emptyBody")}
                     </p>
                 </div>
             )}
@@ -147,7 +150,9 @@ export default function NotificationsPage() {
                                 disabled={isLoadingMore}
                                 className="px-6 py-2 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 text-sm transition-colors disabled:opacity-40"
                             >
-                                {isLoadingMore ? "Loading..." : "Load more"}
+                                {isLoadingMore
+                                    ? t("notif.loadingMore")
+                                    : t("notif.loadMore")}
                             </button>
                         </div>
                     )}

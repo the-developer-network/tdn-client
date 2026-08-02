@@ -1,6 +1,7 @@
 import type { Comment } from "../api/comment.types";
 import { CommentCard } from "./CommentCard";
 import { Button } from "../../../shared/components/ui/Button";
+import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface CommentListProps {
     comments: Comment[];
@@ -17,6 +18,8 @@ export function CommentList({
     onCommentDeleted,
     onRetry,
 }: CommentListProps) {
+    const { t } = useI18n();
+
     if (isLoading) {
         return (
             <div className="flex justify-center p-8">
@@ -31,7 +34,7 @@ export function CommentList({
                 <p className="text-red-400/60 text-sm">{error}</p>
                 {onRetry && (
                     <Button variant="outline" size="sm" onClick={onRetry}>
-                        Try Again
+                        {t("commentList.tryAgain")}
                     </Button>
                 )}
             </div>
@@ -41,7 +44,7 @@ export function CommentList({
     if (comments.length === 0) {
         return (
             <div className="p-8 text-center text-white/30 text-sm">
-                No comments yet. Be the first!
+                {t("commentList.empty")}
             </div>
         );
     }

@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
 import { commentApi } from "../api/comment.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
+import { useI18n } from "../../../shared/hooks/useI18n";
 import type { Comment } from "../api/comment.types";
 
 export function useComments(postId: string) {
+    const { t } = useI18n();
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,11 +29,11 @@ export function useComments(postId: string) {
             );
             setComments(data);
         } catch {
-            setError("Comments could not be loaded.");
+            setError(t("commentList.error"));
         } finally {
             setIsLoading(false);
         }
-    }, [postId, isAuthenticated]);
+    }, [postId, isAuthenticated, t]);
 
     const addComment = useCallback((comment: Comment) => {
         setComments((prev) => [comment, ...prev]);

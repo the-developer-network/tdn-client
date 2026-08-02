@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
+import { useI18n } from "../shared/hooks/useI18n";
 
 export default function TermsOfServicePage() {
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
@@ -18,7 +20,7 @@ export default function TermsOfServicePage() {
                         <ArrowLeft size={18} />
                     </button>
                     <h1 className="text-base font-bold text-white">
-                        Terms of Service
+                        {t("legal.termsTitle")}
                     </h1>
                 </div>
             </div>
@@ -26,197 +28,105 @@ export default function TermsOfServicePage() {
             <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-8 text-white/80 text-sm leading-relaxed">
                 <div>
                     <p className="text-white/40 text-xs mb-4">
-                        Last updated: April 2026
+                        {t("legal.lastUpdated")}
                     </p>
-                    <p>
-                        Welcome to TDN (The Developer Network). By accessing or
-                        using TDN, you agree to be bound by these Terms of
-                        Service. If you do not agree, please do not use the
-                        platform.
-                    </p>
+                    <p>{t("terms.intro")}</p>
                 </div>
 
                 {/* 1 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        1. Acceptance of Terms
+                        {t("terms.s1Title")}
                     </h2>
-                    <p>
-                        By creating an account, browsing the platform, or
-                        interacting with any content on TDN, you acknowledge
-                        that you have read, understood, and agree to these
-                        Terms. These Terms apply to all users — registered or
-                        not.
-                    </p>
+                    <p>{t("terms.s1Body")}</p>
                 </section>
 
                 {/* 2 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        2. Eligibility
+                        {t("terms.s2Title")}
                     </h2>
-                    <p>
-                        You must be at least 13 years of age to use TDN. By
-                        using TDN, you represent that you meet this requirement.
-                        Users under the age of 18 should use the platform only
-                        with parental or guardian consent.
-                    </p>
+                    <p>{t("terms.s2Body")}</p>
                 </section>
 
                 {/* 3 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        3. Community Standards
+                        {t("terms.s3Title")}
                     </h2>
-                    <p className="mb-3">
-                        TDN is a professional developer community. All users are
-                        expected to engage respectfully and constructively. The
-                        following content is strictly prohibited:
-                    </p>
+                    <p className="mb-3">{t("terms.s3Lead")}</p>
                     <ul className="list-disc list-inside space-y-2 text-white/70">
-                        <li>
-                            Sexually explicit, pornographic, or erotic content
-                            of any kind
-                        </li>
-                        <li>
-                            Hate speech, harassment, threats, or discriminatory
-                            language
-                        </li>
-                        <li>Spam, phishing, or deceptive content</li>
-                        <li>
-                            Malware, exploits, or content promoting unauthorized
-                            access to systems
-                        </li>
-                        <li>
-                            Content that violates any applicable law or
-                            regulation
-                        </li>
-                        <li>
-                            Impersonation of other individuals, organizations,
-                            or entities
-                        </li>
+                        <li>{t("terms.s3Explicit")}</li>
+                        <li>{t("terms.s3Hate")}</li>
+                        <li>{t("terms.s3Spam")}</li>
+                        <li>{t("terms.s3Malware")}</li>
+                        <li>{t("terms.s3Illegal")}</li>
+                        <li>{t("terms.s3Impersonation")}</li>
                     </ul>
-                    <p className="mt-3">
-                        Violation of these standards may result in content
-                        removal, account suspension, or permanent ban without
-                        notice.
-                    </p>
+                    <p className="mt-3">{t("terms.s3Note")}</p>
                 </section>
 
                 {/* 4 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        4. User Content
+                        {t("terms.s4Title")}
                     </h2>
-                    <p className="mb-3">
-                        You retain ownership of the content you post on TDN.
-                        However, by posting content, you grant TDN a
-                        non-exclusive, royalty-free, worldwide license to
-                        display, distribute, and promote your content within the
-                        platform.
-                    </p>
-                    <p>
-                        You are solely responsible for the content you share.
-                        TDN does not endorse, verify, or guarantee the accuracy
-                        of user-generated content.
-                    </p>
+                    <p className="mb-3">{t("terms.s4Body1")}</p>
+                    <p>{t("terms.s4Body2")}</p>
                 </section>
 
                 {/* 5 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        5. Open Source & Transparency
+                        {t("terms.s5Title")}
                     </h2>
-                    <p className="mb-3">
-                        TDN is an open source project. The source code for the
-                        client application is publicly available. We believe in
-                        transparency — you can inspect how the platform is built
-                        and verify our security practices yourself.
-                    </p>
-                    <p>
-                        Contributing to TDN's open source repositories is
-                        welcome and governed by the respective repository's
-                        license and contribution guidelines.
-                    </p>
+                    <p className="mb-3">{t("terms.s5Body1")}</p>
+                    <p>{t("terms.s5Body2")}</p>
                 </section>
 
                 {/* 6 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        6. Account Security
+                        {t("terms.s6Title")}
                     </h2>
-                    <p className="mb-3">
-                        You are responsible for maintaining the confidentiality
-                        of your account credentials. Do not share your password
-                        with anyone. TDN will never ask for your password via
-                        email or any communication channel.
-                    </p>
-                    <p>
-                        If you suspect unauthorized access to your account,
-                        please change your password immediately and contact
-                        support.
-                    </p>
+                    <p className="mb-3">{t("terms.s6Body1")}</p>
+                    <p>{t("terms.s6Body2")}</p>
                 </section>
 
                 {/* 7 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        7. Third-Party Authentication
+                        {t("terms.s7Title")}
                     </h2>
-                    <p>
-                        TDN supports sign-in via Google and GitHub (OAuth 2.0).
-                        When you authenticate using these providers, TDN only
-                        receives your public profile information (such as your
-                        email address and display name) as permitted by those
-                        services. Your Google or GitHub password is never
-                        transmitted to or stored by TDN.
-                    </p>
+                    <p>{t("terms.s7Body")}</p>
                 </section>
 
                 {/* 8 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        8. Termination
+                        {t("terms.s8Title")}
                     </h2>
-                    <p>
-                        TDN reserves the right to suspend or terminate your
-                        account at any time, with or without notice, for
-                        violations of these Terms or for any conduct deemed
-                        harmful to the community or platform. You may also
-                        delete your account at any time through the platform
-                        settings.
-                    </p>
+                    <p>{t("terms.s8Body")}</p>
                 </section>
 
                 {/* 9 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        9. Disclaimer of Warranties
+                        {t("terms.s9Title")}
                     </h2>
-                    <p>
-                        TDN is provided "as is" without warranties of any kind,
-                        either express or implied. We do not guarantee
-                        uninterrupted access to the platform and are not liable
-                        for any loss of data or damages resulting from use of
-                        the service.
-                    </p>
+                    <p>{t("terms.s9Body")}</p>
                 </section>
 
                 {/* 10 */}
                 <section>
                     <h2 className="text-white font-bold text-base mb-3">
-                        10. Changes to These Terms
+                        {t("terms.s10Title")}
                     </h2>
-                    <p>
-                        We may update these Terms from time to time. Continued
-                        use of TDN after changes are posted constitutes
-                        acceptance of the revised Terms. We encourage you to
-                        review this page periodically.
-                    </p>
+                    <p>{t("terms.s10Body")}</p>
                 </section>
 
                 <div className="border-t border-white/10 pt-6 text-white/40 text-xs">
-                    Questions? Email us at{" "}
+                    {t("terms.footer")}{" "}
                     <a
                         href="mailto:contact@developernetwork.net"
                         className="hover:text-white/60 transition-colors"
