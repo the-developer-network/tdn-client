@@ -5,6 +5,7 @@ import { Button } from "../../../../shared/components/ui/Button";
 import { profileApi } from "../../../profile/api/profile.api";
 import { useAuthStore } from "../../../../core/auth/auth.store";
 import { useNavigate } from "react-router-dom";
+import { getErrorMessage } from "../../../../shared/utils/error-handler";
 import { useI18n } from "../../../../shared/hooks/useI18n";
 
 export function RecoveryView() {
@@ -18,6 +19,9 @@ export function RecoveryView() {
     const handleRecover = async () => {
         if (!recoveryToken) return;
         setIsLoading(true);
+        // Without this a retry runs under the banner of the attempt before
+        // it, and a successful recovery leaves "recovery failed" on screen.
+        setError(null);
         try {
             const data = await authApi.recoverAccount(recoveryToken);
             setAuth(data.user, data.accessToken);
@@ -32,11 +36,22 @@ export function RecoveryView() {
                 console.error("Profile sync failed:", profileErr);
             }
 
+            // Recovery re-authenticates exactly as login does, so it owes the
+            // user the same verification prompt login gives them — otherwise
+            // an unverified account slips into the app with no way back to
+            // the code screen.
+            if (!data.user.isEmailVerified) {
+                setStep("verify-email");
+                return;
+            }
+
             closeModal();
             navigate("/");
         } catch (err) {
-            console.error("Recovery error:", err);
-            setError(t("auth.recoveryFailed"));
+            // The API distinguishes an expired token from a malformed one
+            // from a rate limit. Answering all of them with the same guess
+            // tells a user whose problem is none of those to keep waiting.
+            setError(getErrorMessage(err));
         } finally {
             setIsLoading(false);
         }

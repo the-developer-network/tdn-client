@@ -261,14 +261,9 @@ const en = {
     "auth.recoveryBack": "No, go back",
     "auth.recoveryExpiry": "This recovery link expires in 15 minutes.",
     "auth.forgotEmailPlaceholder": "example@mail.com",
-    "auth.invalidCode": "Invalid verification code. Please try again.",
     "auth.codeResent": "A new code has been sent to your email.",
     "auth.invalidEmail": "Please enter a valid email.",
-    "auth.emailNotFound": "Email not found or system error.",
     "auth.resetSuccess": "Your password has been reset successfully.",
-    "auth.resetFailed": "Invalid code or request failed.",
-    "auth.recoveryFailed":
-        "Account recovery failed. The link may have expired.",
 
     "page.post": "Post",
     "page.postNotFound": "Post not found.",
@@ -734,14 +729,9 @@ const tr: Record<TranslationKey, string> = {
     "auth.recoveryExpiry":
         "Bu kurtarma bağlantısı 15 dakika içinde sona eriyor.",
     "auth.forgotEmailPlaceholder": "ornek@mail.com",
-    "auth.invalidCode": "Doğrulama kodu geçersiz. Lütfen tekrar deneyin.",
     "auth.codeResent": "E-posta adresinize yeni bir kod gönderildi.",
     "auth.invalidEmail": "Lütfen geçerli bir e-posta adresi girin.",
-    "auth.emailNotFound": "E-posta bulunamadı veya sistem hatası oluştu.",
     "auth.resetSuccess": "Şifreniz başarıyla sıfırlandı.",
-    "auth.resetFailed": "Kod geçersiz veya istek başarısız oldu.",
-    "auth.recoveryFailed":
-        "Hesap kurtarma başarısız. Bağlantının süresi dolmuş olabilir.",
 
     "page.post": "Gönderi",
     "page.postNotFound": "Gönderi bulunamadı.",

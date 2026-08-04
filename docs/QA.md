@@ -53,6 +53,7 @@ src/
           ForgotPasswordView.test.tsx
           IdentifierView.test.tsx
           LoginView.test.tsx
+          RecoveryView.test.tsx
           RegisterView.test.tsx
           ResetPasswordView.test.tsx
           VerifyEmailView.test.tsx
@@ -621,6 +622,23 @@ The form is `noValidate`: a `type="email"` field inside a form otherwise trigger
 | 401                          | `detail` rendered; step unchanged; store still signed out |
 
 > The API spreads `AccountPendingDeletionError` into the problem document, so `recoveryToken` sits at the top level beside `status` — mock it there, not nested.
+
+#### `RecoveryView` (`src/features/auth/components/views/RecoveryView.test.tsx`)
+
+4 tests. The view is reached with a `recoveryToken` already in the store — `LoginView` puts it there from a 403, `OAuthSuccessPage` from a query parameter — so every test seeds it rather than producing one.
+
+`closeModal` schedules a 300 ms timer that wipes `recoveryToken` and `step`. `setState` cannot cancel it, so a test that closes the modal leaks the wipe into the next test, which then clicks a button whose `if (!recoveryToken) return` guard silently swallows the click. Seeding through `openModal("account-recovery")` cancels the pending timer first.
+
+`/auth/recover-account` is `isPublic`, so a 401 makes the client replay the request and then refresh in the background — both need handlers or the retry escapes as an unhandled request.
+
+| Scenario                            | Assert                                                   |
+| ----------------------------------- | -------------------------------------------------------- |
+| 401 for a wrong token purpose       | `detail` rendered; store still signed out                |
+| 503, then a successful retry        | Signed in; the previous failure banner is gone           |
+| Recovered account, email unverified | `step === "verify-email"`; modal stays open              |
+| Recovered account, email verified   | Modal closed; token stored; profile merged into the user |
+
+> Recovery re-authenticates exactly as login does, so it owes the user the same verification prompt. `VerifyEmailView` calls `sendVerification` authenticated, which works because `setAuth` has already stored the token by then.
 
 #### `RegisterView` (`src/features/auth/components/views/RegisterView.test.tsx`)
 
