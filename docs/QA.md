@@ -45,6 +45,8 @@ src/
       auth.store.test.ts
   features/
     auth/
+      api/
+        auth-api.test.ts
       store/
         auth-modal.store.test.ts
       components/
@@ -253,6 +255,31 @@ The refresh queue is the most critical path: a 401 triggers a single token refre
 | 401 → refresh succeeds → original request retried | Request called twice total                                     |
 | Concurrent 401s                                   | Exactly one refresh call; all queued requests resolved         |
 | Refresh fails                                     | `_onSessionExpired` handler called, `"Session Expired"` thrown |
+
+**`isPublic` vs `isAnonymous`.** Both skip the authenticated 401 path, and they are not interchangeable:
+
+- `isPublic` — readable either way (feed, profiles, trends, comments). A 401 means the token is stale, so the request is replayed without it and a refresh runs in the background. The content still arrives.
+- `isAnonymous` — called to _obtain_ a session (everything in `auth-api.ts` except `sendVerification`, `verifyEmail` and `logout`). No token is sent and a 401 is the endpoint's verdict on the credentials, so there is no replay and no refresh. Asserting this is what `auth-api.test.ts` is for.
+
+Flagging a credential endpoint `isPublic` sends every rejected attempt twice and then reports the session as expired — see `auth-api.test.ts` for the four regressions that guard against it.
+
+#### `authApi` (`src/features/auth/api/auth-api.test.ts`)
+
+7 tests. The only `*.api.ts` spec in the suite, because these thunks are the one place where the _choice_ of client flag is itself the behaviour under test.
+
+Requests are counted through `server.events.on("request:start", …)` rather than by incrementing inside each handler — a replay the client makes on its own never reaches a handler you did not write, and counting centrally catches `/auth/refresh` calls no test installed a route for. Call `server.events.removeAllListeners()` in `afterEach` or the counters leak into the next spec.
+
+| Scenario                                        | Assert                                                   |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| 401 from `/auth/login`                          | Exactly one request — the rate-limit budget is not spent |
+| 401 from `/auth/login`, refresh route installed | No `/auth/refresh` call; session-expired never fires     |
+| 401 from `/auth/recover-account`                | Exactly one request                                      |
+| Stale `access_token` in storage, login refused  | Every attempt sent with no `Authorization` header        |
+| 401 with a `detail`                             | Problem document reaches the caller intact               |
+| 200 login                                       | `ApiResponse.data` unwrapped                             |
+| `sendVerification` with a live token            | Still sends `Authorization: Bearer …`                    |
+
+> The header test records _every_ attempt, not the last. The old replay stripped the header itself, so asserting a single captured value reports the stripped retry and misses the request that carried the token — the assertion passed against the bug it was meant to catch.
 
 ---
 
@@ -629,7 +656,7 @@ The form is `noValidate`: a `type="email"` field inside a form otherwise trigger
 
 `closeModal` schedules a 300 ms timer that wipes `recoveryToken` and `step`. `setState` cannot cancel it, so a test that closes the modal leaks the wipe into the next test, which then clicks a button whose `if (!recoveryToken) return` guard silently swallows the click. Seeding through `openModal("account-recovery")` cancels the pending timer first.
 
-`/auth/recover-account` is `isPublic`, so a 401 makes the client replay the request and then refresh in the background — both need handlers or the retry escapes as an unhandled request.
+`/auth/recover-account` is `isAnonymous`, so a 401 reaches the view as-is. It was `isPublic` when these tests were written, which replayed the request and fired a background refresh — hence the refresh handler the spec still installs, now only as a guard against that regression returning.
 
 | Scenario                            | Assert                                                   |
 | ----------------------------------- | -------------------------------------------------------- |

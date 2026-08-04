@@ -10,24 +10,30 @@ import type {
     RegisterResponse,
 } from "./auth-api-response.types";
 
+/**
+ * Everything here except `sendVerification`, `verifyEmail` and `logout` runs
+ * before there is a session, so it is `isAnonymous` rather than `isPublic`:
+ * a 401 from these endpoints is their verdict on the credentials supplied,
+ * and must not be mistaken for a token that needs refreshing.
+ */
 export const authApi = {
     checkIdentifier: (identifier: string) =>
         api.post<CheckResponse>(
             "/auth/check",
             { identifier },
-            { isPublic: true },
+            { isAnonymous: true },
         ),
 
     login: (identifier: string, password: string) =>
         api.post<LoginResponse>(
             "/auth/login",
             { identifier, password },
-            { isPublic: true },
+            { isAnonymous: true },
         ),
 
     register: (payload: RegisterBody) =>
         api.post<RegisterResponse>("/auth/register", payload, {
-            isPublic: true,
+            isAnonymous: true,
         }),
 
     sendVerification: () => api.post<void>("/auth/send-verification"),
@@ -36,10 +42,14 @@ export const authApi = {
         api.post<{ verified: boolean }>("/auth/verify-email", { otp }),
 
     forgotPassword: (email: string) =>
-        api.post<void>("/auth/forgot-password", { email }, { isPublic: true }),
+        api.post<void>(
+            "/auth/forgot-password",
+            { email },
+            { isAnonymous: true },
+        ),
 
     resetPassword: (payload: ResetPasswordBody) =>
-        api.post<void>("/auth/reset-password", payload, { isPublic: true }),
+        api.post<void>("/auth/reset-password", payload, { isAnonymous: true }),
 
     logout: () => api.post("/auth/logout", undefined, { contentType: false }),
 
@@ -47,11 +57,11 @@ export const authApi = {
         api.post<LoginResponse>(
             "/auth/recover-account",
             { recoveryToken },
-            { isPublic: true },
+            { isAnonymous: true },
         ),
 
     exchangeCode: (payload: OAuthExchangeBody) =>
         api.post<LoginResponse>("/oauth/exchange", payload, {
-            isPublic: true,
+            isAnonymous: true,
         }),
 };
