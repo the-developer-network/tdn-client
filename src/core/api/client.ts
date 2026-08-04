@@ -17,7 +17,20 @@ export const registerSessionExpiredHandler = (
 };
 
 interface ApiOptions extends RequestInit {
+    /**
+     * Readable with or without a session. A 401 means the token is stale, so
+     * the request is replayed anonymously and a refresh runs in the
+     * background — the content still arrives, just unauthenticated.
+     */
     isPublic?: boolean;
+    /**
+     * Called to obtain a session rather than with one: login, register,
+     * password reset, account recovery, OAuth exchange. No token is sent, and
+     * a 401 is the endpoint's own answer — "those credentials are wrong" —
+     * not a stale session. It is handed to the caller untouched, with no
+     * replay and no refresh.
+     */
+    isAnonymous?: boolean;
     _retry?: boolean;
     contentType?: boolean;
 }
@@ -95,11 +108,12 @@ export const apiClient = async <T>(
 ): Promise<T> => {
     const {
         isPublic = false,
+        isAnonymous = false,
         _retry = false,
         contentType = true,
         ...fetchOptions
     } = options;
-    const token = localStorage.getItem("access_token");
+    const token = isAnonymous ? null : localStorage.getItem("access_token");
 
     const headers = new Headers(fetchOptions.headers);
 
@@ -120,7 +134,10 @@ export const apiClient = async <T>(
         headers,
     });
 
-    if (response.status === 401 && !_retry) {
+    // `isAnonymous` endpoints answer 401 to mean "wrong credentials", so the
+    // whole recovery apparatus below is skipped and the problem document
+    // falls through to the caller.
+    if (response.status === 401 && !_retry && !isAnonymous) {
         // Public endpoints: retry without token so the request succeeds
         // as unauthenticated, then attempt a background refresh.
         if (isPublic) {

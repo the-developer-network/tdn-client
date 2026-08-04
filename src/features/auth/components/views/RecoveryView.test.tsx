@@ -55,9 +55,11 @@ function recovered(isEmailVerified: boolean) {
 }
 
 /**
- * `/auth/recover-account` is flagged `isPublic`, so a 401 makes the client
- * replay the request and then attempt a background refresh. Both need a
- * handler or the retry escapes as an unhandled request.
+ * `/auth/recover-account` is `isAnonymous`, so a 401 comes straight back to
+ * the view. The refresh handler stays because flagging it `isPublic` again
+ * would replay the request and reach for a session that does not exist —
+ * without the handler that regression would surface as an unhandled request
+ * rather than a failed assertion.
  */
 function stubProfileAndRefresh() {
     server.use(

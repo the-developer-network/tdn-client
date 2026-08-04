@@ -55,7 +55,8 @@ Four TypeScript project references build together (`tsconfig.json`): `app` (src,
 Everything network goes through `api.get/post/patch/delete`. Base URL switches on `import.meta.env.PROD`: production `https://api.developernetwork.net/api/v1`, dev `http://localhost:8080/api/v1` — a local backend on :8080 is expected during development.
 
 - `apiClient` **unwraps `ApiResponse<T>.data`** before returning. Every mock — MSW handler, Playwright `route.fulfill` — must therefore wrap its payload in `{ data: ... }`.
-- `{ isPublic: true }` — on 401, retries once without the Authorization header so the request still resolves anonymously, then refreshes in the background.
+- `{ isPublic: true }` — for content readable with or without a session. On 401, retries once without the Authorization header so the request still resolves anonymously, then refreshes in the background.
+- `{ isAnonymous: true }` — for endpoints called to _obtain_ a session (all of `auth-api.ts` bar `sendVerification`, `verifyEmail`, `logout`). No token is sent, and a 401 is the endpoint's answer about the credentials, so it is thrown to the caller with no replay and no refresh. Never flag a credential endpoint `isPublic`: the replay doubles it against the STRICT 3-per-15-minutes rate limit on `/auth/login`, and the background refresh then reports the session as expired.
 - Authenticated 401 → single in-flight refresh; concurrent requests queue in `failedQueue` and replay after the new token lands. Refresh failure clears `access_token` and fires the session-expired handler registered in `AppInit.tsx` (clears auth store, reopens the auth modal at the `identifier` step).
 - `{ contentType: false }` for `FormData` — never set `Content-Type` manually.
 - 15 s `AbortController` timeout → `NetworkError`. 204 → `{}`.
