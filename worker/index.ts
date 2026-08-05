@@ -281,12 +281,28 @@ ${[...staticEntries, ...profileEntries, ...postEntries].join("\n")}
     });
 }
 
+/**
+ * True for the paths the build actually produces: Vite's hashed bundles under
+ * `/assets/`, and everything copied from `public/`, which lands at the root.
+ *
+ * Deliberately not "the path ends in something that looks like an extension".
+ * Usernames are `^[a-zA-Z0-9._]+$`, so `john.smith` is an ordinary handle, and
+ * testing the whole pathname mistook `/profile/john.smith` for a file and
+ * served a 404 in place of the app. Requiring a single segment keeps every
+ * `/profile/:username` and `/post/:id` on the SPA side no matter what the
+ * parameter contains.
+ */
+function isAssetPath(pathname: string): boolean {
+    if (pathname.startsWith("/assets/")) return true;
+    return /^\/[^/]+\.\w{2,5}$/.test(pathname);
+}
+
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
         const pathname = url.pathname;
 
-        // Generated routes are matched before the extension check below, which
+        // Generated routes are matched before the asset check below, which
         // would otherwise treat "/sitemap.xml" as a static file and look for an
         // asset that does not exist.
         if (pathname === "/sitemap.xml") {
@@ -294,7 +310,7 @@ export default {
         }
 
         // Static assets pass through unchanged
-        if (/\.\w{2,5}$/.test(pathname)) {
+        if (isAssetPath(pathname)) {
             return env.ASSETS.fetch(request);
         }
 

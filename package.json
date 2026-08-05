@@ -24,7 +24,7 @@
         "workerd"
     ],
     "lint-staged": {
-        "src/**/*.{ts,tsx}": [
+        "{src,worker}/**/*.{ts,tsx}": [
             "eslint --fix",
             "prettier --write --ignore-unknown"
         ]

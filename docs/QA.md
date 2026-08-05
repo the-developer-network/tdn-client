@@ -106,6 +106,9 @@ src/
     NotificationsPage.test.tsx
     SettingsPage.test.tsx
 
+worker/
+  index.test.ts
+
 e2e/
   fixtures.ts
   auth.spec.ts
@@ -300,6 +303,27 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 | `{ data, meta }` envelope            | Array returned; `meta` dropped by the client |
 
 > Any spec that mocks a follower list must slice on `limit`/`offset`. A handler returning a fixed array answers a paginated and an unpaginated request identically, which is exactly the bug these tests were written for.
+
+---
+
+### Layer 3a — Cloudflare Worker (`worker/index.ts`)
+
+10 tests in `worker/index.test.ts`. This is the only coverage the Worker has: the Playwright suite runs against `pnpm dev` and never reaches it, yet in production it is what serves every HTML request and everything a crawler sees.
+
+`vitest.config.ts` includes `worker/**` for exactly this reason. The Worker's `fetch` is called directly with a request and a stub `env`; there is no Miniflare in the loop.
+
+The `ASSETS` stub **records the paths it was asked for**. Every routing bug in this file is a request reaching the asset store when it should have reached the SPA shell, or the reverse — asserting on the response body alone cannot tell those apart, because a 404 body and a missing asset look identical.
+
+| Scenario                                     | Assert                                                       |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| `/profile/john.smith`, `.dev`, `.io`         | App shell served; only `/index.html` requested               |
+| `/profile/john.smith` with a profile in API  | OG title and description built from the profile              |
+| `/assets/…js`, `/favicon.svg`, `/robots.txt` | Passed straight to the asset store                           |
+| `/`                                          | Placeholder `og:` and `description` replaced, not duplicated |
+| Post content containing markup               | Escaped — no live `<script>` in the head                     |
+| `/sitemap.xml`                               | Generated XML; asset store never consulted                   |
+
+> **Do not decide "is this an asset?" by testing the whole pathname for a trailing extension.** Usernames are `^[a-zA-Z0-9._]+$`, so `/profile/john.smith` ends in something that looks exactly like a file extension. `isAssetPath` requires either the `/assets/` prefix or a single root-level segment, which is what the build actually produces.
 
 ---
 
@@ -857,6 +881,8 @@ MSW fails the first `PATCH /users/me/username` and accepts every one after it, s
 ### Layer 7 — E2E (Playwright)
 
 Runs against the dev server (`pnpm dev`, auto-started by `playwright.config.ts`). All API calls are intercepted via `page.route("**/api/v1/**", ...)` — no real backend required. Auth state is injected into `localStorage` with `page.addInitScript()` before each navigation.
+
+> ⚠️ **These specs never touch the Cloudflare Worker.** `webServer.command` is `pnpm dev`, so every request is served by Vite. In production `worker/index.ts` sits in front of everything — it decides what is an asset, injects the OG tags crawlers read, and generates `/sitemap.xml`. None of that is exercised here, and the gap let a routing bug reach production in which every profile whose username contained a dot was served a 404. The Worker is covered by `worker/index.test.ts` instead (Layer 3a below); running Playwright against `wrangler dev` would cover it end to end but costs a production build per CI run, so it has not been done.
 
 ```ts
 // e2e/fixtures.ts
