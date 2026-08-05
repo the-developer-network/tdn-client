@@ -106,6 +106,79 @@ describe("useNotifications", () => {
         expect(result.current.isLoadingMore).toBe(false);
     });
 
+    // `setPage(nextPage)` ran before the request, so a failed page 2 still
+    // advanced the counter. The next attempt asked for page 3 and page 2 was
+    // skipped for good — those notifications become unreachable.
+    it("does not advance the page when loading more fails", async () => {
+        const page1 = Array.from({ length: 20 }, (_, i) => ({
+            ...mockNotification,
+            issuerId: `user-${i + 2}`,
+        }));
+        const requested: number[] = [];
+        let failNext = true;
+
+        server.use(
+            http.get(`${BASE}/notifications`, ({ request }) => {
+                const page = Number(
+                    new URL(request.url).searchParams.get("page") ?? "1",
+                );
+                requested.push(page);
+                if (page === 1) return HttpResponse.json({ data: page1 });
+                if (failNext) {
+                    failNext = false;
+                    return HttpResponse.error();
+                }
+                return HttpResponse.json({ data: [mockNotification] });
+            }),
+        );
+
+        const { result } = renderHook(() => useNotifications());
+        await act(async () => {
+            await result.current.fetch();
+        });
+
+        await act(async () => {
+            await result.current.loadMore();
+        });
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(requested).toEqual([1, 2, 2]);
+        expect(useNotificationStore.getState().notifications).toHaveLength(21);
+    });
+
+    // A page that never arrived must not take the ones already on screen
+    // with it.
+    it("keeps the loaded notifications when loading more fails", async () => {
+        const page1 = Array.from({ length: 20 }, (_, i) => ({
+            ...mockNotification,
+            issuerId: `user-${i + 2}`,
+        }));
+
+        server.use(
+            http.get(`${BASE}/notifications`, ({ request }) => {
+                const page = Number(
+                    new URL(request.url).searchParams.get("page") ?? "1",
+                );
+                if (page === 1) return HttpResponse.json({ data: page1 });
+                return HttpResponse.error();
+            }),
+        );
+
+        const { result } = renderHook(() => useNotifications());
+        await act(async () => {
+            await result.current.fetch();
+        });
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(useNotificationStore.getState().notifications).toHaveLength(20);
+        expect(result.current.isLoadingMore).toBe(false);
+        expect(result.current.hasMore).toBe(true);
+    });
+
     it("loadMore() fetches page 2 and appends results when hasMore is true", async () => {
         // Return exactly 20 notifications on page 1 → hasMore = true
         const page1 = Array.from({ length: 20 }, (_, i) => ({

@@ -22,8 +22,10 @@ export function useNotifications() {
                 );
                 setNotifications(data, append);
                 setHasMore(data.length === PAGE_LIMIT);
+                return true;
             } catch (err) {
                 setError(getErrorMessage(err));
+                return false;
             }
         },
         [setNotifications],
@@ -40,9 +42,15 @@ export function useNotifications() {
     const loadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
         setIsLoadingMore(true);
+        setError(null);
         const nextPage = page + 1;
-        setPage(nextPage);
-        await fetchPage(nextPage, true);
+
+        // The counter only moves once the page is actually in hand. Advancing
+        // it first meant a failed page 2 was never retried — the next attempt
+        // asked for page 3 and those notifications became unreachable.
+        if (await fetchPage(nextPage, true)) {
+            setPage(nextPage);
+        }
         setIsLoadingMore(false);
     }, [isLoadingMore, hasMore, page, fetchPage]);
 
