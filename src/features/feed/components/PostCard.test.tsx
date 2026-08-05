@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Post } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
@@ -51,6 +51,13 @@ const makeTranslation = (content: string): TranslationReturn => ({
     handleRevert: vi.fn(),
 });
 
+// The selection tests spy on `window.getSelection`, which `user-event` also
+// reads while typing. Leaving it stubbed would strand any later spec that
+// types into a field.
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 beforeEach(() => {
     mockNavigate.mockClear();
     vi.mocked(usePostActions).mockReturnValue(makeActions());
@@ -96,6 +103,55 @@ describe("PostCard", () => {
         render(<PostCard {...mockPost} />);
         fireEvent.click(screen.getByAltText("alice"));
         expect(mockNavigate).toHaveBeenCalledWith("/profile/alice");
+    });
+
+    describe("clicks the card must not act on", () => {
+        const withVideo: Post = {
+            ...mockPost,
+            mediaUrls: ["https://cdn.example.com/clip.mp4"],
+        };
+
+        // `<video controls>` puts its play, seek, volume and fullscreen
+        // controls inside the card. Every one of them is a click that
+        // bubbles, so the first press on play navigated away and the video
+        // could not be operated in the feed at all. `CommentCard` stops the
+        // same event on its media wrapper; this one did not.
+        it("does not navigate when the video is clicked", () => {
+            const { container } = render(<PostCard {...withVideo} />);
+            const video = container.querySelector("video");
+
+            expect(video).not.toBeNull();
+            fireEvent.click(video!);
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        // Releasing a drag-select fires a click on the article, so reading a
+        // post carefully enough to quote from it threw the reader onto
+        // another page and lost the selection.
+        it("does not navigate when the click ends a text selection", () => {
+            render(<PostCard {...mockPost} />);
+
+            vi.spyOn(window, "getSelection").mockReturnValue({
+                toString: () => "Hello",
+            } as unknown as Selection);
+
+            fireEvent.click(screen.getByRole("article"));
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it("still navigates when the selection is empty", () => {
+            render(<PostCard {...mockPost} />);
+
+            vi.spyOn(window, "getSelection").mockReturnValue({
+                toString: () => "",
+            } as unknown as Selection);
+
+            fireEvent.click(screen.getByRole("article"));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/post/post-1");
+        });
     });
 
     it("opens the delete confirmation modal when the delete button is clicked", () => {

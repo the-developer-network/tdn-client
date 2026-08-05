@@ -654,6 +654,22 @@ it("renders empty state", () => {
 });
 ```
 
+#### `PostCard` / `CommentCard`
+
+8 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so most of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own click routing is all that is under test.
+
+| Scenario                         | Assert                        |
+| -------------------------------- | ----------------------------- |
+| Card clicked                     | Navigates to the detail route |
+| Avatar clicked                   | Navigates to the profile      |
+| Video clicked (`PostCard`)       | Does not navigate             |
+| Click ending a text selection    | Does not navigate             |
+| Click with an empty selection    | Still navigates               |
+| Delete button (own post/comment) | Confirmation modal opens      |
+| `handleDelete` resolves true     | Modal closes                  |
+
+> ⚠️ **`vi.spyOn(window, "getSelection")` must be restored.** `@testing-library/user-event` reads the selection while typing, and a stub left in place strands every later spec that types into a field — five unrelated auth and settings specs failed on a 5 s `user-event` timeout, all of them passing in isolation. Both card specs call `vi.restoreAllMocks()` in `afterEach`. If a batch of typing tests starts timing out for no reason, look for an unrestored global spy rather than at the specs that failed.
+
 #### `NotificationCard`
 
 | Scenario            | Assert                                   |
