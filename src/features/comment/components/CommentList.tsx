@@ -9,6 +9,11 @@ interface CommentListProps {
     error: string | null;
     onCommentDeleted?: (commentId: string) => void;
     onRetry?: () => void;
+    // Optional so the bookmarks page, whose comments arrive through the post
+    // list's own paging, can keep rendering a plain list.
+    hasMore?: boolean;
+    isLoadingMore?: boolean;
+    onLoadMore?: () => void;
 }
 
 export function CommentList({
@@ -17,6 +22,9 @@ export function CommentList({
     error,
     onCommentDeleted,
     onRetry,
+    hasMore = false,
+    isLoadingMore = false,
+    onLoadMore,
 }: CommentListProps) {
     const { t } = useI18n();
 
@@ -58,6 +66,20 @@ export function CommentList({
                     onDeleted={onCommentDeleted}
                 />
             ))}
+
+            {hasMore && !isLoadingMore && onLoadMore && (
+                <div className="flex justify-center py-4">
+                    <Button variant="outline" size="sm" onClick={onLoadMore}>
+                        {t("common.loadMore")}
+                    </Button>
+                </div>
+            )}
+
+            {isLoadingMore && (
+                <div className="flex justify-center py-4">
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+            )}
         </div>
     );
 }

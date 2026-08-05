@@ -371,17 +371,37 @@ expect(result.current.posts).toHaveLength(1);
 
 #### `useComments` (`src/features/comment/hooks/useComments.test.ts`)
 
-5 tests. No auto-fetch — `fetchComments()` is called explicitly. `addComment` and `removeComment` are pure local state mutations.
+9 tests. No auto-fetch — `fetchComments()` is called explicitly. `addComment` and `removeComment` are pure local state mutations.
 
 **Requires `vi.hoisted` localStorage stub** (imports `useAuthStore`).
 
-| Scenario                      | Assert                                                   |
-| ----------------------------- | -------------------------------------------------------- |
-| Initial state                 | `comments=[]`, `isLoading=false`, `error=null`           |
-| `fetchComments()` — success   | List populated from API; `isLoading=false`; `error=null` |
-| `fetchComments()` — API error | `error` set; `comments=[]`                               |
-| `addComment(comment)`         | Prepends to list; no API call                            |
-| `removeComment(id)`           | Removes by id; no API call                               |
+| Scenario                         | Assert                                                   |
+| -------------------------------- | -------------------------------------------------------- |
+| Initial state                    | `comments=[]`, `isLoading=false`, `error=null`           |
+| `fetchComments()` — success      | List populated from API; `isLoading=false`; `error=null` |
+| `fetchComments()` — connection   | `error.network` named; `comments=[]`                     |
+| 404 with a `detail`              | The API's `detail`, not a fixed string                   |
+| 31 comments, then `loadMore()`   | 20 then 31; `hasMore` true then false                    |
+| 4 comments                       | `hasMore` false without a second request                 |
+| `addComment()` then `loadMore()` | No duplicate ids — see the note below                    |
+| `addComment(comment)`            | Prepends to list; no API call                            |
+| `removeComment(id)`              | Removes by id; no API call                               |
+
+#### `useCommentReplies` (`src/features/comment/hooks/useCommentReplies.test.ts`)
+
+8 tests. Same shape as `useComments` against `/comments/:commentId/replies`.
+
+| Scenario                       | Assert                                          |
+| ------------------------------ | ----------------------------------------------- |
+| `fetchReplies()` — success     | List populated; `error=null`; `isLoading=false` |
+| 27 replies, then `loadMore()`  | 20 then 27; `hasMore` true then false           |
+| 3 replies                      | `hasMore` false without a second request        |
+| `addReply()` then `loadMore()` | No duplicate ids                                |
+| `fetchReplies()` after paging  | Back to 20 — replaced, not appended             |
+| 404 with a `detail`            | `detail` surfaced; `isLoading=false`            |
+| `removeReply(id)`              | Removes by id; no API call                      |
+
+> **Why the duplicate tests exist.** Both endpoints page by a page _number_, and both lists grow at the head when the reader posts. That shifts every server row down, so page 2 comes back overlapping page 1 by however many were added since. Neither a page counter nor an offset taken from `list.length` fixes it — one duplicates, the other skips. The hooks drop incoming rows whose id is already on screen, and these tests pin that.
 
 #### `useNotifications` (`src/features/notifications/hooks/useNotifications.test.ts`)
 

@@ -22,8 +22,11 @@ export default function PostDetailPage() {
     const {
         comments,
         isLoading: commentsLoading,
+        isLoadingMore: commentsLoadingMore,
+        hasMore: hasMoreComments,
         error: commentsError,
         fetchComments,
+        loadMore: loadMoreComments,
         addComment,
         removeComment,
         retry: retryComments,
@@ -107,6 +110,9 @@ export default function PostDetailPage() {
                             error={commentsError}
                             onCommentDeleted={removeComment}
                             onRetry={retryComments}
+                            hasMore={hasMoreComments}
+                            isLoadingMore={commentsLoadingMore}
+                            onLoadMore={loadMoreComments}
                         />
                     </div>
                 </div>

@@ -60,7 +60,6 @@ const en = {
     "comment.shareText": "Check out this comment!",
 
     "commentList.empty": "No comments yet. Be the first!",
-    "commentList.error": "Comments could not be loaded.",
     "commentList.tryAgain": "Try Again",
 
     "notif.title": "Notifications",
@@ -525,7 +524,6 @@ const tr: Record<TranslationKey, string> = {
     "comment.shareText": "Bu yoruma bir göz at!",
 
     "commentList.empty": "Henüz yorum yok. İlk siz olun!",
-    "commentList.error": "Yorumlar yüklenemedi.",
     "commentList.tryAgain": "Tekrar Dene",
 
     "notif.title": "Bildirimler",
