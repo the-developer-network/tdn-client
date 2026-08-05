@@ -346,7 +346,9 @@ expect(result.current.likeCount).toBe(5); // rolled back
 
 #### `useBookmarks` (`src/features/feed/hooks/useBookmarks.test.ts`)
 
-5 tests. `useBookmarks` does not import `useAuthStore` directly, but `apiClient` calls `localStorage.getItem` at runtime — the `vi.hoisted` stub is still required.
+9 tests. `useBookmarks` does not import `useAuthStore` directly, but `apiClient` calls `localStorage.getItem` at runtime — the `vi.hoisted` stub is still required.
+
+`/posts/bookmarks` pages by `page`/`limit` (max 100) and returns posts and comments together. `meta.postTotal` is stripped by the client's `.data` unwrapping, so `hasMore` is derived from a full page of _either_ list. The pagination handler slices on the query it is given — a fixed array would answer page 1 and page 2 identically and hide the very bug these tests cover.
 
 ```ts
 // Hook auto-fetches in useEffect → use waitFor, not await act
@@ -355,13 +357,17 @@ await waitFor(() => expect(result.current.isLoading).toBe(false));
 expect(result.current.posts).toHaveLength(1);
 ```
 
-| Scenario                                    | Assert                                                       |
-| ------------------------------------------- | ------------------------------------------------------------ |
-| Mount (default handler)                     | `posts` populated, `isLoading=false`, `error=null`           |
-| API fails on mount                          | `error` set to message string; `posts=[]`; `isLoading=false` |
-| `retry()` after error with restored handler | `error=null`; `posts` populated                              |
-| `removePost(id)`                            | Removes post from local state; no API call                   |
-| API returns empty list                      | `posts=[]`; `error=null`                                     |
+| Scenario                                    | Assert                                                 |
+| ------------------------------------------- | ------------------------------------------------------ |
+| Mount (default handler)                     | `posts` populated, `isLoading=false`, `error=null`     |
+| Connection dropped on mount                 | `error.network` message; `posts=[]`; `isLoading=false` |
+| 429 with a `detail`                         | The API's `detail` rendered, not a fixed string        |
+| `retry()` after error with restored handler | `error=null`; `posts` populated                        |
+| `removePost(id)`                            | Removes post from local state; no API call             |
+| API returns empty list                      | `posts=[]`; `error=null`                               |
+| 25 bookmarks, then `loadMore()`             | 20 then 25; `hasMore` true then false                  |
+| 3 bookmarks                                 | `hasMore` false without a second request               |
+| `retry()` after `loadMore()`                | Back to 20 — the list is replaced, not appended to     |
 
 #### `useComments` (`src/features/comment/hooks/useComments.test.ts`)
 

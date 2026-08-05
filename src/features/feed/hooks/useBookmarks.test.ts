@@ -81,7 +81,11 @@ describe("useBookmarks", () => {
         expect(result.current.error).toBeNull();
     });
 
-    it("sets an error message when the API fails on mount", async () => {
+    // CHANGED EXPECTATION: this used to assert the fixed string
+    // "Bookmarks could not be loaded." for every failure alike. A dropped
+    // connection is now named as one, which is the whole point of routing
+    // through `getErrorMessage`.
+    it("names a connection failure on mount", async () => {
         server.use(
             http.get(`${BASE}/posts/bookmarks`, () => HttpResponse.error()),
         );
@@ -90,7 +94,9 @@ describe("useBookmarks", () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-        expect(result.current.error).toBe("Bookmarks could not be loaded.");
+        expect(result.current.error).toBe(
+            "Unable to connect. Please check your internet connection.",
+        );
         expect(result.current.posts).toHaveLength(0);
     });
 
@@ -118,6 +124,114 @@ describe("useBookmarks", () => {
 
         expect(result.current.error).toBeNull();
         expect(result.current.posts).toHaveLength(1);
+    });
+
+    // `/posts/bookmarks` takes `page`/`limit` (max 100). The hook asked for
+    // page 1 and never asked again, and `BookmarksPage` wired `hasMore` to a
+    // literal `false`, so bookmark 21 onwards was unreachable.
+    describe("pagination", () => {
+        /** Serves `total` bookmarked posts, honouring `page`/`limit`. */
+        function serveBookmarks(total: number) {
+            const all = Array.from({ length: total }, (_, i) => ({
+                ...mockPost,
+                id: `post-${i}`,
+            }));
+
+            server.use(
+                http.get(`${BASE}/posts/bookmarks`, ({ request }) => {
+                    const q = new URL(request.url).searchParams;
+                    const page = Number(q.get("page") ?? 1);
+                    const limit = Number(q.get("limit") ?? 20);
+                    const start = (page - 1) * limit;
+                    return HttpResponse.json({
+                        data: {
+                            posts: all.slice(start, start + limit),
+                            comments: [],
+                        },
+                        meta: {
+                            postTotal: total,
+                            commentTotal: 0,
+                            page,
+                            timestamp: new Date().toISOString(),
+                        },
+                    });
+                }),
+            );
+        }
+
+        it("reaches the bookmarks past the first page", async () => {
+            serveBookmarks(25);
+
+            const { result } = renderHook(() => useBookmarks());
+            await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+            expect(result.current.posts).toHaveLength(20);
+            expect(result.current.hasMore).toBe(true);
+
+            await act(async () => {
+                result.current.loadMore();
+            });
+
+            await waitFor(() => expect(result.current.posts).toHaveLength(25));
+            expect(result.current.hasMore).toBe(false);
+        });
+
+        it("reports no more to load when the first page is short", async () => {
+            serveBookmarks(3);
+
+            const { result } = renderHook(() => useBookmarks());
+            await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+            expect(result.current.posts).toHaveLength(3);
+            expect(result.current.hasMore).toBe(false);
+        });
+
+        it("starts again from page one after retry", async () => {
+            serveBookmarks(25);
+
+            const { result } = renderHook(() => useBookmarks());
+            await waitFor(() => expect(result.current.isLoading).toBe(false));
+            await act(async () => {
+                result.current.loadMore();
+            });
+            await waitFor(() => expect(result.current.posts).toHaveLength(25));
+
+            await act(async () => {
+                await result.current.retry();
+            });
+
+            // Not 45: retry replaces the list, it does not staple page one
+            // onto the pages already collected.
+            expect(result.current.posts).toHaveLength(20);
+            expect(result.current.hasMore).toBe(true);
+        });
+    });
+
+    // Every failure was reported as "Bookmarks could not be loaded.", so a
+    // rate limit and a server fault read identically and the reason the API
+    // gave went to the console instead of the screen.
+    it("reports the reason the API gave", async () => {
+        server.use(
+            http.get(`${BASE}/posts/bookmarks`, () =>
+                HttpResponse.json(
+                    {
+                        type: "about:blank",
+                        title: "TooManyRequests",
+                        status: 429,
+                        detail: "Too many requests, please try again later.",
+                    },
+                    { status: 429 },
+                ),
+            ),
+        );
+
+        const { result } = renderHook(() => useBookmarks());
+
+        await waitFor(() =>
+            expect(result.current.error).toBe(
+                "Too many requests, please try again later.",
+            ),
+        );
     });
 
     it("removes a post from local state immediately via removePost() without an API call", async () => {
