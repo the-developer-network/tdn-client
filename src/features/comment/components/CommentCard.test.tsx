@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Comment } from "../api/comment.types";
 import { useCommentActions } from "../hooks/useCommentActions";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
@@ -51,6 +51,13 @@ const makeTranslation = (content: string): TranslationReturn => ({
     handleRevert: vi.fn(),
 });
 
+// The selection test spies on `window.getSelection`, which `user-event` also
+// reads while typing. Leaving it stubbed would strand any later spec that
+// types into a field.
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 beforeEach(() => {
     mockNavigate.mockClear();
     vi.mocked(useCommentActions).mockReturnValue(makeActions());
@@ -89,6 +96,20 @@ describe("CommentCard", () => {
         render(<CommentCard comment={mockComment} />);
         fireEvent.click(screen.getByRole("article"));
         expect(mockNavigate).toHaveBeenCalledWith("/comments/c1");
+    });
+
+    // Releasing a drag-select fires a click on the article, so quoting a
+    // comment threw the reader onto another page and lost the selection.
+    it("does not navigate when the click ends a text selection", () => {
+        render(<CommentCard comment={mockComment} />);
+
+        vi.spyOn(window, "getSelection").mockReturnValue({
+            toString: () => "Nice",
+        } as unknown as Selection);
+
+        fireEvent.click(screen.getByRole("article"));
+
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it("opens the delete confirmation modal when the delete button is clicked", () => {

@@ -5,6 +5,7 @@ import { usePostActions } from "../hooks/usePostActions";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
+import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 const BADGE_STYLES: Record<PostType, string> = {
@@ -68,6 +69,7 @@ export function PostCard({
     );
 
     const handleCardClick = () => {
+        if (hasTextSelection()) return;
         navigate(`/post/${id}`);
     };
 
@@ -212,9 +214,18 @@ export function PostCard({
                                         className={`relative w-full overflow-hidden ${mediaUrls.length === 1 ? "aspect-video" : "aspect-square"}`}
                                     >
                                         {isVideo(url) ? (
+                                            // Play, seek, volume and
+                                            // fullscreen are all clicks
+                                            // inside the card. Without this
+                                            // the first one navigates away
+                                            // and the video cannot be
+                                            // operated in the feed at all.
                                             <video
                                                 src={url}
                                                 controls
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (

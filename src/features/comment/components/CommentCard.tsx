@@ -5,6 +5,7 @@ import { useCommentActions } from "../hooks/useCommentActions";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
+import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface CommentCardProps {
@@ -54,6 +55,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
     const handleCardClick = () => {
+        if (hasTextSelection()) return;
         navigate(`/comments/${id}`);
     };
 
