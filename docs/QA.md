@@ -20,7 +20,7 @@
 pnpm test              # unit + integration (single run)
 pnpm test:watch        # watch mode
 pnpm test:coverage     # with coverage report
-pnpm test:e2e          # Playwright E2E against the dev server
+pnpm test:e2e          # Playwright: app against Vite + worker against wrangler dev
 pnpm test:e2e:ui       # Playwright interactive UI
 ```
 
@@ -114,6 +114,8 @@ e2e/
   auth.spec.ts
   feed.spec.ts
   profile.spec.ts
+  worker/
+    worker.spec.ts
 ```
 
 ---
@@ -308,7 +310,7 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 ### Layer 3a — Cloudflare Worker (`worker/index.ts`)
 
-10 tests in `worker/index.test.ts`. This is the only coverage the Worker has: the Playwright suite runs against `pnpm dev` and never reaches it, yet in production it is what serves every HTML request and everything a crawler sees.
+10 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
 
 `vitest.config.ts` includes `worker/**` for exactly this reason. The Worker's `fetch` is called directly with a request and a stub `env`; there is no Miniflare in the loop.
 
@@ -882,7 +884,20 @@ MSW fails the first `PATCH /users/me/username` and accepts every one after it, s
 
 Runs against the dev server (`pnpm dev`, auto-started by `playwright.config.ts`). All API calls are intercepted via `page.route("**/api/v1/**", ...)` — no real backend required. Auth state is injected into `localStorage` with `page.addInitScript()` before each navigation.
 
-> ⚠️ **These specs never touch the Cloudflare Worker.** `webServer.command` is `pnpm dev`, so every request is served by Vite. In production `worker/index.ts` sits in front of everything — it decides what is an asset, injects the OG tags crawlers read, and generates `/sitemap.xml`. None of that is exercised here, and the gap let a routing bug reach production in which every profile whose username contained a dot was served a 404. The Worker is covered by `worker/index.test.ts` instead (Layer 3a below); running Playwright against `wrangler dev` would cover it end to end but costs a production build per CI run, so it has not been done.
+Two Playwright projects run from one config:
+
+| Project    | Server                       | Specs                            |
+| ---------- | ---------------------------- | -------------------------------- |
+| `chromium` | `pnpm dev` (Vite)            | everything outside `e2e/worker/` |
+| `worker`   | `pnpm build && wrangler dev` | `e2e/worker/*.spec.ts`           |
+
+The **`chromium` project never touches the Cloudflare Worker** — Vite serves it directly. In production `worker/index.ts` sits in front of everything: it decides what is a static asset, injects the tags crawlers read, and generates `/sitemap.xml`. That gap let a routing bug reach production in which every profile whose username contained a dot lost its meta tags, so the `worker` project exists to run the real stack.
+
+**What the `worker` project can prove that `worker/index.test.ts` cannot** is the asset layer and the Worker wired together. Cloudflare serves matching assets _before_ invoking the Worker, and `wrangler.jsonc` sets `not_found_handling: "single-page-application"`, so a miss returns `index.html` with a **200**. Status codes therefore cannot distinguish "the Worker handled this" from "the asset layer fell back to the shell" — both are 200 HTML. The specs assert on `name="twitter:site"`, which `buildMetaTags` emits and the built shell does not contain; one test asserts that absence in `dist/index.html` so the marker cannot silently stop being a marker.
+
+> ⚠️ **`reuseExistingServer` will lie to you when comparing two versions of the Worker.** It is `!process.env.CI`, so locally Playwright reuses a Wrangler already on the port — serving a build from before your edit. A run that "passes on the broken version" almost certainly reused the fixed one. Kill the Wrangler process between comparison runs.
+
+> `wrangler dev` needs `pnpm build` first: `@cloudflare/vite-plugin` writes `.wrangler/deploy/config.json` during the build, which is where `assets.directory` comes from. Without it Wrangler refuses to start. `.wrangler/` is gitignored, so a clean checkout must build before it can preview.
 
 ```ts
 // e2e/fixtures.ts
