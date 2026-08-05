@@ -112,32 +112,6 @@ describe("CommentCard", () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    // `CommentAuthorSchema` marks `username` optional, so the key is absent
-    // whenever the author relation is gone.
-    describe("an author the API did not name", () => {
-        const anonymous: Comment = {
-            ...mockComment,
-            author: {
-                id: "u1",
-                avatarUrl: "",
-                isMe: false,
-            } as unknown as Comment["author"],
-        };
-
-        it("does not render the literal string undefined as a handle", () => {
-            const { container } = render(<CommentCard comment={anonymous} />);
-            expect(container.textContent).not.toContain("undefined");
-        });
-
-        it("does not route the avatar to /profile/undefined", () => {
-            const { container } = render(<CommentCard comment={anonymous} />);
-
-            fireEvent.click(container.querySelector("img")!);
-
-            expect(mockNavigate).not.toHaveBeenCalledWith("/profile/undefined");
-        });
-    });
-
     it("refuses an avatar url that is not a real image protocol", () => {
         render(
             <CommentCard

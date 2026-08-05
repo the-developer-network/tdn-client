@@ -9,7 +9,6 @@ import { CommentBox } from "../features/comment/components/CommentBox";
 import { useComments } from "../features/comment/hooks/useComments";
 import { CommentList } from "../features/comment/components/CommentList";
 import { SEO } from "../shared/components/ui/SEO";
-import { authorDisplayName } from "../shared/utils/author-display";
 import { useI18n } from "../shared/hooks/useI18n";
 
 export default function PostDetailPage() {
@@ -57,7 +56,7 @@ export default function PostDetailPage() {
             <SEO
                 title={
                     post
-                        ? `${authorDisplayName(post.author)}: ${post.content.slice(0, 60)}${post.content.length > 60 ? "..." : ""}`
+                        ? `${post.author.username}: ${post.content.slice(0, 60)}${post.content.length > 60 ? "..." : ""}`
                         : "Post"
                 }
                 description={post?.content.slice(0, 155)}

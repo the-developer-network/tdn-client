@@ -7,10 +7,6 @@ import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
-import {
-    authorDisplayName,
-    authorProfilePath,
-} from "../../../shared/utils/author-display";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 const BADGE_STYLES: Record<PostType, string> = {
@@ -43,20 +39,16 @@ export function PostCard({
     const navigate = useNavigate();
     const { t, locale } = useI18n();
 
-    const displayName = authorDisplayName(author);
-    const profilePath = authorProfilePath(author);
     // The avatar is another user's, so it goes through the same sanitiser the
     // composers use for the reader's own.
     const avatarSrc =
         getSafeImageSrc(author.avatarUrl) ??
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(author.username)}`;
 
-    const goToProfile = profilePath
-        ? (e: React.MouseEvent) => {
-              e.stopPropagation();
-              navigate(profilePath);
-          }
-        : undefined;
+    const goToProfile = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/profile/${author.username}`);
+    };
 
     const {
         displayContent,
@@ -84,7 +76,7 @@ export function PostCard({
         likeCount,
         isBookmarked,
         id,
-        `${displayName} post`,
+        `${author.username} post`,
         () => onDeleted?.(id),
     );
 
@@ -120,27 +112,24 @@ export function PostCard({
                 <div className="flex gap-4">
                     <img
                         src={avatarSrc}
-                        className={`h-10 w-10 rounded-full border border-white/5 object-cover shrink-0 ${goToProfile ? "cursor-pointer" : ""}`}
-                        alt={displayName}
+                        className="h-10 w-10 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
+                        alt={author.username}
                         onClick={goToProfile}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <div
-                                className={`flex items-center gap-1.5 ${goToProfile ? "cursor-pointer" : ""}`}
+                                className="flex items-center gap-1.5 cursor-pointer"
                                 onClick={goToProfile}
                             >
-                                <span className="font-semibold text-white text-sm hover:underline">
-                                    {displayName}
-                                </span>
-                                {/* Only when the API named them — a bare "@"
-                                    is what the unguarded version rendered,
-                                    since React drops an undefined child. */}
-                                {author.username && (
-                                    <span className="text-white/40 text-sm hover:underline">
-                                        @{author.username}
+                                {author.fullName && (
+                                    <span className="font-semibold text-white text-sm hover:underline">
+                                        {author.fullName}
                                     </span>
                                 )}
+                                <span className="text-white/40 text-sm hover:underline">
+                                    @{author.username}
+                                </span>
                             </div>
                             <span className="text-white/20">·</span>
                             <span className="text-white/40 text-sm">
