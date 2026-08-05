@@ -656,7 +656,7 @@ it("renders empty state", () => {
 
 #### `PostCard` / `CommentCard`
 
-9 and 6 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
+8 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
 
 | Scenario                         | Assert                        |
 | -------------------------------- | ----------------------------- |
@@ -667,9 +667,10 @@ it("renders empty state", () => {
 | Click with an empty selection    | Still navigates               |
 | Delete button (own post/comment) | Confirmation modal opens      |
 | `handleDelete` resolves true     | Modal closes                  |
-| `javascript:` avatar url         | Not used as `src`             |
 
-> `author.username` reads as optional in `PostAuthorSchema` / `CommentAuthorSchema`, but the database rules it out: `User.username` is `NOT NULL`, the `author` relation on both `Post` and `Comment` is required with `onDelete: Cascade`, and every repository query selects it. Do not add client-side guards for a missing handle — the slack is in the TypeBox schema, not in the data.
+> **The author fields here need no client-side guards, and adding them is a mistake worth naming.** `username` reads as optional in `PostAuthorSchema` / `CommentAuthorSchema`, but `User.username` is `NOT NULL`, the `author` relation on `Post` and `Comment` is required with `onDelete: Cascade`, and every repository query selects it. `avatarUrl` is `NOT NULL` with a database default, is absent from `UpdateProfileBodySchema` (which sets `additionalProperties: false`, so no client can write it), and `toFeedResponse` substitutes a CDN default and CDN-prefixes anything not starting with `http`. So neither a `?? fallback` nor a `getSafeImageSrc` call can ever do anything on these two cards. The slack is in the TypeBox schemas, not the data — tracked in tdn-api#182. Fixtures use a realistic CDN url rather than `""` so they match what the API actually sends.
+>
+> The `|| ui-avatars` fallbacks that remain in `PostBox`, `CommentBox`, `EditProfileModal`, `ProfilePage` and `ProfileSearchDropdown` are **live**: those render the current user from the auth store, whose `LoginResponse.user` carries only `{ id, username, isEmailVerified }`, so `avatarUrl` really is undefined until the profile sync lands.
 
 > ⚠️ **`vi.spyOn(window, "getSelection")` must be restored.** `@testing-library/user-event` reads the selection while typing, and a stub left in place strands every later spec that types into a field — five unrelated auth and settings specs failed on a 5 s `user-event` timeout, all of them passing in isolation. Both card specs call `vi.restoreAllMocks()` in `afterEach`. If a batch of typing tests starts timing out for no reason, look for an unrestored global spy rather than at the specs that failed.
 

@@ -80,7 +80,7 @@ const mockPost: Post = {
         id: "u1",
         username: "alice",
         fullName: "Alice Smith",
-        avatarUrl: "",
+        avatarUrl: "https://cdn.example.com/avatars/alice.png",
         isMe: false,
     },
     tags: [],
@@ -152,23 +152,6 @@ describe("PostCard", () => {
 
             expect(mockNavigate).toHaveBeenCalledWith("/post/post-1");
         });
-    });
-
-    // The composers run avatars through `getSafeImageSrc`; the cards, which
-    // render other people's avatars, did not.
-    it("refuses an avatar url that is not a real image protocol", () => {
-        render(
-            <PostCard
-                {...mockPost}
-                author={{
-                    ...mockPost.author,
-                    avatarUrl: "javascript:alert(1)",
-                }}
-            />,
-        );
-
-        const avatar = screen.getByAltText("alice") as HTMLImageElement;
-        expect(avatar.getAttribute("src")).not.toContain("javascript:");
     });
 
     it("opens the delete confirmation modal when the delete button is clicked", () => {

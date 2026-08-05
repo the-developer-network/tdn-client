@@ -6,7 +6,6 @@ import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
-import { getSafeImageSrc } from "../../../shared/utils/image-src";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface CommentCardProps {
@@ -55,12 +54,6 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
-    // Another user's avatar, so it goes through the same sanitiser the
-    // composers use for the reader's own.
-    const avatarSrc =
-        getSafeImageSrc(author.avatarUrl) ??
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(author.username)}`;
-
     const goToProfile = (e: React.MouseEvent) => {
         e.stopPropagation();
         navigate(`/profile/${author.username}`);
@@ -96,8 +89,11 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                 onClick={handleCardClick}
             >
                 <div className="flex gap-3">
+                    {/* `avatarUrl` is NOT NULL in the database and the mapper
+                        substitutes a CDN default, so there is nothing to fall
+                        back to and nothing to sanitise. */}
                     <img
-                        src={avatarSrc}
+                        src={author.avatarUrl}
                         className="h-9 w-9 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
                         alt={author.username}
                         onClick={goToProfile}

@@ -78,7 +78,7 @@ const mockComment: Comment = {
     author: {
         id: "u1",
         username: "alice",
-        avatarUrl: "",
+        avatarUrl: "https://cdn.example.com/avatars/alice.png",
         isMe: false,
     },
     parentId: null,
@@ -110,23 +110,6 @@ describe("CommentCard", () => {
         fireEvent.click(screen.getByRole("article"));
 
         expect(mockNavigate).not.toHaveBeenCalled();
-    });
-
-    it("refuses an avatar url that is not a real image protocol", () => {
-        render(
-            <CommentCard
-                comment={{
-                    ...mockComment,
-                    author: {
-                        ...mockComment.author,
-                        avatarUrl: "javascript:alert(1)",
-                    },
-                }}
-            />,
-        );
-
-        const avatar = screen.getByAltText("alice") as HTMLImageElement;
-        expect(avatar.getAttribute("src")).not.toContain("javascript:");
     });
 
     it("opens the delete confirmation modal when the delete button is clicked", () => {

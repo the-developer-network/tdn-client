@@ -6,7 +6,6 @@ import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
-import { getSafeImageSrc } from "../../../shared/utils/image-src";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 const BADGE_STYLES: Record<PostType, string> = {
@@ -38,12 +37,6 @@ export function PostCard({
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
     const navigate = useNavigate();
     const { t, locale } = useI18n();
-
-    // The avatar is another user's, so it goes through the same sanitiser the
-    // composers use for the reader's own.
-    const avatarSrc =
-        getSafeImageSrc(author.avatarUrl) ??
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(author.username)}`;
 
     const goToProfile = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -110,8 +103,11 @@ export function PostCard({
                 onClick={handleCardClick}
             >
                 <div className="flex gap-4">
+                    {/* `avatarUrl` is NOT NULL in the database and the mapper
+                        substitutes a CDN default, so there is nothing to fall
+                        back to and nothing to sanitise. */}
                     <img
-                        src={avatarSrc}
+                        src={author.avatarUrl}
                         className="h-10 w-10 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
                         alt={author.username}
                         onClick={goToProfile}
