@@ -91,7 +91,6 @@ const en = {
     "bookmarks.emptyTitle": "Save posts for later",
     "bookmarks.emptyBody":
         "Don't let the good ones get away! Bookmark posts to easily find them again in the future.",
-    "bookmarks.error": "Bookmarks could not be loaded.",
 
     "follows.title": "Who to Follow",
     "follows.subtitle": "Developers you might want to follow",
@@ -557,7 +556,6 @@ const tr: Record<TranslationKey, string> = {
     "bookmarks.emptyTitle": "Gönderileri sonra için kaydet",
     "bookmarks.emptyBody":
         "Kaçırma! Gönderileri daha sonra kolayca bulmak için kaydet.",
-    "bookmarks.error": "Kaydedilenler yüklenemedi.",
 
     "follows.title": "Kimler Takip Edilmeli",
     "follows.subtitle": "Takip etmek isteyebileceğin geliştiriciler",

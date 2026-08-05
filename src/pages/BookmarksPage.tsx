@@ -11,8 +11,17 @@ import { useI18n } from "../shared/hooks/useI18n";
 
 export default function BookmarksPage() {
     const { t } = useI18n();
-    const { posts, isLoading, error, comments, removePost, retry } =
-        useBookmarks();
+    const {
+        posts,
+        isLoading,
+        isLoadingMore,
+        hasMore,
+        error,
+        comments,
+        removePost,
+        retry,
+        loadMore,
+    } = useBookmarks();
     const navigate = useNavigate();
 
     const { user, isAuthenticated } = useAuthStore();
@@ -82,11 +91,11 @@ export default function BookmarksPage() {
                             <PostList
                                 posts={posts}
                                 isLoading={false}
-                                isLoadingMore={false}
-                                hasMore={false}
+                                isLoadingMore={isLoadingMore}
+                                hasMore={hasMore}
                                 error={error}
                                 onPostDeleted={removePost}
-                                onLoadMore={() => {}}
+                                onLoadMore={loadMore}
                                 onRetry={retry}
                             />
                             {comments.length > 0 && (
