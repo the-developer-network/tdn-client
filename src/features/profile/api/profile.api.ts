@@ -9,6 +9,28 @@ import type {
 } from "./profile.types";
 import type { Post } from "../../feed/api/feed.types";
 
+export interface FollowListParams {
+    limit?: number;
+    offset?: number;
+}
+
+/**
+ * Both follower endpoints take `PaginationQuerySchema`: `limit` (default 20,
+ * max 50) and `offset` (default 0). Omitting them does not mean "everything"
+ * — it means the server's first 20, which is how these lists came to stop at
+ * twenty with nothing on screen saying so. `limit` is clamped here because
+ * the schema answers an over-large value with a 400, and a list that renders
+ * an error instead of people is worse than a shorter page.
+ */
+export const FOLLOW_LIST_MAX_LIMIT = 50;
+
+function followListQuery({ limit = 20, offset = 0 }: FollowListParams): string {
+    const query = new URLSearchParams();
+    query.set("limit", String(Math.min(limit, FOLLOW_LIST_MAX_LIMIT)));
+    query.set("offset", String(offset));
+    return query.toString();
+}
+
 export const profileApi = {
     getProfile: (username: string): Promise<Profile> =>
         api.get<Profile>(`/profiles/${username}`, { isPublic: true }),
@@ -25,15 +47,23 @@ export const profileApi = {
         });
     },
 
-    getFollowers: (username: string): Promise<FollowUser[]> =>
-        api.get<FollowUser[]>(`/profiles/${username}/followers`, {
-            isPublic: true,
-        }),
+    getFollowers: (
+        username: string,
+        params: FollowListParams = {},
+    ): Promise<FollowUser[]> =>
+        api.get<FollowUser[]>(
+            `/profiles/${username}/followers?${followListQuery(params)}`,
+            { isPublic: true },
+        ),
 
-    getFollowing: (username: string): Promise<FollowUser[]> =>
-        api.get<FollowUser[]>(`/profiles/${username}/following`, {
-            isPublic: true,
-        }),
+    getFollowing: (
+        username: string,
+        params: FollowListParams = {},
+    ): Promise<FollowUser[]> =>
+        api.get<FollowUser[]>(
+            `/profiles/${username}/following?${followListQuery(params)}`,
+            { isPublic: true },
+        ),
 
     updateProfile: (body: UpdateProfileBody): Promise<Profile> =>
         api.patch<Profile>("/profiles/me", body),

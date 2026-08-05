@@ -18,7 +18,8 @@ export function FollowListModal({
 }: FollowListModalProps) {
     const navigate = useNavigate();
     const { t } = useI18n();
-    const { users, isLoading, error } = useFollowList(username, type, isOpen);
+    const { users, isLoading, isLoadingMore, error, hasMore, loadMore } =
+        useFollowList(username, type, isOpen);
 
     function handleUserClick(targetUsername: string) {
         onClose();
@@ -90,6 +91,24 @@ export function FollowListModal({
                                 )}
                             </button>
                         ))}
+
+                    {hasMore && !isLoadingMore && (
+                        <div className="flex justify-center py-4">
+                            <button
+                                type="button"
+                                onClick={loadMore}
+                                className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
+                            >
+                                {t("common.loadMore")}
+                            </button>
+                        </div>
+                    )}
+
+                    {isLoadingMore && (
+                        <div className="flex justify-center py-4">
+                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        </div>
+                    )}
                 </div>
             </div>
         </Modal>

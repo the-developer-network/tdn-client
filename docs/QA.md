@@ -82,8 +82,11 @@ src/
       components/
         NotificationCard.test.tsx
     profile/
+      api/
+        profile.api.test.ts
       hooks/
         useFollowAction.test.ts
+        useFollowList.test.ts
     settings/
       hooks/
         useDeleteAccount.test.ts
@@ -281,6 +284,23 @@ Requests are counted through `server.events.on("request:start", …)` rather tha
 
 > The header test records _every_ attempt, not the last. The old replay stripped the header itself, so asserting a single captured value reports the stripped retry and misses the request that carried the token — the assertion passed against the bug it was meant to catch.
 
+#### `profileApi` (`src/features/profile/api/profile.api.test.ts`)
+
+7 tests. Query-string construction, which is where an API module can be wrong without anything throwing: the request succeeds, it just asks the wrong question.
+
+The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, default 20, max 50); `/users/:username/posts` takes `page`/`limit`. Sending nothing is not "everything" — it is the server's first page. Assertions read `new URL(request.url).searchParams` inside the handler rather than matching a string, so parameter order never makes a test brittle.
+
+| Scenario                             | Assert                                       |
+| ------------------------------------ | -------------------------------------------- |
+| `getFollowers` / `getFollowing`      | `limit=20&offset=0` present                  |
+| Explicit `{ limit: 50, offset: 20 }` | Carried through unchanged                    |
+| `{ limit: 500 }`                     | Clamped to 50 — above that the schema 400s   |
+| `getUserPosts({ page: 3 })`          | `page=3`, not an offset                      |
+| `searchProfiles("a b&c")`            | `q` round-trips intact                       |
+| `{ data, meta }` envelope            | Array returned; `meta` dropped by the client |
+
+> Any spec that mocks a follower list must slice on `limit`/`offset`. A handler returning a fixed array answers a paginated and an unpaginated request identically, which is exactly the bug these tests were written for.
+
 ---
 
 ### Layer 4 — Custom Hooks
@@ -423,6 +443,21 @@ expect(result.current.isLoading).toBe(false);
 | `rerender({ initialIsFollowing: true })` | `isFollowing` syncs with new prop                                           |
 
 > **Note:** In-render state sync pattern (`useState` + guard comparing previous prop) means `rerender()` from RTL triggers the sync immediately — no `waitFor` needed.
+
+#### `useFollowList` (`src/features/profile/hooks/useFollowList.test.ts`)
+
+4 tests. Backs `FollowListModal`, and pages by **offset** rather than a page counter — the endpoint allows a short page, which would desynchronise a counter.
+
+The handler must slice against the `limit`/`offset` it is given rather than returning a fixed array. A handler that ignores them answers a paginated request and an unpaginated one identically, so the truncation these tests exist to catch stays invisible.
+
+`meta.count` is not available to the hook: `apiClient` unwraps `.data` before returning, so `hasMore` is derived from a full page instead.
+
+| Scenario                        | Assert                                          |
+| ------------------------------- | ----------------------------------------------- |
+| 34 followers, then `loadMore()` | 20 then 34; `hasMore` true then false           |
+| 5 followers                     | All 5; `hasMore` false without a second request |
+| Type switched to `following`    | List replaced, not appended                     |
+| 404                             | `detail` surfaced; `isLoading` false            |
 
 #### `useNetworkStatus` (`src/shared/hooks/useNetworkStatus.test.ts`)
 
