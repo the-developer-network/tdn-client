@@ -6,6 +6,11 @@ import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
+import { getSafeImageSrc } from "../../../shared/utils/image-src";
+import {
+    authorDisplayName,
+    authorProfilePath,
+} from "../../../shared/utils/author-display";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 interface CommentCardProps {
@@ -54,6 +59,21 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
+    const displayName = authorDisplayName(author);
+    const profilePath = authorProfilePath(author);
+    // Another user's avatar, so it goes through the same sanitiser the
+    // composers use for the reader's own.
+    const avatarSrc =
+        getSafeImageSrc(author.avatarUrl) ??
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+
+    const goToProfile = profilePath
+        ? (e: React.MouseEvent) => {
+              e.stopPropagation();
+              navigate(profilePath);
+          }
+        : undefined;
+
     const handleCardClick = () => {
         if (hasTextSelection()) return;
         navigate(`/comments/${id}`);
@@ -85,34 +105,28 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
             >
                 <div className="flex gap-3">
                     <img
-                        src={
-                            author.avatarUrl ||
-                            `https://ui-avatars.com/api/?name=${author.username}`
-                        }
-                        className="h-9 w-9 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
-                        alt={author.username}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/profile/${author.username}`);
-                        }}
+                        src={avatarSrc}
+                        className={`h-9 w-9 rounded-full border border-white/5 object-cover shrink-0 ${goToProfile ? "cursor-pointer" : ""}`}
+                        alt={displayName}
+                        onClick={goToProfile}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                             <span
-                                className="flex items-center gap-1.5 cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/profile/${author.username}`);
-                                }}
+                                className={`flex items-center gap-1.5 ${goToProfile ? "cursor-pointer" : ""}`}
+                                onClick={goToProfile}
                             >
-                                {author.fullName && (
-                                    <span className="font-semibold text-white text-sm hover:underline">
-                                        {author.fullName}
+                                <span className="font-semibold text-white text-sm hover:underline">
+                                    {displayName}
+                                </span>
+                                {/* Only when the API named them — a bare "@"
+                                    is what the unguarded version rendered,
+                                    since React drops an undefined child. */}
+                                {author.username && (
+                                    <span className="text-white/40 text-sm hover:underline">
+                                        @{author.username}
                                     </span>
                                 )}
-                                <span className="text-white/40 text-sm hover:underline">
-                                    @{author.username}
-                                </span>
                             </span>
                             <span className="text-white/20">·</span>
                             <span className="text-white/40 text-xs">

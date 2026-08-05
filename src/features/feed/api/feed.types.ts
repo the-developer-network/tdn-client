@@ -1,16 +1,13 @@
 import type { Comment } from "../../comment/api/comment.types";
 
 export type PostType =
-    | "COMMUNITY"
-    | "TECH_NEWS"
-    | "SYSTEM_UPDATE"
-    | "JOB_POSTING";
+    "COMMUNITY" | "TECH_NEWS" | "SYSTEM_UPDATE" | "JOB_POSTING";
 
 export type PostCategory = "AI" | "GAME" | "MOBILE" | "BACKEND" | "FRONTEND";
 
 export interface PostAuthor {
     id: string;
-    username: string;
+    username?: string;
     fullName?: string;
     avatarUrl: string;
     isMe?: boolean;

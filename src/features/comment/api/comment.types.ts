@@ -1,6 +1,6 @@
 export interface CommentAuthor {
     id: string;
-    username: string;
+    username?: string;
     fullName?: string;
     avatarUrl: string;
     isMe?: boolean;

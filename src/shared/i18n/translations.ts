@@ -271,6 +271,7 @@ const en = {
     "page.loadingComment": "Loading...",
     "page.loadingReplies": "Loading replies...",
 
+    "common.unknownUser": "Unknown user",
     "common.cancel": "Cancel",
     "common.delete": "Delete",
     "common.deleting": "Deleting...",
@@ -737,6 +738,7 @@ const tr: Record<TranslationKey, string> = {
     "page.loadingComment": "Yükleniyor...",
     "page.loadingReplies": "Yanıtlar yükleniyor...",
 
+    "common.unknownUser": "Bilinmeyen kullanıcı",
     "common.cancel": "İptal",
     "common.delete": "Sil",
     "common.deleting": "Siliniyor...",

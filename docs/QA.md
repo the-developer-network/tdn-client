@@ -656,17 +656,24 @@ it("renders empty state", () => {
 
 #### `PostCard` / `CommentCard`
 
-8 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so most of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own click routing is all that is under test.
+13 and 9 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
 
-| Scenario                         | Assert                        |
-| -------------------------------- | ----------------------------- |
-| Card clicked                     | Navigates to the detail route |
-| Avatar clicked                   | Navigates to the profile      |
-| Video clicked (`PostCard`)       | Does not navigate             |
-| Click ending a text selection    | Does not navigate             |
-| Click with an empty selection    | Still navigates               |
-| Delete button (own post/comment) | Confirmation modal opens      |
-| `handleDelete` resolves true     | Modal closes                  |
+`author.username` is **optional** in both API schemas, so half of these tests render an author without one. Build that fixture with a cast rather than by setting `username: undefined` — Fastify omits the key entirely, and a present-but-undefined key behaves differently under `??`. The avatar's `alt` is the display name, not the handle.
+
+| Scenario                         | Assert                                                |
+| -------------------------------- | ----------------------------------------------------- |
+| Card clicked                     | Navigates to the detail route                         |
+| Avatar clicked                   | Navigates to the profile                              |
+| Video clicked (`PostCard`)       | Does not navigate                                     |
+| Click ending a text selection    | Does not navigate                                     |
+| Click with an empty selection    | Still navigates                                       |
+| Delete button (own post/comment) | Confirmation modal opens                              |
+| `handleDelete` resolves true     | Modal closes                                          |
+| Author with no `username`        | Nothing renders "undefined"                           |
+| Author with no `username`        | Avatar does not route to `/profile/undefined`         |
+| Author with no `username`        | Avatar service not asked for "undefined" (`PostCard`) |
+| Only `fullName` survived         | The full name is still shown (`PostCard`)             |
+| `javascript:` avatar url         | Not used as `src`                                     |
 
 > ⚠️ **`vi.spyOn(window, "getSelection")` must be restored.** `@testing-library/user-event` reads the selection while typing, and a stub left in place strands every later spec that types into a field — five unrelated auth and settings specs failed on a 5 s `user-event` timeout, all of them passing in isolation. Both card specs call `vi.restoreAllMocks()` in `afterEach`. If a batch of typing tests starts timing out for no reason, look for an unrestored global spy rather than at the specs that failed.
 

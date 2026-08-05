@@ -99,9 +99,12 @@ describe("PostCard", () => {
         expect(mockNavigate).toHaveBeenCalledWith("/post/post-1");
     });
 
+    // CHANGED EXPECTATION: the avatar's alt text is the author's display name
+    // now, not their raw handle — it can no longer read "undefined", and a
+    // name describes the person better than a handle does.
     it("navigates to /profile/:username when the avatar image is clicked", () => {
         render(<PostCard {...mockPost} />);
-        fireEvent.click(screen.getByAltText("alice"));
+        fireEvent.click(screen.getByAltText("Alice Smith"));
         expect(mockNavigate).toHaveBeenCalledWith("/profile/alice");
     });
 
@@ -152,6 +155,69 @@ describe("PostCard", () => {
 
             expect(mockNavigate).toHaveBeenCalledWith("/post/post-1");
         });
+    });
+
+    // `PostAuthorSchema` marks `username` optional, and the mapper emits
+    // `undefined` when the author relation is gone, so Fastify drops the key
+    // entirely. The client typed it `string` and interpolated it unguarded.
+    describe("an author the API did not name", () => {
+        const anonymous: Post = {
+            ...mockPost,
+            author: {
+                id: "u1",
+                fullName: null,
+                avatarUrl: "",
+                isMe: false,
+            } as unknown as Post["author"],
+        };
+
+        it("does not render the literal string undefined as a handle", () => {
+            const { container } = render(<PostCard {...anonymous} />);
+            expect(container.textContent).not.toContain("undefined");
+        });
+
+        it("does not route the avatar to /profile/undefined", () => {
+            const { container } = render(<PostCard {...anonymous} />);
+
+            fireEvent.click(container.querySelector("img")!);
+
+            expect(mockNavigate).not.toHaveBeenCalledWith("/profile/undefined");
+        });
+
+        it("does not ask the avatar service for a user called undefined", () => {
+            const { container } = render(<PostCard {...anonymous} />);
+            const avatar = container.querySelector("img")!;
+
+            expect(avatar.getAttribute("src") ?? "").not.toContain("undefined");
+            expect(avatar.getAttribute("alt") ?? "").not.toContain("undefined");
+        });
+
+        it("still names the author when only the full name survived", () => {
+            render(
+                <PostCard
+                    {...anonymous}
+                    author={{ ...anonymous.author, fullName: "Alice Smith" }}
+                />,
+            );
+            expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+        });
+    });
+
+    // The composers run avatars through `getSafeImageSrc`; the cards, which
+    // render other people's avatars, did not.
+    it("refuses an avatar url that is not a real image protocol", () => {
+        render(
+            <PostCard
+                {...mockPost}
+                author={{
+                    ...mockPost.author,
+                    avatarUrl: "javascript:alert(1)",
+                }}
+            />,
+        );
+
+        const avatar = screen.getByAltText("Alice Smith") as HTMLImageElement;
+        expect(avatar.getAttribute("src")).not.toContain("javascript:");
     });
 
     it("opens the delete confirmation modal when the delete button is clicked", () => {
