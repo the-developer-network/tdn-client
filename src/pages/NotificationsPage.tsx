@@ -9,6 +9,7 @@ import { useNotificationStore } from "../features/notifications/store/notificati
 import { notificationApi } from "../features/notifications/api/notification.api";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
+import { useToastStore } from "../shared/store/toast.store";
 import { getErrorMessage } from "../shared/utils/error-handler";
 import { useI18n } from "../shared/hooks/useI18n";
 
@@ -24,6 +25,7 @@ export default function NotificationsPage() {
     } = useNotificationStore();
     const { fetch, isLoading, isLoadingMore, error, hasMore, loadMore } =
         useNotifications();
+    const addToast = useToastStore((state) => state.addToast);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -41,7 +43,9 @@ export default function NotificationsPage() {
             await notificationApi.markAllRead();
             markAllReadInStore();
         } catch (err) {
-            console.error(getErrorMessage(err));
+            // The message was already being built here and then thrown away
+            // in the console, leaving a button that looked broken.
+            addToast({ type: "error", message: getErrorMessage(err) });
         }
     }
 
@@ -91,8 +95,11 @@ export default function NotificationsPage() {
                 </div>
             )}
 
-            {/* Error state */}
-            {error && !isLoading && (
+            {/* Error state — only when there is nothing to show. With a list
+                already on screen the failure belongs under it, not instead
+                of it: a second page that never arrived must not take the
+                first one with it. */}
+            {error && !isLoading && notifications.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                     <p className="text-white/60 text-[15px] mb-4">{error}</p>
                     <button
@@ -132,7 +139,7 @@ export default function NotificationsPage() {
             )}
 
             {/* Notifications list */}
-            {!error && notifications.length > 0 && (
+            {notifications.length > 0 && (
                 <div>
                     {notifications.map((notification, i) => (
                         <NotificationCard
@@ -141,8 +148,20 @@ export default function NotificationsPage() {
                         />
                     ))}
 
+                    {error && (
+                        <div className="flex flex-col items-center gap-3 py-6 text-center">
+                            <p className="text-sm text-red-400/60">{error}</p>
+                            <button
+                                onClick={loadMore}
+                                className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/60 hover:border-white/40 hover:text-white transition-colors"
+                            >
+                                {t("notif.tryAgain")}
+                            </button>
+                        </div>
+                    )}
+
                     {/* Load more */}
-                    {hasMore && (
+                    {!error && hasMore && (
                         <div className="flex justify-center py-6">
                             <button
                                 onClick={loadMore}

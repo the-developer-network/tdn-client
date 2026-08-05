@@ -405,7 +405,9 @@ expect(result.current.posts).toHaveLength(1);
 
 #### `useNotifications` (`src/features/notifications/hooks/useNotifications.test.ts`)
 
-5 tests. `fetch()` is called explicitly. Notifications live in `useNotificationStore`, not in the hook's return value — assert against `useNotificationStore.getState().notifications`.
+7 tests. `fetch()` is called explicitly. Notifications live in `useNotificationStore`, not in the hook's return value — assert against `useNotificationStore.getState().notifications`.
+
+The page counter advances **only after** a page is in hand. To test that, the handler has to record which pages were asked for and fail one of them selectively — asserting on the store alone cannot tell a skipped page from a failed one.
 
 **Requires `vi.hoisted` localStorage stub.**
 
@@ -441,6 +443,8 @@ expect(useNotificationStore.getState().notifications).toHaveLength(21);
 | Server returns < 20 items         | `hasMore=false`                                           |
 | `loadMore()` when `hasMore=false` | Store unchanged; `isLoadingMore=false`                    |
 | `loadMore()` when `hasMore=true`  | Page 2 fetched and appended; `hasMore` updated            |
+| `loadMore()` fails, then retried  | Pages requested are `[1, 2, 2]` — page 2 is not skipped   |
+| `loadMore()` fails                | Loaded notifications kept; `hasMore` still true           |
 
 #### `useFollowAction` (`src/features/profile/hooks/useFollowAction.test.ts`)
 
@@ -799,6 +803,23 @@ it("redirects unauthenticated users to /", () => {
 | Category tab click                   | API called with correct `type` param    |
 | "Following" toggle — unauthenticated | Auth modal opened                       |
 | "Following" toggle — authenticated   | `followedOnly=true` appended to request |
+
+**`NotificationsPage`** (`src/pages/NotificationsPage.test.tsx`)
+
+6 tests. Every collaborator is `vi.mock`ed, so `useNotifications` and the store are handed fixed return values rather than driven through MSW — which is what makes the error-with-a-list case expressible at all.
+
+Needs the `vi.hoisted` localStorage stub: `getErrorMessage` resolves its strings through the persisted language store.
+
+| Scenario                     | Assert                                                |
+| ---------------------------- | ----------------------------------------------------- |
+| Unauthenticated              | Renders nothing; redirects to `/`                     |
+| Fetching with an empty list  | Skeletons rendered                                    |
+| Error with an empty list     | Message and Try Again rendered                        |
+| `unreadCount > 0`            | "N unread" shown                                      |
+| Error **with** a loaded list | Cards still on screen; error shown beneath them       |
+| `markAllRead` rejects        | Toast queued with the API's `detail`; store untouched |
+
+> An `error` set by `loadMore` must never gate the list itself. The two states coexist: the error belongs under the rows, with its own retry, not instead of them.
 
 **`SettingsPage`** (`src/pages/SettingsPage.test.tsx`)
 

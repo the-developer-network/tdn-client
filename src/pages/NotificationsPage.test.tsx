@@ -1,5 +1,31 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// `getErrorMessage` resolves its strings through the persisted language
+// store, which captures storage at module-evaluation time.
+vi.hoisted(() => {
+    const _map = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+        getItem: (key: string) => _map.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+            _map.set(key, String(value));
+        },
+        removeItem: (key: string) => {
+            _map.delete(key);
+        },
+        clear: () => {
+            _map.clear();
+        },
+        get length() {
+            return _map.size;
+        },
+        key: (i: number) => [..._map.keys()][i] ?? null,
+    });
+});
+
+import { notificationApi } from "../features/notifications/api/notification.api";
+import { useToastStore } from "../shared/store/toast.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useNotificationStore } from "../features/notifications/store/notification.store";
@@ -55,6 +81,19 @@ function makeNotificationStore(
     } as unknown as ReturnType<typeof useNotificationStore>;
 }
 
+function makeNotification() {
+    return {
+        recipientId: "user-1",
+        issuerId: "user-2",
+        username: "otheruser",
+        type: "LIKE" as const,
+        avatarUrl: "https://example.com/a.png",
+        referenceId: "post-1",
+        createdAt: new Date().toISOString(),
+        isRead: false,
+    };
+}
+
 function makeUseNotifications(
     overrides: Partial<ReturnType<typeof useNotifications>> = {},
 ): ReturnType<typeof useNotifications> {
@@ -71,6 +110,9 @@ function makeUseNotifications(
 
 beforeEach(() => {
     mockNavigate.mockClear();
+    vi.mocked(notificationApi.markAllRead).mockReset();
+    vi.mocked(notificationApi.markAllRead).mockResolvedValue(undefined);
+    useToastStore.setState({ toasts: [] });
     vi.mocked(useAuthStore).mockReturnValue(makeAuth(true));
     vi.mocked(useAuthModalStore).mockReturnValue({
         openModal: vi.fn(),
@@ -115,5 +157,53 @@ describe("NotificationsPage", () => {
         );
         render(<NotificationsPage />);
         expect(screen.getByText("5 unread")).toBeInTheDocument();
+    });
+
+    // The list was gated behind `!error`, and `loadMore` sets `error`. So a
+    // failed second page replaced twenty notifications the reader already had
+    // with an error panel — the page punished them for asking for more.
+    it("keeps the loaded notifications on screen when loading more fails", () => {
+        vi.mocked(useNotificationStore).mockReturnValue(
+            makeNotificationStore({
+                notifications: [
+                    makeNotification(),
+                    makeNotification(),
+                ] as ReturnType<typeof useNotificationStore>["notifications"],
+            }),
+        );
+        vi.mocked(useNotifications).mockReturnValue(
+            makeUseNotifications({ error: "Failed to load", hasMore: true }),
+        );
+
+        render(<NotificationsPage />);
+
+        expect(screen.getAllByTestId("notification-card")).toHaveLength(2);
+        expect(screen.getByText("Failed to load")).toBeInTheDocument();
+    });
+
+    // The handler computed a user-facing message with `getErrorMessage` and
+    // then sent it to `console.error`.
+    it("tells the reader when marking all read fails", async () => {
+        const user = userEvent.setup();
+        vi.mocked(notificationApi.markAllRead).mockRejectedValueOnce({
+            status: 429,
+            title: "TooManyRequests",
+            detail: "Too many requests, please try again later.",
+        });
+        const markAllRead = vi.fn();
+        vi.mocked(useNotificationStore).mockReturnValue(
+            makeNotificationStore({ unreadCount: 3, markAllRead }),
+        );
+
+        render(<NotificationsPage />);
+        await user.click(screen.getByTitle("Mark all read"));
+
+        await waitFor(() => {
+            expect(useToastStore.getState().toasts).toHaveLength(1);
+        });
+        expect(useToastStore.getState().toasts[0].message).toBe(
+            "Too many requests, please try again later.",
+        );
+        expect(markAllRead).not.toHaveBeenCalled();
     });
 });
