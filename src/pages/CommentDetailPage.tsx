@@ -5,6 +5,7 @@ import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget"
 import { commentApi } from "../features/comment/api/comment.api";
 import type { Comment } from "../features/comment/api/comment.types";
 import { CommentCard } from "../features/comment/components/CommentCard";
+import { Button } from "../shared/components/ui/Button";
 import { useCommentReplies } from "../features/comment/hooks/useCommentReplies";
 import { CommentBox } from "../features/comment/components/CommentBox";
 import { useI18n } from "../shared/hooks/useI18n";
@@ -20,8 +21,11 @@ export default function CommentDetailPage() {
     const {
         replies,
         isLoading: repliesLoading,
+        isLoadingMore: repliesLoadingMore,
+        hasMore: hasMoreReplies,
         error: repliesError,
         fetchReplies,
+        loadMore: loadMoreReplies,
         addReply,
         removeReply,
     } = useCommentReplies(id!);
@@ -121,13 +125,33 @@ export default function CommentDetailPage() {
                             {repliesError}
                         </div>
                     ) : (
-                        replies.map((reply) => (
-                            <CommentCard
-                                key={reply.id}
-                                comment={reply}
-                                onDeleted={removeReply}
-                            />
-                        ))
+                        <>
+                            {replies.map((reply) => (
+                                <CommentCard
+                                    key={reply.id}
+                                    comment={reply}
+                                    onDeleted={removeReply}
+                                />
+                            ))}
+
+                            {hasMoreReplies && !repliesLoadingMore && (
+                                <div className="flex justify-center py-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={loadMoreReplies}
+                                    >
+                                        {t("common.loadMore")}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {repliesLoadingMore && (
+                                <div className="flex justify-center py-4">
+                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </>
                     )}
                 </>
             ) : (

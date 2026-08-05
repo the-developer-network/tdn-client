@@ -77,7 +77,10 @@ describe("useComments", () => {
         expect(result.current.error).toBeNull();
     });
 
-    it("fetchComments() sets an error message when the API fails", async () => {
+    // CHANGED EXPECTATION: this asserted the fixed string
+    // "Comments could not be loaded." for every failure alike. A dropped
+    // connection is now named as one.
+    it("fetchComments() names a connection failure", async () => {
         server.use(
             http.get(`${BASE}/posts/post-1/comments`, () =>
                 HttpResponse.error(),
@@ -90,8 +93,115 @@ describe("useComments", () => {
             await result.current.fetchComments();
         });
 
-        expect(result.current.error).toBe("Comments could not be loaded.");
+        expect(result.current.error).toBe(
+            "Unable to connect. Please check your internet connection.",
+        );
         expect(result.current.comments).toHaveLength(0);
+    });
+
+    // `catch {}` did not even bind the error, so the reason the API gave was
+    // discarded rather than merely flattened.
+    it("reports the reason the API gave", async () => {
+        server.use(
+            http.get(`${BASE}/posts/post-1/comments`, () =>
+                HttpResponse.json(
+                    {
+                        type: "about:blank",
+                        title: "NotFound",
+                        status: 404,
+                        detail: "Post not found.",
+                    },
+                    { status: 404 },
+                ),
+            ),
+        );
+
+        const { result } = renderHook(() => useComments("post-1"));
+
+        await act(async () => {
+            await result.current.fetchComments();
+        });
+
+        expect(result.current.error).toBe("Post not found.");
+    });
+
+    // `/posts/:postId/comments` pages by `page`/`limit` (max 50). The hook
+    // asked once and `CommentList` had no way to ask again, so comment 21
+    // onwards was unreachable on any post with a real discussion on it.
+    describe("pagination", () => {
+        /** Serves `total` comments, honouring `page`/`limit`. */
+        function serveComments(total: number) {
+            const all = Array.from({ length: total }, (_, i) => ({
+                ...mockComment,
+                id: `comment-${i}`,
+            }));
+
+            server.use(
+                http.get(`${BASE}/posts/post-1/comments`, ({ request }) => {
+                    const q = new URL(request.url).searchParams;
+                    const page = Number(q.get("page") ?? 1);
+                    const limit = Number(q.get("limit") ?? 20);
+                    const start = (page - 1) * limit;
+                    return HttpResponse.json({
+                        data: all.slice(start, start + limit),
+                        meta: { currentPage: page, limit },
+                    });
+                }),
+            );
+        }
+
+        it("reaches the comments past the first page", async () => {
+            serveComments(31);
+
+            const { result } = renderHook(() => useComments("post-1"));
+            await act(async () => {
+                await result.current.fetchComments();
+            });
+
+            expect(result.current.comments).toHaveLength(20);
+            expect(result.current.hasMore).toBe(true);
+
+            await act(async () => {
+                await result.current.loadMore();
+            });
+
+            expect(result.current.comments).toHaveLength(31);
+            expect(result.current.hasMore).toBe(false);
+        });
+
+        it("reports no more to load when the first page is short", async () => {
+            serveComments(4);
+
+            const { result } = renderHook(() => useComments("post-1"));
+            await act(async () => {
+                await result.current.fetchComments();
+            });
+
+            expect(result.current.comments).toHaveLength(4);
+            expect(result.current.hasMore).toBe(false);
+        });
+
+        // A new comment is prepended locally. Paging by a page counter would
+        // then re-request rows the server has already shifted along, showing
+        // one comment twice; offsetting by what is on screen would skip one.
+        it("does not duplicate a comment posted before loading more", async () => {
+            serveComments(31);
+
+            const { result } = renderHook(() => useComments("post-1"));
+            await act(async () => {
+                await result.current.fetchComments();
+            });
+
+            act(() => {
+                result.current.addComment({ ...mockComment, id: "brand-new" });
+            });
+            await act(async () => {
+                await result.current.loadMore();
+            });
+
+            const ids = result.current.comments.map((c) => c.id);
+            expect(new Set(ids).size).toBe(ids.length);
+        });
     });
 
     it("addComment() prepends the new comment to the list without an API call", () => {
