@@ -78,7 +78,7 @@ const mockComment: Comment = {
     author: {
         id: "u1",
         username: "alice",
-        avatarUrl: "",
+        avatarUrl: "https://cdn.example.com/avatars/alice.png",
         isMe: false,
     },
     parentId: null,

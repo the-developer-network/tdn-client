@@ -54,6 +54,11 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
+    const goToProfile = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/profile/${author.username}`);
+    };
+
     const handleCardClick = () => {
         if (hasTextSelection()) return;
         navigate(`/comments/${id}`);
@@ -84,26 +89,20 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                 onClick={handleCardClick}
             >
                 <div className="flex gap-3">
+                    {/* `avatarUrl` is NOT NULL in the database and the mapper
+                        substitutes a CDN default, so there is nothing to fall
+                        back to and nothing to sanitise. */}
                     <img
-                        src={
-                            author.avatarUrl ||
-                            `https://ui-avatars.com/api/?name=${author.username}`
-                        }
+                        src={author.avatarUrl}
                         className="h-9 w-9 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
                         alt={author.username}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/profile/${author.username}`);
-                        }}
+                        onClick={goToProfile}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                             <span
                                 className="flex items-center gap-1.5 cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/profile/${author.username}`);
-                                }}
+                                onClick={goToProfile}
                             >
                                 {author.fullName && (
                                     <span className="font-semibold text-white text-sm hover:underline">

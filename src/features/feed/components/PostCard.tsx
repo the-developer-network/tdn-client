@@ -38,6 +38,11 @@ export function PostCard({
     const navigate = useNavigate();
     const { t, locale } = useI18n();
 
+    const goToProfile = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/profile/${author.username}`);
+    };
+
     const {
         displayContent,
         isTranslated,
@@ -98,26 +103,20 @@ export function PostCard({
                 onClick={handleCardClick}
             >
                 <div className="flex gap-4">
+                    {/* `avatarUrl` is NOT NULL in the database and the mapper
+                        substitutes a CDN default, so there is nothing to fall
+                        back to and nothing to sanitise. */}
                     <img
-                        src={
-                            author.avatarUrl ||
-                            `https://ui-avatars.com/api/?name=${author.username}`
-                        }
+                        src={author.avatarUrl}
                         className="h-10 w-10 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
                         alt={author.username}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/profile/${author.username}`);
-                        }}
+                        onClick={goToProfile}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <div
                                 className="flex items-center gap-1.5 cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/profile/${author.username}`);
-                                }}
+                                onClick={goToProfile}
                             >
                                 {author.fullName && (
                                     <span className="font-semibold text-white text-sm hover:underline">

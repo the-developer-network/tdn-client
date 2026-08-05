@@ -80,7 +80,7 @@ const mockPost: Post = {
         id: "u1",
         username: "alice",
         fullName: "Alice Smith",
-        avatarUrl: "",
+        avatarUrl: "https://cdn.example.com/avatars/alice.png",
         isMe: false,
     },
     tags: [],
