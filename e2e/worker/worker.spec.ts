@@ -3,6 +3,14 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
+import {
+    STUB_POST_AUTHOR,
+    STUB_POST_DATE,
+    STUB_POST_ID,
+    stubPostContent,
+    stubProfileName,
+} from "./api-stub-data.ts";
+
 /**
  * These run against `wrangler dev` serving the real build, not against Vite.
  * Everything here is invisible to the other specs: the asset layer decides
@@ -11,6 +19,10 @@ import { dirname, resolve } from "node:path";
  *
  * `worker/index.test.ts` covers the Worker's logic with a stubbed `env`.
  * What only this file can show is the two layers wired together.
+ *
+ * The API behind it is `e2e/worker/api-stub.ts`, reached because the Wrangler
+ * webServer sets `--var API_BASE`. That is what makes the metadata below
+ * something to assert rather than whatever production held today.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -41,7 +53,14 @@ test.describe("routing", () => {
 
             expect(res.status()).toBe(200);
             expect(res.headers()["content-type"]).toContain("text/html");
-            expect(await res.text()).toContain(WORKER_ONLY_TAG);
+
+            const html = await res.text();
+            expect(html).toContain(WORKER_ONLY_TAG);
+            // Not just "the Worker answered" — it resolved the profile and
+            // built the title from what the API gave it.
+            expect(html).toContain(
+                `content="${stubProfileName(username)} (@${username}) - TDN"`,
+            );
         });
     }
 
@@ -50,6 +69,15 @@ test.describe("routing", () => {
 
         expect(res.status()).toBe(200);
         expect(await res.text()).toContain(WORKER_ONLY_TAG);
+    });
+
+    test("a post's own content becomes its description", async ({
+        request,
+    }) => {
+        const html = await (await request.get(`/post/${STUB_POST_ID}`)).text();
+
+        expect(html).toContain(WORKER_ONLY_TAG);
+        expect(html).toContain(`content="${stubPostContent(STUB_POST_ID)}"`);
     });
 
     test("a real asset is served as itself, not as the shell", async ({
@@ -91,5 +119,20 @@ test.describe("/sitemap.xml", () => {
                 `<loc>https://developernetwork.net${path === "/" ? "/" : path}</loc>`,
             );
         }
+    });
+
+    test("advertises the posts and authors the API returned", async ({
+        request,
+    }) => {
+        const xml = await (await request.get("/sitemap.xml")).text();
+
+        expect(xml).toContain(
+            `<loc>https://developernetwork.net/post/${STUB_POST_ID}</loc>`,
+        );
+        expect(xml).toContain(
+            `<loc>https://developernetwork.net/profile/${STUB_POST_AUTHOR}</loc>`,
+        );
+        // The post's own date, not the day the sitemap was generated.
+        expect(xml).toContain(`<lastmod>${STUB_POST_DATE}</lastmod>`);
     });
 });
