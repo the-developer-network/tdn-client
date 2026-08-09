@@ -19,7 +19,8 @@ const MAX_RETRIES = 5;
 
 interface WsMessage {
     event: string;
-    payload: RealtimeNotificationPayload;
+    // `auth_success` carries no payload, so this cannot be required.
+    payload?: RealtimeNotificationPayload;
 }
 
 export function useNotificationSocket() {
@@ -37,18 +38,34 @@ export function useNotificationSocket() {
     const retryCountRef = useRef(0);
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const activeRef = useRef(false);
+    const onlineHandlerRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
-        const token = storeToken ?? localStorage.getItem("access_token");
+        // Read at dial time, not once per effect. `apiClient` refreshes the JWT
+        // by writing `access_token` straight to storage without going through
+        // `setAuth`, so neither `isAuthenticated` nor `storeToken` changes and
+        // this effect never re-runs — a token captured here would be re-sent,
+        // already expired, on every reconnect for the rest of the session.
+        const readToken = () =>
+            useAuthStore.getState().token ??
+            localStorage.getItem("access_token");
 
-        if (!isAuthenticated || !token) {
+        function stop() {
             activeRef.current = false;
             if (retryTimerRef.current) {
                 clearTimeout(retryTimerRef.current);
                 retryTimerRef.current = null;
             }
+            if (onlineHandlerRef.current) {
+                window.removeEventListener("online", onlineHandlerRef.current);
+                onlineHandlerRef.current = null;
+            }
             wsRef.current?.close();
             wsRef.current = null;
+        }
+
+        if (!isAuthenticated || !readToken()) {
+            stop();
             return;
         }
 
@@ -58,12 +75,14 @@ export function useNotificationSocket() {
         function connect() {
             if (!activeRef.current) return;
 
+            const token = readToken();
+            if (!token) return;
+
             const ws = new WebSocket(WS_URL);
             wsRef.current = ws;
 
             ws.onopen = () => {
                 ws.send(JSON.stringify({ event: "auth", token }));
-                retryCountRef.current = 0;
             };
 
             ws.onerror = () => {
@@ -77,9 +96,14 @@ export function useNotificationSocket() {
                 if (!navigator.onLine) {
                     const handleOnline = () => {
                         window.removeEventListener("online", handleOnline);
+                        onlineHandlerRef.current = null;
                         retryCountRef.current = 0;
                         connect();
                     };
+                    // Held so the cleanup below can remove it. Left armed, it
+                    // outlives the effect that registered it and dials again
+                    // on top of the socket the next effect already opened.
+                    onlineHandlerRef.current = handleOnline;
                     window.addEventListener("online", handleOnline);
                     return;
                 }
@@ -105,6 +129,17 @@ export function useNotificationSocket() {
                     const message = JSON.parse(
                         event.data as string,
                     ) as WsMessage;
+                    // The server accepts the upgrade before it has seen the
+                    // auth frame and only then closes a bad token (1008), so
+                    // `onopen` says nothing about whether the connection is
+                    // usable. `auth_success` is the first point at which it
+                    // does — resetting the retry budget on `onopen` instead
+                    // meant a rejected token could never exhaust it, and the
+                    // client redialled once a second for the life of the tab.
+                    if (message.event === "auth_success") {
+                        retryCountRef.current = 0;
+                        return;
+                    }
                     if (message.event === "new-notification") {
                         incrementUnread();
                     }
@@ -116,14 +151,6 @@ export function useNotificationSocket() {
 
         connect();
 
-        return () => {
-            activeRef.current = false;
-            if (retryTimerRef.current) {
-                clearTimeout(retryTimerRef.current);
-                retryTimerRef.current = null;
-            }
-            wsRef.current?.close();
-            wsRef.current = null;
-        };
+        return stop;
     }, [isAuthenticated, storeToken, incrementUnread]);
 }
