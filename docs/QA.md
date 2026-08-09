@@ -817,7 +817,7 @@ The form is `noValidate`: a `type="email"` field inside a form otherwise trigger
 
 #### `RegisterView` (`src/features/auth/components/views/RegisterView.test.tsx`)
 
-4 tests. Registration is two calls — `POST /auth/register` followed by an automatic `POST /auth/login` — and the halves fail differently, so mock them separately.
+6 tests. Registration is two calls — `POST /auth/register` followed by an automatic `POST /auth/login` — and the halves fail differently, so mock them separately.
 
 Field-level highlighting reads `validation[0].instancePath` (`"/username"`), the only place the API names the offending field; `getErrorMessage` returns just the message, which never does. Handlers must therefore return whole RFC 7807 problem documents, not bare strings.
 
@@ -827,8 +827,12 @@ Field-level highlighting reads `validation[0].instancePath` (`"/username"`), the
 | Register succeeds, auto-login 500s   | `step === "login"`, `identifier` set to the new username      |
 | Happy path                           | `step === "verify-email"`; token stored; auth store signed in |
 | Whitespace-only username             | Submit stays disabled                                         |
+| Enter in the password field          | Registers — the view is a `<form>`, not a div with a handler  |
+| Back pressed                         | `step === "identifier"`; no `POST /auth/register` went out    |
 
 > `type="email"` inputs run the HTML value sanitization algorithm, so jsdom strips whitespace from that field on its own — only the text inputs need a trimmed guard.
+
+> The form is `noValidate`: with `type="email"` present, native constraint validation runs first and blocks submit, so the view's own error banner would never be reached. And because `Button` declares no default `type`, the Back button needs `type="button"` or it submits the form it sits in — the "Back pressed" row is what holds that.
 
 #### `ResetPasswordView` (`src/features/auth/components/views/ResetPasswordView.test.tsx`)
 
