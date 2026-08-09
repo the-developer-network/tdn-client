@@ -123,7 +123,19 @@ export function RegisterView() {
                 {t("auth.registerSubtitle")}
             </p>
 
-            <div className="space-y-4">
+            {/*
+             * `noValidate` because the email field is `type="email"`: native
+             * constraint validation runs before submit and would block the
+             * handler, leaving the app's own error banner unreachable.
+             */}
+            <form
+                className="space-y-4"
+                noValidate
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleRegister();
+                }}
+            >
                 {error && (
                     <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm py-3 px-4 rounded-md animate-in shake-in duration-300">
                         {error}
@@ -179,10 +191,10 @@ export function RegisterView() {
                 </div>
 
                 <Button
+                    type="submit"
                     variant="primary"
                     size="full"
                     className="mt-4 py-3"
-                    onClick={handleRegister}
                     disabled={
                         isLoading ||
                         !formData.email.trim() ||
@@ -193,7 +205,9 @@ export function RegisterView() {
                     {isLoading ? t("auth.creatingAccount") : t("auth.register")}
                 </Button>
 
+                {/* `Button` has no default type, so without this it submits. */}
                 <Button
+                    type="button"
                     variant="ghost"
                     size="full"
                     className="text-white/40 hover:text-white py-2"
@@ -201,7 +215,7 @@ export function RegisterView() {
                 >
                     {t("auth.back")}
                 </Button>
-            </div>
+            </form>
         </div>
     );
 }

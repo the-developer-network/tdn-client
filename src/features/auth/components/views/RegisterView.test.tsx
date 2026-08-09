@@ -185,6 +185,59 @@ describe("RegisterView", () => {
         expect(localStorage.getItem("access_token")).toBe("token-123");
     });
 
+    // Every other view in this modal submits on Enter. This one had no <form>
+    // at all, so the keyboard path did nothing: the only way to register was to
+    // reach for the mouse.
+    it("registers when Enter is pressed in a field, not only on a click", async () => {
+        const user = userEvent.setup();
+        server.use(
+            http.post(`${BASE}/auth/register`, () =>
+                HttpResponse.json({
+                    data: {
+                        id: "u1",
+                        username: "newbie",
+                        createdAt: new Date().toISOString(),
+                    },
+                }),
+            ),
+            http.post(`${BASE}/auth/login`, () =>
+                HttpResponse.json({ data: loginResponse }),
+            ),
+            profileHandler(),
+        );
+
+        render(<RegisterView />);
+        await fillForm(user);
+        // `fillForm` leaves the focus in the password field.
+        await user.keyboard("{Enter}");
+
+        await waitFor(() => {
+            expect(useAuthModalStore.getState().step).toBe("verify-email");
+        });
+    });
+
+    // `Button` sets no default `type`, so every button inside a <form> is a
+    // submit button unless it says otherwise. Back must only go back.
+    it("does not register when Back is pressed", async () => {
+        const user = userEvent.setup();
+        const paths: string[] = [];
+        const record = ({ request }: { request: Request }) => {
+            paths.push(new URL(request.url).pathname);
+        };
+        server.events.on("request:start", record);
+
+        try {
+            render(<RegisterView />);
+            await fillForm(user);
+            await user.click(screen.getByRole("button", { name: "Back" }));
+
+            expect(useAuthModalStore.getState().step).toBe("identifier");
+            expect(paths).not.toContain("/api/v1/auth/register");
+        } finally {
+            server.events.removeListener("request:start", record);
+        }
+    });
+
     // The payload trims, so a whitespace-only username is submitted as "" —
     // a request that can only come back as a validation error.
     it("keeps the submit button disabled for a whitespace-only username", async () => {
