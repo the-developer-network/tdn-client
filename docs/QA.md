@@ -69,6 +69,7 @@ src/
         PostList.test.tsx
     comment/
       hooks/
+        useCommentActions.test.ts
         useComments.test.ts
         useCommentReplies.test.ts
       components/
@@ -349,7 +350,7 @@ Use `renderHook` + `act` from `@testing-library/react`. Override MSW handlers pe
 
 #### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
 
-9 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`.
+12 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`, `handleShare`.
 
 **Requires `vi.hoisted` localStorage stub** (transitively imports `useAuthStore`).
 
@@ -375,8 +376,32 @@ expect(result.current.likeCount).toBe(5); // rolled back
 | Optimistic bookmark — API error  | State rolled back; error toast added                               |
 | `handleDelete` — success         | Returns `true`; `onDeleteSuccess` callback fired                   |
 | `handleDelete` — unauthenticated | Returns `false`; auth modal opened                                 |
+| `handleShare` — copy succeeds    | `writeText` called with `/post/:id`; info toast                    |
+| `handleShare` — copy rejected    | Error toast — the button must not fail silently                    |
+| `handleShare` — sheet dismissed  | No toast at all (`AbortError` is a cancel, not a failure)          |
 
 > **Note:** `openModal()` defaults `step` to `"initial"`, overwriting a preceding `setStep("login")` call. Assert `isOpen: true` only — do not assert the step value.
+
+> **Sharing needs both APIs stubbed by hand.** jsdom implements neither `navigator.clipboard` nor `navigator.share`, so `shareContent` picks its branch off properties the test installs with `Object.defineProperty(..., { configurable: true })`. Delete all three (`clipboard`, `share`, `canShare`) in `afterEach` — `vi.restoreAllMocks()` does not undo `defineProperty`, and a leftover global changes how _other_ spec files behave.
+
+#### `useCommentActions` (`src/features/comment/hooks/useCommentActions.test.ts`)
+
+15 tests, the comment-side twin of `usePostActions`: same optimistic like / save / delete matrix against `/comments/:id/...`, plus the full share matrix. **Requires the `vi.hoisted` localStorage stub.**
+
+The share cases set `useLanguageStore.setState({ locale: "en" })` in `beforeEach` — without it the locale is sniffed from `navigator.language` and the asserted toast text depends on the machine running the suite.
+
+| Scenario                             | Assert                                                     |
+| ------------------------------------ | ---------------------------------------------------------- |
+| Unauthenticated like / save / delete | Auth modal opened; no state change; `handleDelete` `false` |
+| Optimistic like — success / error    | `likeCount` ±1; rolled back with an error toast on failure |
+| Optimistic save — success / error    | `isBookmarked` toggled; rolled back with an error toast    |
+| `handleDelete` — success             | Returns `true`; `onDeleteSuccess` fired                    |
+| `handleDelete` — API error           | Returns `false`; `onDeleteSuccess` **not** fired; toast    |
+| `handleShare` — copy succeeds        | `writeText` called with `/comments/:id`; info toast        |
+| `handleShare` — copy rejected        | Error toast                                                |
+| `handleShare` — native share fails   | Error toast                                                |
+| `handleShare` — sheet dismissed      | No toast                                                   |
+| `handleShare` — native share OK      | `navigator.share` given title/text/url; no toast           |
 
 #### `useBookmarks` (`src/features/feed/hooks/useBookmarks.test.ts`)
 

@@ -47,6 +47,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    // jsdom implements neither API, so both are installed by hand below and
+    // must be removed again — a global left behind here leaks into every
+    // later spec file in the run.
+    Reflect.deleteProperty(navigator, "clipboard");
+    Reflect.deleteProperty(navigator, "share");
+    Reflect.deleteProperty(navigator, "canShare");
     vi.restoreAllMocks();
 });
 
@@ -234,6 +240,84 @@ describe("usePostActions", () => {
 
             expect(returned).toBe(false);
             expect(useAuthModalStore.getState().isOpen).toBe(true);
+        });
+    });
+
+    describe("handleShare", () => {
+        it("copies the post's own URL and confirms it with a toast", async () => {
+            Object.defineProperty(navigator, "clipboard", {
+                configurable: true,
+                value: { writeText: vi.fn(() => Promise.resolve()) },
+            });
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 0, false, "post-1"),
+            );
+
+            await act(async () => {
+                await result.current.handleShare(mockEvent);
+            });
+
+            expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+                `${window.location.origin}/post/post-1`,
+            );
+            const toasts = useToastStore.getState().toasts;
+            expect(toasts).toHaveLength(1);
+            expect(toasts[0].type).toBe("info");
+        });
+
+        it("reports a copy that failed instead of doing nothing", async () => {
+            vi.spyOn(console, "error").mockImplementation(() => {});
+            // Rejects exactly as a browser does when the document is not
+            // focused, or when the page is served over an insecure origin.
+            Object.defineProperty(navigator, "clipboard", {
+                configurable: true,
+                value: {
+                    writeText: vi.fn(() =>
+                        Promise.reject(
+                            new DOMException(
+                                "Document is not focused.",
+                                "NotAllowedError",
+                            ),
+                        ),
+                    ),
+                },
+            });
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 0, false, "post-1"),
+            );
+
+            await act(async () => {
+                await result.current.handleShare(mockEvent);
+            });
+
+            const toasts = useToastStore.getState().toasts;
+            expect(toasts).toHaveLength(1);
+            expect(toasts[0].type).toBe("error");
+        });
+
+        it("stays silent when the reader dismisses the native share sheet", async () => {
+            Object.defineProperty(navigator, "share", {
+                configurable: true,
+                value: vi.fn(() =>
+                    Promise.reject(new DOMException("Aborted.", "AbortError")),
+                ),
+            });
+            Object.defineProperty(navigator, "canShare", {
+                configurable: true,
+                value: vi.fn(() => true),
+            });
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 0, false, "post-1"),
+            );
+
+            await act(async () => {
+                await result.current.handleShare(mockEvent);
+            });
+
+            expect(useToastStore.getState().toasts).toHaveLength(0);
         });
     });
 });

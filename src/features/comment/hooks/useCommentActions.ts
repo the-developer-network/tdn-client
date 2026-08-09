@@ -116,6 +116,8 @@ export function useCommentActions(
 
         if (result === "copied") {
             addToast({ type: "info", message: t("common.linkCopied") });
+        } else if (result === "error") {
+            addToast({ type: "error", message: t("common.shareFailed") });
         }
     };
 
