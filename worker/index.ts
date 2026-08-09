@@ -2,7 +2,7 @@
 
 import { STATIC_ROUTES } from "./static-routes";
 
-const API_BASE = "https://api.developernetwork.net/api/v1";
+const DEFAULT_API_BASE = "https://api.developernetwork.net/api/v1";
 const SITE_URL = "https://developernetwork.net";
 const SITE_NAME = "TDN - The Developer Network";
 const DEFAULT_DESCRIPTION =
@@ -11,6 +11,17 @@ const DEFAULT_IMAGE = `${SITE_URL}/og-default.png`;
 
 interface Env {
     ASSETS: Fetcher;
+    /**
+     * The API this Worker reads post and profile metadata from. Left unset in
+     * deployment, where `DEFAULT_API_BASE` is what runs; the e2e suite sets it
+     * (`wrangler dev --var API_BASE:...`) so a test run does not call the
+     * production API three times per sitemap request.
+     */
+    API_BASE?: string;
+}
+
+function resolveApiBase(env: Env): string {
+    return env.API_BASE || DEFAULT_API_BASE;
 }
 
 interface Post {
@@ -80,9 +91,12 @@ function injectIntoHead(html: string, tags: string): string {
     return html.replace("</head>", `${tags}\n  </head>`);
 }
 
-async function fetchPost(postId: string): Promise<Post | null> {
+async function fetchPost(
+    apiBase: string,
+    postId: string,
+): Promise<Post | null> {
     try {
-        const res = await fetch(`${API_BASE}/posts/${postId}`);
+        const res = await fetch(`${apiBase}/posts/${postId}`);
         if (!res.ok) return null;
         const json = (await res.json()) as { data: Post };
         return json.data;
@@ -91,9 +105,12 @@ async function fetchPost(postId: string): Promise<Post | null> {
     }
 }
 
-async function fetchProfile(username: string): Promise<Profile | null> {
+async function fetchProfile(
+    apiBase: string,
+    username: string,
+): Promise<Profile | null> {
     try {
-        const res = await fetch(`${API_BASE}/profiles/${username}`);
+        const res = await fetch(`${apiBase}/profiles/${username}`);
         if (!res.ok) return null;
         const json = (await res.json()) as { data: Profile };
         return json.data;
@@ -104,6 +121,7 @@ async function fetchProfile(username: string): Promise<Profile | null> {
 
 async function handlePage(url: URL, env: Env): Promise<Response> {
     const pathname = url.pathname;
+    const apiBase = resolveApiBase(env);
 
     const assetResponse = await env.ASSETS.fetch(
         new Request(`${url.origin}/index.html`, { method: "GET" }),
@@ -119,7 +137,7 @@ async function handlePage(url: URL, env: Env): Promise<Response> {
     let tags: string;
 
     if (postMatch) {
-        const post = await fetchPost(postMatch[1]);
+        const post = await fetchPost(apiBase, postMatch[1]);
         if (post) {
             const authorName =
                 post.author.fullName || `@${post.author.username}`;
@@ -144,7 +162,7 @@ async function handlePage(url: URL, env: Env): Promise<Response> {
             );
         }
     } else if (profileMatch) {
-        const profile = await fetchProfile(profileMatch[1]);
+        const profile = await fetchProfile(apiBase, profileMatch[1]);
         if (profile) {
             const displayName = profile.fullName || `@${profile.username}`;
             const description =
@@ -210,11 +228,13 @@ function urlEntry(
   </url>`;
 }
 
-async function fetchPostPage(page: number, limit: number): Promise<ApiPost[]> {
+async function fetchPostPage(
+    apiBase: string,
+    page: number,
+    limit: number,
+): Promise<ApiPost[]> {
     try {
-        const res = await fetch(
-            `${API_BASE}/posts?page=${page}&limit=${limit}`,
-        );
+        const res = await fetch(`${apiBase}/posts?page=${page}&limit=${limit}`);
         if (!res.ok) return [];
         const body = (await res.json()) as ApiPost[] | ApiPage;
         if (Array.isArray(body)) return body;
@@ -224,11 +244,12 @@ async function fetchPostPage(page: number, limit: number): Promise<ApiPost[]> {
     }
 }
 
-async function handleSitemap(): Promise<Response> {
+async function handleSitemap(env: Env): Promise<Response> {
+    const apiBase = resolveApiBase(env);
     const pages = await Promise.all([
-        fetchPostPage(1, 100),
-        fetchPostPage(2, 100),
-        fetchPostPage(3, 100),
+        fetchPostPage(apiBase, 1, 100),
+        fetchPostPage(apiBase, 2, 100),
+        fetchPostPage(apiBase, 3, 100),
     ]);
 
     const allPosts = pages.flat();
@@ -306,7 +327,7 @@ export default {
         // would otherwise treat "/sitemap.xml" as a static file and look for an
         // asset that does not exist.
         if (pathname === "/sitemap.xml") {
-            return handleSitemap();
+            return handleSitemap(env);
         }
 
         // Static assets pass through unchanged

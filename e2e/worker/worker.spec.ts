@@ -1,7 +1,15 @@
 import { test, expect } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+
+import {
+    STUB_POST_AUTHOR,
+    STUB_POST_DATE,
+    STUB_POST_ID,
+    stubPostContent,
+    stubProfileName,
+} from "./api-stub-data.ts";
 
 /**
  * These run against `wrangler dev` serving the real build, not against Vite.
@@ -11,10 +19,26 @@ import { dirname, resolve } from "node:path";
  *
  * `worker/index.test.ts` covers the Worker's logic with a stubbed `env`.
  * What only this file can show is the two layers wired together.
+ *
+ * The API behind it is `e2e/worker/api-stub.ts`, reached because the Wrangler
+ * webServer sets `--var API_BASE`. That is what makes the metadata below
+ * something to assert rather than whatever production held today.
  */
 
+/**
+ * `@cloudflare/vite-plugin` splits the build in two: the client goes to
+ * `dist/client`, the Worker bundle to `dist/<worker-name>`. Nothing is written
+ * to `dist/` itself, so `dist/index.html` only ever exists as a leftover from
+ * a build predating the plugin — which is why pointing at it passed locally
+ * and failed on every fresh checkout.
+ *
+ * Read inside the test rather than at module scope. Playwright imports every
+ * spec after the webServers are up, but a throw during that import is a load
+ * error, not a test failure: it takes down the whole run, app specs included,
+ * and reports a stack instead of a diff.
+ */
 const here = dirname(fileURLToPath(import.meta.url));
-const builtShell = readFileSync(resolve(here, "../../dist/index.html"), "utf8");
+const BUILT_SHELL = resolve(here, "../../dist/client/index.html");
 
 /**
  * `twitter:site` is emitted by `buildMetaTags` and appears nowhere in the
@@ -26,7 +50,12 @@ const builtShell = readFileSync(resolve(here, "../../dist/index.html"), "utf8");
 const WORKER_ONLY_TAG = 'name="twitter:site"';
 
 test("the built shell carries no worker tags, so the marker is meaningful", () => {
-    expect(builtShell).not.toContain(WORKER_ONLY_TAG);
+    expect(
+        existsSync(BUILT_SHELL),
+        `${BUILT_SHELL} is missing. The Wrangler webServer runs \`pnpm run build\` before it serves anything, so by the time this runs the file should exist — check where the build actually writes the client.`,
+    ).toBe(true);
+
+    expect(readFileSync(BUILT_SHELL, "utf8")).not.toContain(WORKER_ONLY_TAG);
 });
 
 test.describe("routing", () => {
@@ -41,7 +70,14 @@ test.describe("routing", () => {
 
             expect(res.status()).toBe(200);
             expect(res.headers()["content-type"]).toContain("text/html");
-            expect(await res.text()).toContain(WORKER_ONLY_TAG);
+
+            const html = await res.text();
+            expect(html).toContain(WORKER_ONLY_TAG);
+            // Not just "the Worker answered" — it resolved the profile and
+            // built the title from what the API gave it.
+            expect(html).toContain(
+                `content="${stubProfileName(username)} (@${username}) - TDN"`,
+            );
         });
     }
 
@@ -50,6 +86,15 @@ test.describe("routing", () => {
 
         expect(res.status()).toBe(200);
         expect(await res.text()).toContain(WORKER_ONLY_TAG);
+    });
+
+    test("a post's own content becomes its description", async ({
+        request,
+    }) => {
+        const html = await (await request.get(`/post/${STUB_POST_ID}`)).text();
+
+        expect(html).toContain(WORKER_ONLY_TAG);
+        expect(html).toContain(`content="${stubPostContent(STUB_POST_ID)}"`);
     });
 
     test("a real asset is served as itself, not as the shell", async ({
@@ -91,5 +136,20 @@ test.describe("/sitemap.xml", () => {
                 `<loc>https://developernetwork.net${path === "/" ? "/" : path}</loc>`,
             );
         }
+    });
+
+    test("advertises the posts and authors the API returned", async ({
+        request,
+    }) => {
+        const xml = await (await request.get("/sitemap.xml")).text();
+
+        expect(xml).toContain(
+            `<loc>https://developernetwork.net/post/${STUB_POST_ID}</loc>`,
+        );
+        expect(xml).toContain(
+            `<loc>https://developernetwork.net/profile/${STUB_POST_AUTHOR}</loc>`,
+        );
+        // The post's own date, not the day the sitemap was generated.
+        expect(xml).toContain(`<lastmod>${STUB_POST_DATE}</lastmod>`);
     });
 });

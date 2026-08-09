@@ -116,6 +116,8 @@ e2e/
   profile.spec.ts
   worker/
     worker.spec.ts
+    api-stub.ts        # stand-in API, started as a Playwright webServer
+    api-stub-data.ts   # its fixtures, shared with the spec
 ```
 
 ---
@@ -310,7 +312,7 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 ### Layer 3a — Cloudflare Worker (`worker/index.ts`)
 
-10 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
+14 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
 
 `vitest.config.ts` includes `worker/**` for exactly this reason. The Worker's `fetch` is called directly with a request and a stub `env`; there is no Miniflare in the loop.
 
@@ -324,6 +326,10 @@ The `ASSETS` stub **records the paths it was asked for**. Every routing bug in t
 | `/`                                          | Placeholder `og:` and `description` replaced, not duplicated |
 | Post content containing markup               | Escaped — no live `<script>` in the head                     |
 | `/sitemap.xml`                               | Generated XML; asset store never consulted                   |
+| `env.API_BASE` set                           | Profile, post and sitemap all read from it, not production   |
+| `env.API_BASE` unset                         | Production API used — deployment needs no setting            |
+
+> The `API_BASE` tests register a handler for **both** origins and assert the recorded request URLs, rather than only asserting the tags. `tests/setup.ts` runs MSW with `onUnhandledRequest: "warn"`, so a request to the wrong origin with no handler escapes to the real network and the spec passes against the bug it exists to catch. Requests are collected with `server.events.on("request:start", …)` and released with `server.events.removeAllListeners()` in `afterEach`.
 
 > **Do not decide "is this an asset?" by testing the whole pathname for a trailing extension.** Usernames are `^[a-zA-Z0-9._]+$`, so `/profile/john.smith` ends in something that looks exactly like a file extension. `isAssetPath` requires either the `/assets/` prefix or a single root-level segment, which is what the build actually produces.
 
@@ -886,14 +892,16 @@ Runs against the dev server (`pnpm dev`, auto-started by `playwright.config.ts`)
 
 Two Playwright projects run from one config:
 
-| Project    | Server                       | Specs                            |
-| ---------- | ---------------------------- | -------------------------------- |
-| `chromium` | `pnpm dev` (Vite)            | everything outside `e2e/worker/` |
-| `worker`   | `pnpm build && wrangler dev` | `e2e/worker/*.spec.ts`           |
+| Project    | Server                                       | Specs                            |
+| ---------- | -------------------------------------------- | -------------------------------- |
+| `chromium` | `pnpm dev` (Vite)                            | everything outside `e2e/worker/` |
+| `worker`   | `pnpm build && wrangler dev` + `api-stub.ts` | `e2e/worker/*.spec.ts`           |
 
 The **`chromium` project never touches the Cloudflare Worker** — Vite serves it directly. In production `worker/index.ts` sits in front of everything: it decides what is a static asset, injects the tags crawlers read, and generates `/sitemap.xml`. That gap let a routing bug reach production in which every profile whose username contained a dot lost its meta tags, so the `worker` project exists to run the real stack.
 
-**What the `worker` project can prove that `worker/index.test.ts` cannot** is the asset layer and the Worker wired together. Cloudflare serves matching assets _before_ invoking the Worker, and `wrangler.jsonc` sets `not_found_handling: "single-page-application"`, so a miss returns `index.html` with a **200**. Status codes therefore cannot distinguish "the Worker handled this" from "the asset layer fell back to the shell" — both are 200 HTML. The specs assert on `name="twitter:site"`, which `buildMetaTags` emits and the built shell does not contain; one test asserts that absence in `dist/index.html` so the marker cannot silently stop being a marker.
+**What the `worker` project can prove that `worker/index.test.ts` cannot** is the asset layer and the Worker wired together. Cloudflare serves matching assets _before_ invoking the Worker, and `wrangler.jsonc` sets `not_found_handling: "single-page-application"`, so a miss returns `index.html` with a **200**. Status codes therefore cannot distinguish "the Worker handled this" from "the asset layer fell back to the shell" — both are 200 HTML. The specs assert on `name="twitter:site"`, which `buildMetaTags` emits and the built shell does not contain; one test asserts that absence in `dist/client/index.html` — where `@cloudflare/vite-plugin` writes the client build; nothing is emitted to `dist/` itself — so the marker cannot silently stop being a marker.
+
+**The API behind the `worker` project is a stub, not production.** `e2e/worker/api-stub.ts` is a third webServer serving post detail, profile detail and the post list on `127.0.0.1:8789`, and the Wrangler webServer passes `--var API_BASE:http://127.0.0.1:8789/api/v1` to point the Worker at it. `worker/index.ts` falls back to the production API when `API_BASE` is unset, so nothing has to be set at deploy time. This is what lets the specs assert the metadata the Worker _produced_ (`Stub john.smith (@john.smith) - TDN`, the stub post in the sitemap) instead of only that some tag exists; before it, every `/sitemap.xml` request in CI pulled three pages of one hundred real posts. Fixtures are shared through `e2e/worker/api-stub-data.ts` so an assertion cannot drift from what the stub returns.
 
 > ⚠️ **`reuseExistingServer` will lie to you when comparing two versions of the Worker.** It is `!process.env.CI`, so locally Playwright reuses a Wrangler already on the port — serving a build from before your edit. A run that "passes on the broken version" almost certainly reused the fixed one. Kill the Wrangler process between comparison runs.
 
