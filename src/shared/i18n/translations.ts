@@ -281,6 +281,7 @@ const en = {
     "common.loadMore": "Load more",
     "common.loadingMore": "Loading...",
     "common.linkCopied": "Link copied to clipboard!",
+    "common.shareFailed": "Could not share the link. Please try again.",
     "common.notificationsUnavailable":
         "Real-time notifications are currently unavailable.",
 
@@ -747,6 +748,7 @@ const tr: Record<TranslationKey, string> = {
     "common.loadMore": "Daha fazla",
     "common.loadingMore": "Yükleniyor...",
     "common.linkCopied": "Bağlantı panoya kopyalandı!",
+    "common.shareFailed": "Bağlantı paylaşılamadı. Lütfen tekrar deneyin.",
     "common.notificationsUnavailable":
         "Gerçek zamanlı bildirimler şu anda kullanılamıyor.",
 
