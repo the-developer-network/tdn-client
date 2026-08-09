@@ -53,9 +53,10 @@ export default defineConfig({
             timeout: 30_000,
         },
         {
-            // Wrangler serves `dist/`, so the build has to have happened
-            // first. The worker specs also read `dist/index.html` directly, to
-            // prove their marker tag is absent before the Worker adds it.
+            // Wrangler serves the build, so the build has to have happened
+            // first. The worker specs also read `dist/client/index.html`
+            // directly, to prove their marker tag is absent before the Worker
+            // adds it.
             //
             // `--var API_BASE` is what keeps this run off the production API;
             // `worker/index.ts` falls back to production when it is unset, so

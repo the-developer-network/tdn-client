@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -25,8 +25,20 @@ import {
  * something to assert rather than whatever production held today.
  */
 
+/**
+ * `@cloudflare/vite-plugin` splits the build in two: the client goes to
+ * `dist/client`, the Worker bundle to `dist/<worker-name>`. Nothing is written
+ * to `dist/` itself, so `dist/index.html` only ever exists as a leftover from
+ * a build predating the plugin — which is why pointing at it passed locally
+ * and failed on every fresh checkout.
+ *
+ * Read inside the test rather than at module scope. Playwright imports every
+ * spec after the webServers are up, but a throw during that import is a load
+ * error, not a test failure: it takes down the whole run, app specs included,
+ * and reports a stack instead of a diff.
+ */
 const here = dirname(fileURLToPath(import.meta.url));
-const builtShell = readFileSync(resolve(here, "../../dist/index.html"), "utf8");
+const BUILT_SHELL = resolve(here, "../../dist/client/index.html");
 
 /**
  * `twitter:site` is emitted by `buildMetaTags` and appears nowhere in the
@@ -38,7 +50,12 @@ const builtShell = readFileSync(resolve(here, "../../dist/index.html"), "utf8");
 const WORKER_ONLY_TAG = 'name="twitter:site"';
 
 test("the built shell carries no worker tags, so the marker is meaningful", () => {
-    expect(builtShell).not.toContain(WORKER_ONLY_TAG);
+    expect(
+        existsSync(BUILT_SHELL),
+        `${BUILT_SHELL} is missing. The Wrangler webServer runs \`pnpm run build\` before it serves anything, so by the time this runs the file should exist — check where the build actually writes the client.`,
+    ).toBe(true);
+
+    expect(readFileSync(BUILT_SHELL, "utf8")).not.toContain(WORKER_ONLY_TAG);
 });
 
 test.describe("routing", () => {
