@@ -79,6 +79,8 @@ src/
         notification.store.test.ts
       hooks/
         useNotifications.test.ts
+        useNotificationSocket.test.ts
+        useInitialUnreadCount.test.ts
       components/
         NotificationCard.test.tsx
     profile/
@@ -477,6 +479,35 @@ expect(useNotificationStore.getState().notifications).toHaveLength(21);
 | `loadMore()` when `hasMore=true`  | Page 2 fetched and appended; `hasMore` updated            |
 | `loadMore()` fails, then retried  | Pages requested are `[1, 2, 2]` — page 2 is not skipped   |
 | `loadMore()` fails                | Loaded notifications kept; `hasMore` still true           |
+
+#### `useNotificationSocket` (`src/features/notifications/hooks/useNotificationSocket.test.ts`)
+
+9 tests. **Requires the `vi.hoisted` localStorage stub** (imports `useAuthStore`), and stubs `WebSocket` with a `FakeWebSocket` that records every instance in a module-level `sockets` array — the reconnect tests assert on how many sockets were dialled, so that array is the subject; the hook itself returns nothing.
+
+The reconnect block uses **fake timers** for the backoff, and shadows `navigator.onLine` with an own property (`Object.defineProperty`) because it is a getter on `Navigator.prototype` and cannot be spied on.
+
+**What the server does matters here and is easy to get wrong:** `realtime.routes.ts` accepts every upgrade and authenticates from a post-open `{ event: "auth", token }` frame, closing with **1008** when `fastify.jwt.verify` rejects the token and replying `{ event: "auth_success" }` when it does not. `onopen` therefore fires for connections that are about to be thrown out — a test that reads "the socket opened" as success proves nothing.
+
+```ts
+// A rejected token, as the server delivers it: the upgrade succeeds first.
+function rejectAuth(ws: FakeWebSocket) {
+    ws.onopen?.();
+    ws.onclose?.();
+}
+```
+
+| Scenario                                             | Assert                                                          |
+| ---------------------------------------------------- | --------------------------------------------------------------- |
+| Authenticated with a token in the store              | One socket; first frame is `{ event: "auth", token }`           |
+| Authenticated after a reload (token only in storage) | Connects using the stored JWT                                   |
+| URL                                                  | `ws://localhost:8080/api/v1/realtime/ws` (pinned against drift) |
+| Unauthenticated / no token anywhere                  | No socket dialled                                               |
+| Server rejects the token on every attempt            | Dialling stops at 6 sockets (1 + `MAX_RETRIES`) and stays there |
+| Retry budget exhausted                               | `common.notificationsUnavailable` toast added                   |
+| JWT refreshed into storage between attempts          | The reconnect authenticates with the **new** token              |
+| Effect torn down while the offline resume is armed   | The later `online` event dials nothing extra                    |
+
+> The toast is asserted **before** advancing the timers again — `toast.store` dismisses after 4 s, so any further advance empties the store the assertion reads.
 
 #### `useFollowAction` (`src/features/profile/hooks/useFollowAction.test.ts`)
 
