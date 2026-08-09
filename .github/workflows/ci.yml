@@ -83,3 +83,15 @@ jobs:
 
             - name: Run E2E tests
               run: pnpm test:e2e
+
+            # `wrangler dev` runs as a Playwright webServer, so all a failing run
+            # shows is `[WebServer] ✘ [ERROR]` with the detail in a file on the
+            # runner. Without this the only symptom is ECONNREFUSED on 8788.
+            - name: Wrangler logs
+              if: failure()
+              run: |
+                  shopt -s nullglob
+                  for log in ~/.config/.wrangler/logs/*.log; do
+                      echo "===== $log ====="
+                      cat "$log"
+                  done
