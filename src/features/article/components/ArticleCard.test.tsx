@@ -113,10 +113,16 @@ describe("ArticleCard", () => {
         expect(rendered.every((src) => /^https?:/.test(src))).toBe(true);
     });
 
-    it("renders without a cover", () => {
-        renderCard({ coverImageUrl: null });
+    // A cover is optional on the API and absent on most articles, so the card
+    // has to collapse rather than leave an empty slot where a picture would go.
+    it("collapses the image slot when there is no cover", () => {
+        const { container } = renderCard({ coverImageUrl: null });
 
         expect(screen.getByText("Clean Architecture")).toBeInTheDocument();
+        // The avatar is the only image left, and nothing renders with an
+        // empty src — which is what an unreserved slot would look like.
+        expect(container.querySelectorAll("img")).toHaveLength(1);
+        expect(container.querySelector("img[src='']")).toBeNull();
     });
 
     it("falls back to createdAt when the article was never published", () => {

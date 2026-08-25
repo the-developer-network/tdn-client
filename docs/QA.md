@@ -967,6 +967,8 @@ Articles are a separate resource, not a `PostType`, so the tab cannot live in `u
 | "Following" toggle — unauthenticated | Auth modal opened                                                                          |
 | "Following" toggle — authenticated   | `followedOnly=true` appended to request                                                    |
 
+**Articles without a cover are the normal case.** The API leaves `coverImageUrl` null on most articles and there is no generated stand-in — the same choice Medium makes. Both the card and the reading view are tested for it, because the failure mode is subtle: a reserved-but-empty image slot reads as a picture that failed to load rather than as an article that has none.
+
 **`ArticleDetailPage`** (`src/pages/ArticleDetailPage.test.tsx`)
 
 | Scenario            | Assert                                                                         |

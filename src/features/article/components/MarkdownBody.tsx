@@ -21,28 +21,28 @@ interface MarkdownBodyProps {
  */
 export function MarkdownBody({ body }: MarkdownBodyProps) {
     return (
-        <div className="px-4 py-6 text-[15px] leading-7 text-white/80">
+        <div className="px-6 py-8 text-[18px] leading-[1.75] text-white/80">
             <Markdown
                 skipHtml
                 remarkPlugins={[remarkGfm]}
                 components={{
                     h1: ({ children }) => (
-                        <h1 className="mt-8 mb-3 text-2xl font-bold text-white first:mt-0">
+                        <h1 className="mt-10 mb-4 text-[28px] font-bold leading-snug tracking-tight text-white first:mt-0">
                             {children}
                         </h1>
                     ),
                     h2: ({ children }) => (
-                        <h2 className="mt-7 mb-3 text-xl font-bold text-white first:mt-0">
+                        <h2 className="mt-9 mb-3 text-[24px] font-bold leading-snug tracking-tight text-white first:mt-0">
                             {children}
                         </h2>
                     ),
                     h3: ({ children }) => (
-                        <h3 className="mt-6 mb-2 text-lg font-semibold text-white first:mt-0">
+                        <h3 className="mt-8 mb-2 text-[20px] font-semibold leading-snug text-white first:mt-0">
                             {children}
                         </h3>
                     ),
                     p: ({ children }) => (
-                        <p className="my-4 first:mt-0">{children}</p>
+                        <p className="my-6 first:mt-0">{children}</p>
                     ),
                     a: ({ href, children }) => (
                         <a
@@ -55,17 +55,17 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                         </a>
                     ),
                     ul: ({ children }) => (
-                        <ul className="my-4 list-disc pl-6 space-y-1">
+                        <ul className="my-6 list-disc pl-6 space-y-2">
                             {children}
                         </ul>
                     ),
                     ol: ({ children }) => (
-                        <ol className="my-4 list-decimal pl-6 space-y-1">
+                        <ol className="my-6 list-decimal pl-6 space-y-2">
                             {children}
                         </ol>
                     ),
                     blockquote: ({ children }) => (
-                        <blockquote className="my-4 border-l-2 border-white/20 pl-4 italic text-white/60">
+                        <blockquote className="my-6 border-l-[3px] border-white/25 pl-5 text-[19px] italic text-white/60">
                             {children}
                         </blockquote>
                     ),
