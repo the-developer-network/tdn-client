@@ -5,7 +5,8 @@ import { feedApi } from "../../feed/api/feed.api";
 import type { Comment } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { useI18n } from "../../../shared/hooks/useI18n";
-import { getSafeImageSrc } from "../../../shared/utils/image-src";
+import { useToastStore } from "../../../shared/store/toast.store";
+import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 interface CommentBoxProps {
     postId: string;
@@ -31,6 +32,7 @@ export function CommentBox({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { user, isAuthenticated } = useAuthStore();
     const { openModal } = useAuthModalStore();
+    const addToast = useToastStore((state) => state.addToast);
 
     // Object URLs must be revoked or every attachment leaks for the life of the
     // page. Created and released in handlers rather than an effect, so React
@@ -91,7 +93,7 @@ export function CommentBox({
             setFiles([]);
             setPreviews([]);
         } catch (err) {
-            console.error("Comment creation failed:", err);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsSubmitting(false);
             setIsUploading(false);
@@ -121,15 +123,28 @@ export function CommentBox({
                             className={`grid gap-1 rounded-2xl overflow-hidden ${previews.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
                         >
                             {previews.map((url, i) => {
-                                const safeUrl = getSafeImageSrc(url);
+                                // `previews[i]` is the object URL of `files[i]`
+                                // — both arrays are appended to and filtered in
+                                // the same handlers. The picker takes video as
+                                // well as images, and an <img> cannot render
+                                // one: it drew a broken image over the file the
+                                // reader had just chosen.
+                                const isVideo =
+                                    files[i].type.startsWith("video/");
                                 return (
                                     <div
                                         key={i}
                                         className="relative aspect-video bg-white/5"
                                     >
-                                        {safeUrl && (
+                                        {isVideo ? (
+                                            <video
+                                                src={url}
+                                                controls
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
                                             <img
-                                                src={safeUrl}
+                                                src={url}
                                                 className="w-full h-full object-cover"
                                                 alt=""
                                             />
