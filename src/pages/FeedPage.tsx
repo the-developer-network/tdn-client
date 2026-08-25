@@ -13,6 +13,8 @@ import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget"
 import { PostList } from "../features/feed/components/PostList";
 import { PostBox } from "../features/feed/components/PostBox";
 import { useFeed } from "../features/feed/components/useFeed";
+import { ArticleList } from "../features/article/components/ArticleList";
+import { useArticles } from "../features/article/hooks/useArticles";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import type { PostCategory, PostType } from "../features/feed/api/feed.types";
@@ -21,14 +23,25 @@ import { SEO } from "../shared/components/ui/SEO";
 import { useI18n } from "../shared/hooks/useI18n";
 import type { TranslationKey } from "../shared/i18n/translations";
 
-const CATEGORIES: { labelKey: TranslationKey; value: PostType }[] = [
+/**
+ * Articles are a separate resource, not a `PostType` — they have their own
+ * endpoints, their own slugged detail route and a markdown body. The tab sits
+ * alongside the post filters because that is where readers look for it, but it
+ * cannot be a value in the `PostType` union, so the strip is keyed by this
+ * wider type and the articles case is branched on explicitly.
+ */
+type FeedTab = PostType | "ARTICLES";
+
+const ARTICLES_TAB = "ARTICLES";
+
+const CATEGORIES: { labelKey: TranslationKey; value: FeedTab }[] = [
     { labelKey: "feed.community", value: "COMMUNITY" },
     { labelKey: "feed.news", value: "TECH_NEWS" },
     { labelKey: "feed.updates", value: "SYSTEM_UPDATE" },
-    { labelKey: "feed.jobs", value: "JOB_POSTING" },
+    { labelKey: "feed.articles", value: ARTICLES_TAB },
 ];
 
-const FOLLOWED_ONLY_TABS: PostType[] = ["TECH_NEWS", "SYSTEM_UPDATE"];
+const FOLLOWED_ONLY_TABS: FeedTab[] = ["TECH_NEWS", "SYSTEM_UPDATE"];
 
 const FILTER_CATEGORIES: {
     labelKey: TranslationKey;
@@ -44,6 +57,7 @@ const FILTER_CATEGORIES: {
 
 export default function FeedPage() {
     const { t } = useI18n();
+    const [activeTab, setActiveTab] = useState<FeedTab>("COMMUNITY");
     const [followedOnly, setFollowedOnly] = useState(false);
     const [selectedCategories, setSelectedCategories] = useState<
         PostCategory[]
@@ -66,12 +80,32 @@ export default function FeedPage() {
         retryLoadMore,
     } = useFeed(followedOnly, selectedCategories);
 
+    const {
+        articles,
+        isLoading: articlesLoading,
+        isLoadingMore: articlesLoadingMore,
+        error: articlesError,
+        loadMoreError: articlesLoadMoreError,
+        hasMore: hasMoreArticles,
+        fetchArticles,
+        loadMore: loadMoreArticles,
+        retry: retryArticles,
+        retryLoadMore: retryLoadMoreArticles,
+    } = useArticles();
+
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const openModal = useAuthModalStore((state) => state.openModal);
 
+    const isArticles = activeTab === ARTICLES_TAB;
+
+    // The two lists fetch from different endpoints, so each effect stands down
+    // while the other tab is showing — otherwise switching to Articles would
+    // still refetch posts on every filter change behind it.
     useEffect(() => {
+        if (isArticles) return;
         fetchPosts(activeCategory);
     }, [
+        isArticles,
         activeCategory,
         fetchPosts,
         isAuthenticated,
@@ -79,10 +113,24 @@ export default function FeedPage() {
         selectedCategories,
     ]);
 
-    function handleCategoryChange(type: PostType) {
+    useEffect(() => {
+        if (!isArticles) return;
+        fetchArticles({ followedOnly, categories: selectedCategories });
+    }, [
+        isArticles,
+        fetchArticles,
+        isAuthenticated,
+        followedOnly,
+        selectedCategories,
+    ]);
+
+    function handleTabChange(tab: FeedTab) {
         setFollowedOnly(false);
         setSelectedCategories([]);
-        changeCategory(type);
+        setActiveTab(tab);
+        // Articles keep their own state in `useArticles`; only the post feed
+        // needs telling which type it is now showing.
+        if (tab !== ARTICLES_TAB) changeCategory(tab);
     }
 
     function handleToggleCategory(cat: PostCategory) {
@@ -99,13 +147,14 @@ export default function FeedPage() {
         setFollowedOnly((prev) => !prev);
     }
 
-    const showFollowedOnlyToggle = FOLLOWED_ONLY_TABS.includes(activeCategory);
-    const showPostBox = !FOLLOWED_ONLY_TABS.includes(activeCategory);
+    // Articles support both narrowings too, so they get the same chip row.
+    const showFilters = isArticles || FOLLOWED_ONLY_TABS.includes(activeTab);
+    const showPostBox = !isArticles && !FOLLOWED_ONLY_TABS.includes(activeTab);
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             <SEO
-                description="TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community."
+                description="TDN is the social network for developers. Share code, tech news, articles and connect with the dev community."
                 canonical="/"
             />
             <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -119,23 +168,23 @@ export default function FeedPage() {
                     {CATEGORIES.map((cat) => (
                         <button
                             key={cat.value}
-                            onClick={() => handleCategoryChange(cat.value)}
+                            onClick={() => handleTabChange(cat.value)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-                                activeCategory === cat.value
+                                activeTab === cat.value
                                     ? "text-white"
                                     : "text-white/40 hover:text-white/70"
                             }`}
                         >
                             {t(cat.labelKey)}
-                            {activeCategory === cat.value && (
+                            {activeTab === cat.value && (
                                 <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-white rounded-full" />
                             )}
                         </button>
                     ))}
                 </div>
 
-                {/* Following toggle + category filters — only on News & Updates */}
-                {showFollowedOnlyToggle && (
+                {/* Following toggle + category filters — News, Updates, Articles */}
+                {showFilters && (
                     <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
                         <button
                             onClick={handleFollowedOnlyToggle}
@@ -167,7 +216,7 @@ export default function FeedPage() {
                 )}
             </div>
 
-            {/* Post Box — hidden on News & Updates */}
+            {/* Post Box — hidden on News, Updates and Articles */}
             {showPostBox && (
                 <PostBox
                     onPostCreated={addPost}
@@ -175,18 +224,32 @@ export default function FeedPage() {
                 />
             )}
 
-            <PostList
-                posts={posts}
-                isLoading={isLoading}
-                isLoadingMore={isLoadingMore}
-                hasMore={hasMore}
-                error={error}
-                loadMoreError={loadMoreError}
-                onPostDeleted={removePost}
-                onLoadMore={loadMore}
-                onRetry={retry}
-                onRetryLoadMore={retryLoadMore}
-            />
+            {isArticles ? (
+                <ArticleList
+                    articles={articles}
+                    isLoading={articlesLoading}
+                    isLoadingMore={articlesLoadingMore}
+                    hasMore={hasMoreArticles}
+                    error={articlesError}
+                    loadMoreError={articlesLoadMoreError}
+                    onLoadMore={loadMoreArticles}
+                    onRetry={retryArticles}
+                    onRetryLoadMore={retryLoadMoreArticles}
+                />
+            ) : (
+                <PostList
+                    posts={posts}
+                    isLoading={isLoading}
+                    isLoadingMore={isLoadingMore}
+                    hasMore={hasMore}
+                    error={error}
+                    loadMoreError={loadMoreError}
+                    onPostDeleted={removePost}
+                    onLoadMore={loadMore}
+                    onRetry={retry}
+                    onRetryLoadMore={retryLoadMore}
+                />
+            )}
         </PageShell>
     );
 }

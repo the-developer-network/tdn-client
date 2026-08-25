@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { commentApi } from "../api/comment.api";
 import { feedApi } from "../../feed/api/feed.api";
-import type { Comment } from "../api/comment.types";
+import type { Comment, CommentTarget } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { useToastStore } from "../../../shared/store/toast.store";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
+import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 interface CommentBoxProps {
-    postId: string;
+    target: CommentTarget;
     parentId?: string;
     onCommentCreated: (comment: Comment) => void;
     placeholder?: string;
@@ -17,7 +19,7 @@ interface CommentBoxProps {
 const MAX_FILES = 4;
 
 export function CommentBox({
-    postId,
+    target,
     parentId,
     onCommentCreated,
     placeholder,
@@ -31,6 +33,7 @@ export function CommentBox({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { user, isAuthenticated } = useAuthStore();
     const { openModal } = useAuthModalStore();
+    const addToast = useToastStore((state) => state.addToast);
 
     // Object URLs must be revoked or every attachment leaks for the life of the
     // page. Created and released in handlers rather than an effect, so React
@@ -80,7 +83,7 @@ export function CommentBox({
                 mediaUrls = res.mediaUrls;
                 setIsUploading(false);
             }
-            const comment = await commentApi.createComment(postId, {
+            const comment = await commentApi.createComment(target, {
                 content,
                 mediaUrls,
                 ...(parentId ? { parentId } : {}),
@@ -91,7 +94,7 @@ export function CommentBox({
             setFiles([]);
             setPreviews([]);
         } catch (err) {
-            console.error("Comment creation failed:", err);
+            addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsSubmitting(false);
             setIsUploading(false);
@@ -121,19 +124,39 @@ export function CommentBox({
                             className={`grid gap-1 rounded-2xl overflow-hidden ${previews.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
                         >
                             {previews.map((url, i) => {
+                                // `previews[i]` is the object URL of `files[i]`
+                                // — both arrays are appended to and filtered in
+                                // the same handlers. The picker takes video as
+                                // well as images, and an <img> cannot render
+                                // one: it drew a broken image over the file the
+                                // reader had just chosen.
+                                const isVideo =
+                                    files[i].type.startsWith("video/");
+                                // `createObjectURL` yields a blob: URL, which
+                                // this allows — but the value still goes
+                                // through the guard rather than straight into
+                                // src, so the element cannot become a sink if
+                                // the preview list ever carries anything else.
                                 const safeUrl = getSafeImageSrc(url);
                                 return (
                                     <div
                                         key={i}
                                         className="relative aspect-video bg-white/5"
                                     >
-                                        {safeUrl && (
-                                            <img
-                                                src={safeUrl}
-                                                className="w-full h-full object-cover"
-                                                alt=""
-                                            />
-                                        )}
+                                        {safeUrl &&
+                                            (isVideo ? (
+                                                <video
+                                                    src={safeUrl}
+                                                    controls
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={safeUrl}
+                                                    className="w-full h-full object-cover"
+                                                    alt=""
+                                                />
+                                            ))}
                                         <button
                                             onClick={() => removeFile(i)}
                                             className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black rounded-full p-1 transition-colors"

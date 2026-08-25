@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useProfile } from "../features/profile/hooks/useProfile";
 import { useUserPosts } from "../features/profile/hooks/useUserPosts";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
+import { useArticles } from "../features/article/hooks/useArticles";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import ProfilePage from "./ProfilePage";
@@ -45,6 +46,13 @@ vi.mock("../features/feed/components/PostList", () => ({
         ),
 }));
 
+vi.mock("../features/article/components/ArticleList", () => ({
+    ArticleList: () => <div data-testid="article-list" />,
+}));
+vi.mock("../features/article/hooks/useArticles", () => ({
+    useArticles: vi.fn(),
+}));
+
 vi.mock("../features/profile/hooks/useProfile", () => ({
     useProfile: vi.fn(),
 }));
@@ -64,6 +72,7 @@ const NETWORK_ERROR =
 
 const retryProfile = vi.fn();
 const retryPosts = vi.fn();
+const fetchArticles = vi.fn();
 
 function mockProfile(overrides: Partial<ReturnType<typeof useProfile>> = {}) {
     vi.mocked(useProfile).mockReturnValue({
@@ -113,8 +122,77 @@ beforeEach(() => {
         handleFollow: vi.fn(),
     } as unknown as ReturnType<typeof useFollowAction>);
 
+    vi.mocked(useArticles).mockReturnValue({
+        articles: [],
+        isLoading: false,
+        isLoadingMore: false,
+        error: null,
+        loadMoreError: null,
+        hasMore: false,
+        fetchArticles,
+        loadMore: vi.fn(),
+        retry: vi.fn(),
+        retryLoadMore: vi.fn(),
+    });
+
+    fetchArticles.mockClear();
     mockProfile();
     mockPosts();
+});
+
+describe("ProfilePage tabs", () => {
+    it("opens on Posts, with the articles list not mounted", () => {
+        render(<ProfilePage />);
+
+        expect(screen.getByTestId("post-list")).toBeInTheDocument();
+        expect(screen.queryByTestId("article-list")).not.toBeInTheDocument();
+    });
+
+    // Most visits never leave Posts, and the list endpoint is rate limited
+    // like every other public read — so nothing is requested until asked for.
+    it("does not request articles until the tab is opened", async () => {
+        const user = userEvent.setup();
+        render(<ProfilePage />);
+
+        expect(fetchArticles).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole("button", { name: "Articles" }));
+
+        expect(fetchArticles).toHaveBeenCalledWith({
+            authorUsername: "alice",
+        });
+    });
+
+    it("swaps the post list for the article list", async () => {
+        const user = userEvent.setup();
+        render(<ProfilePage />);
+
+        await user.click(screen.getByRole("button", { name: "Articles" }));
+
+        expect(screen.getByTestId("article-list")).toBeInTheDocument();
+        expect(screen.queryByTestId("post-list")).not.toBeInTheDocument();
+    });
+
+    it("goes back to the posts tab", async () => {
+        const user = userEvent.setup();
+        render(<ProfilePage />);
+
+        await user.click(screen.getByRole("button", { name: "Articles" }));
+        await user.click(screen.getByRole("button", { name: "Posts" }));
+
+        expect(screen.getByTestId("post-list")).toBeInTheDocument();
+        expect(screen.queryByTestId("article-list")).not.toBeInTheDocument();
+    });
+
+    it("hides both tabs while the profile itself is failing", () => {
+        mockProfile({ error: NETWORK_ERROR });
+
+        render(<ProfilePage />);
+
+        expect(
+            screen.queryByRole("button", { name: "Articles" }),
+        ).not.toBeInTheDocument();
+    });
 });
 
 describe("ProfilePage error states", () => {

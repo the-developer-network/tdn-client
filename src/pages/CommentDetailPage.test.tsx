@@ -49,6 +49,7 @@ const mockComment: Comment = {
     author: { id: "u1", username: "alice", avatarUrl: "" },
     parentId: null,
     postId: "post-1",
+    articleId: null,
 };
 
 beforeEach(() => {

@@ -48,6 +48,7 @@ const mockReply: Comment = {
     },
     parentId: "comment-1",
     postId: "post-1",
+    articleId: null,
 };
 
 /** Serves `total` replies, honouring `page`/`limit`. */

@@ -36,7 +36,10 @@ export default function CommentDetailPage() {
             return;
         }
 
-        if (comment) {
+        // A comment on an article carries only the article's uuid, and the
+        // article route reads by slug — there is no endpoint that turns one
+        // into the other, so only a post parent can be navigated to.
+        if (comment?.postId) {
             navigate(`/post/${comment.postId}`);
             return;
         }
@@ -104,13 +107,23 @@ export default function CommentDetailPage() {
                     <CommentCard
                         comment={comment}
                         onDeleted={() => {
-                            navigate(`/post/${comment.postId}`, {
-                                replace: true,
-                            });
+                            navigate(
+                                comment.postId
+                                    ? `/post/${comment.postId}`
+                                    : "/",
+                                { replace: true },
+                            );
                         }}
                     />
                     <CommentBox
-                        postId={comment.postId}
+                        target={
+                            comment.postId
+                                ? { type: "post", id: comment.postId }
+                                : {
+                                      type: "article",
+                                      id: comment.articleId ?? "",
+                                  }
+                        }
                         parentId={id!}
                         onCommentCreated={(newReply) => {
                             addReply(newReply);

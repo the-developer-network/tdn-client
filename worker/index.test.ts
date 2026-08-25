@@ -146,6 +146,127 @@ describe("worker routing", () => {
         });
     });
 
+    describe("article metadata", () => {
+        const article = {
+            slug: "clean-architecture",
+            title: "Clean Architecture",
+            excerpt: "Keeping transport concerns out of the domain layer.",
+            coverImageUrl: "https://cdn.example.com/cover.png",
+            author: {
+                username: "bob",
+                fullName: "Bob",
+                avatarUrl: "https://cdn.example.com/bob.png",
+            },
+        };
+
+        it("injects the article's own title, excerpt and cover", async () => {
+            server.use(
+                http.get(`${API}/articles/:slug`, () =>
+                    HttpResponse.json({ data: article }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const res = await worker.fetch(
+                get("/articles/clean-architecture"),
+                env,
+            );
+            const html = await res.text();
+
+            expect(html).toContain(
+                '<meta property="og:title" content="Clean Architecture" />',
+            );
+            expect(html).toContain(
+                'content="https://cdn.example.com/cover.png"',
+            );
+            expect(html).toContain(
+                "https://developernetwork.net/articles/clean-architecture",
+            );
+        });
+
+        it("falls back to the author avatar when there is no cover", async () => {
+            server.use(
+                http.get(`${API}/articles/:slug`, () =>
+                    HttpResponse.json({
+                        data: { ...article, coverImageUrl: null },
+                    }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/articles/clean-architecture"), env)
+            ).text();
+
+            expect(html).toContain('content="https://cdn.example.com/bob.png"');
+        });
+
+        // A draft belonging to someone else answers 404, and so does a slug
+        // that never existed. Both must land on the ordinary site defaults —
+        // never on a page that hints an unpublished article is there.
+        it("uses the site defaults when the article cannot be read", async () => {
+            server.use(
+                http.get(
+                    `${API}/articles/:slug`,
+                    () => new HttpResponse(null, { status: 404 }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/articles/some-draft"), env)
+            ).text();
+
+            expect(html).toContain(
+                '<meta property="og:title" content="TDN - The Developer Network" />',
+            );
+            expect(html).not.toContain("unpublished");
+        });
+
+        it("escapes markup coming from an article title", async () => {
+            server.use(
+                http.get(`${API}/articles/:slug`, () =>
+                    HttpResponse.json({
+                        data: {
+                            ...article,
+                            title: "</title><script>alert(1)</script>",
+                        },
+                    }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/articles/x"), env)
+            ).text();
+
+            expect(html).not.toContain("<script>alert(1)</script>");
+            expect(html).toContain("&lt;script&gt;");
+        });
+
+        // `/articles` is the list page, one segment long — it must not be
+        // mistaken for an article slug and sent to the API.
+        it("leaves the list page on the site defaults", async () => {
+            let called = false;
+            server.use(
+                http.get(`${API}/articles/:slug`, () => {
+                    called = true;
+                    return HttpResponse.json({ data: article });
+                }),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/articles"), env)
+            ).text();
+
+            expect(called).toBe(false);
+            expect(html).toContain(
+                '<meta property="og:title" content="TDN - The Developer Network" />',
+            );
+        });
+    });
+
     describe("/sitemap.xml", () => {
         it("is generated rather than looked up as a file", async () => {
             server.use(

@@ -5,6 +5,7 @@ import BookmarksPage from "../pages/BookmarksPage";
 import PostDetailPage from "../pages/PostDetailPage";
 import CommentDetailPage from "../pages/CommentDetailPage";
 import ExplorePage from "../pages/ExplorePage";
+import ArticleDetailPage from "../pages/ArticleDetailPage";
 import ProfilePage from "../pages/ProfilePage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
     {
         path: "/post/:id",
         element: <PostDetailPage />,
+    },
+    {
+        path: "/articles/:slug",
+        element: <ArticleDetailPage />,
     },
     {
         path: "/oauth-success",

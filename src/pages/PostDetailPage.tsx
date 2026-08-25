@@ -30,7 +30,7 @@ export default function PostDetailPage() {
         addComment,
         removeComment,
         retry: retryComments,
-    } = useComments(id!);
+    } = useComments({ type: "post", id: id! });
 
     useEffect(() => {
         if (!id) return;
@@ -100,7 +100,7 @@ export default function PostDetailPage() {
                         }}
                     />
                     <CommentBox
-                        postId={post.id}
+                        target={{ type: "post", id: post.id }}
                         onCommentCreated={addComment}
                     />
                     <div className="divide-y divide-white/10">

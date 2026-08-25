@@ -48,6 +48,7 @@ const mockComment: Comment = {
     },
     parentId: null,
     postId: "post-1",
+    articleId: null,
 };
 
 beforeEach(() => {
@@ -57,7 +58,9 @@ beforeEach(() => {
 
 describe("useComments", () => {
     it("starts with an empty list, no loading state, and no error", () => {
-        const { result } = renderHook(() => useComments("post-1"));
+        const { result } = renderHook(() =>
+            useComments({ type: "post", id: "post-1" }),
+        );
 
         expect(result.current.comments).toEqual([]);
         expect(result.current.isLoading).toBe(false);
@@ -65,7 +68,9 @@ describe("useComments", () => {
     });
 
     it("fetchComments() populates the list from the API", async () => {
-        const { result } = renderHook(() => useComments("post-1"));
+        const { result } = renderHook(() =>
+            useComments({ type: "post", id: "post-1" }),
+        );
 
         await act(async () => {
             await result.current.fetchComments();
@@ -87,7 +92,9 @@ describe("useComments", () => {
             ),
         );
 
-        const { result } = renderHook(() => useComments("post-1"));
+        const { result } = renderHook(() =>
+            useComments({ type: "post", id: "post-1" }),
+        );
 
         await act(async () => {
             await result.current.fetchComments();
@@ -116,7 +123,9 @@ describe("useComments", () => {
             ),
         );
 
-        const { result } = renderHook(() => useComments("post-1"));
+        const { result } = renderHook(() =>
+            useComments({ type: "post", id: "post-1" }),
+        );
 
         await act(async () => {
             await result.current.fetchComments();
@@ -153,7 +162,9 @@ describe("useComments", () => {
         it("reaches the comments past the first page", async () => {
             serveComments(31);
 
-            const { result } = renderHook(() => useComments("post-1"));
+            const { result } = renderHook(() =>
+                useComments({ type: "post", id: "post-1" }),
+            );
             await act(async () => {
                 await result.current.fetchComments();
             });
@@ -172,7 +183,9 @@ describe("useComments", () => {
         it("reports no more to load when the first page is short", async () => {
             serveComments(4);
 
-            const { result } = renderHook(() => useComments("post-1"));
+            const { result } = renderHook(() =>
+                useComments({ type: "post", id: "post-1" }),
+            );
             await act(async () => {
                 await result.current.fetchComments();
             });
@@ -187,7 +200,9 @@ describe("useComments", () => {
         it("does not duplicate a comment posted before loading more", async () => {
             serveComments(31);
 
-            const { result } = renderHook(() => useComments("post-1"));
+            const { result } = renderHook(() =>
+                useComments({ type: "post", id: "post-1" }),
+            );
             await act(async () => {
                 await result.current.fetchComments();
             });
@@ -205,7 +220,9 @@ describe("useComments", () => {
     });
 
     it("addComment() prepends the new comment to the list without an API call", () => {
-        const { result } = renderHook(() => useComments("post-1"));
+        const { result } = renderHook(() =>
+            useComments({ type: "post", id: "post-1" }),
+        );
 
         act(() => {
             result.current.addComment(mockComment);
@@ -216,7 +233,9 @@ describe("useComments", () => {
     });
 
     it("removeComment() removes the comment with the given id from the list", () => {
-        const { result } = renderHook(() => useComments("post-1"));
+        const { result } = renderHook(() =>
+            useComments({ type: "post", id: "post-1" }),
+        );
 
         act(() => {
             result.current.addComment(mockComment);

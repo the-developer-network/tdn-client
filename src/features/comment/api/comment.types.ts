@@ -17,8 +17,22 @@ export interface Comment {
     isBookmarked: boolean;
     author: CommentAuthor;
     parentId: string | null;
-    postId: string;
+    /**
+     * A comment hangs off a post or an article, never both and never neither —
+     * the database enforces exactly one of these being set. Narrow before use
+     * rather than asserting with `!`.
+     */
+    postId: string | null;
+    articleId: string | null;
 }
+
+/**
+ * What a comment is attached to. The two live under different collection
+ * paths (`/posts/:id/comments`, `/articles/:id/comments`) while every
+ * per-comment route (`/comments/:id/...`) is shared.
+ */
+export type CommentTarget =
+    { type: "post"; id: string } | { type: "article"; id: string };
 
 export interface CreateCommentBody {
     content: string;
