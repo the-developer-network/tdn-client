@@ -133,6 +133,45 @@ describe("ArticleDetailPage", () => {
         expect(screen.getByText("Body text.")).toBeInTheDocument();
     });
 
+    // Most articles have no cover — the API leaves `coverImageUrl` null and
+    // there is no auto-generated stand-in, exactly as Medium behaves. The page
+    // must read as deliberate rather than as a picture that failed to load.
+    it("renders a cover when there is one", () => {
+        setArticleState({
+            article: {
+                ...article,
+                coverImageUrl: "https://example.com/cover.png",
+                coverImageAlt: "A wide cover",
+            },
+        });
+        const { container } = render(<ArticleDetailPage />);
+
+        expect(container.querySelector("figure img")).toHaveAttribute(
+            "src",
+            "https://example.com/cover.png",
+        );
+        expect(screen.getByText("A wide cover")).toBeInTheDocument();
+    });
+
+    it("starts at the title and reserves no space when there is no cover", () => {
+        const { container } = render(<ArticleDetailPage />);
+
+        expect(container.querySelector("figure")).toBeNull();
+        expect(container.querySelector("img[src='']")).toBeNull();
+        expect(
+            screen.getByRole("heading", {
+                level: 1,
+                name: "Clean Architecture",
+            }),
+        ).toBeInTheDocument();
+    });
+
+    it("shows the excerpt as a subtitle under the title", () => {
+        render(<ArticleDetailPage />);
+
+        expect(screen.getByText("An excerpt.")).toBeInTheDocument();
+    });
+
     it("shows a spinner while the article loads", () => {
         setArticleState({ article: null, isLoading: true });
         const { container } = render(<ArticleDetailPage />);

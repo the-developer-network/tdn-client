@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Bookmark, Clock, Heart, Share2 } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
-import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { MarkdownBody } from "../features/article/components/MarkdownBody";
 import { useArticle } from "../features/article/hooks/useArticle";
 import { useArticleActions } from "../features/article/hooks/useArticleActions";
@@ -23,7 +22,7 @@ export default function ArticleDetailPage() {
     const { article, isLoading, error, retry } = useArticle(slug ?? "");
 
     return (
-        <PageShell rightRail={<TrendingTopicsWidget />}>
+        <PageShell width="reading">
             <SEO
                 title={article ? article.title : t("page.article")}
                 description={article?.excerpt}
@@ -123,19 +122,33 @@ function ArticleView({ article, slug }: ArticleViewProps) {
 
     return (
         <article>
+            {/* A cover is optional, and most articles will not have one. The
+                header simply starts at the top when it is absent — nothing is
+                reserved for it, so a text-only article reads as deliberate
+                rather than as a picture that failed to load. */}
             {cover && (
-                <img
-                    src={cover}
-                    alt={article.coverImageAlt ?? ""}
-                    className="aspect-video w-full border-b border-white/10 object-cover"
-                />
+                <figure className="border-b border-white/10">
+                    <img
+                        src={cover}
+                        alt={article.coverImageAlt ?? ""}
+                        className="w-full"
+                    />
+                    {article.coverImageAlt && (
+                        <figcaption className="px-6 py-2 text-center text-xs text-white/35">
+                            {article.coverImageAlt}
+                        </figcaption>
+                    )}
+                </figure>
             )}
 
-            <header className="border-b border-white/10 px-4 py-5">
-                <h1 className="text-2xl font-bold leading-tight text-white">
+            <header className="border-b border-white/10 px-6 pb-6 pt-8">
+                <h1 className="text-[32px] font-bold leading-[1.2] tracking-tight text-white sm:text-[40px]">
                     {article.title}
                 </h1>
-                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                <p className="mt-3 text-lg leading-7 text-white/50">
+                    {article.excerpt}
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
                     <button
                         onClick={() =>
                             navigate(`/profile/${article.author.username}`)
@@ -146,10 +159,10 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                             <img
                                 src={avatar}
                                 alt=""
-                                className="h-8 w-8 rounded-full border border-white/10 object-cover"
+                                className="h-10 w-10 rounded-full border border-white/10 object-cover"
                             />
                         ) : (
-                            <span className="h-8 w-8 rounded-full bg-white/10" />
+                            <span className="h-10 w-10 rounded-full bg-white/10" />
                         )}
                         <span className="font-medium text-white">
                             {article.author.fullName ||
@@ -190,7 +203,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
 
             <MarkdownBody body={article.body} />
 
-            <div className="flex items-center gap-6 border-y border-white/10 px-4 py-3 text-white/30">
+            <div className="flex items-center gap-6 border-y border-white/10 px-6 py-3 text-white/30">
                 <button
                     onClick={handleLike}
                     disabled={isLikeLoading}
