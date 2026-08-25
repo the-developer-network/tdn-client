@@ -102,12 +102,15 @@ describe("ArticleCard", () => {
             coverImageUrl: "javascript:alert(1)",
         });
 
-        const covers = [...container.querySelectorAll("img")].filter((img) =>
-            ["javascript:", "data:", "vbscript:"].some((scheme) =>
-                img.src.startsWith(scheme),
-            ),
+        // An allowlist rather than a denylist. The security bot's suggestion
+        // extended the banned list to data: and vbscript:, which is right as
+        // far as it goes — but any scheme left off the list still passes.
+        // Requiring http(s) closes the whole class instead, and the avatar,
+        // the only image that should survive here, is https.
+        const rendered = [...container.querySelectorAll("img")].map(
+            (img) => img.src,
         );
-        expect(covers).toHaveLength(0);
+        expect(rendered.every((src) => /^https?:/.test(src))).toBe(true);
     });
 
     it("renders without a cover", () => {

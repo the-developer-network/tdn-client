@@ -6,6 +6,7 @@ import type { Comment, CommentTarget } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { useToastStore } from "../../../shared/store/toast.store";
+import { getSafeImageSrc } from "../../../shared/utils/image-src";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 interface CommentBoxProps {
@@ -131,24 +132,31 @@ export function CommentBox({
                                 // reader had just chosen.
                                 const isVideo =
                                     files[i].type.startsWith("video/");
+                                // `createObjectURL` yields a blob: URL, which
+                                // this allows — but the value still goes
+                                // through the guard rather than straight into
+                                // src, so the element cannot become a sink if
+                                // the preview list ever carries anything else.
+                                const safeUrl = getSafeImageSrc(url);
                                 return (
                                     <div
                                         key={i}
                                         className="relative aspect-video bg-white/5"
                                     >
-                                        {isVideo ? (
-                                            <video
-                                                src={url}
-                                                controls
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <img
-                                                src={url}
-                                                className="w-full h-full object-cover"
-                                                alt=""
-                                            />
-                                        )}
+                                        {safeUrl &&
+                                            (isVideo ? (
+                                                <video
+                                                    src={safeUrl}
+                                                    controls
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={safeUrl}
+                                                    className="w-full h-full object-cover"
+                                                    alt=""
+                                                />
+                                            ))}
                                         <button
                                             onClick={() => removeFile(i)}
                                             className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black rounded-full p-1 transition-colors"
