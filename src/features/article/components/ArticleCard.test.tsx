@@ -103,7 +103,9 @@ describe("ArticleCard", () => {
         });
 
         const covers = [...container.querySelectorAll("img")].filter((img) =>
-            img.src.startsWith("javascript:"),
+            ["javascript:", "data:", "vbscript:"].some((scheme) =>
+                img.src.startsWith(scheme),
+            ),
         );
         expect(covers).toHaveLength(0);
     });
