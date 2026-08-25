@@ -16,11 +16,30 @@ vi.mock("react-router-dom", async () => {
     };
 });
 
+// The mock records the layout props so the page's own layout choices — the
+// reading width and keeping the trending rail — are asserted here rather than
+// only being visible in the browser.
+const pageShellProps = vi.fn();
 vi.mock("../shared/layout/PageShell", () => ({
-    PageShell: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    PageShell: ({
+        children,
+        ...rest
+    }: {
+        children: React.ReactNode;
+        width?: string;
+        rightRail?: React.ReactNode;
+    }) => {
+        pageShellProps(rest);
+        return (
+            <>
+                {children}
+                {rest.rightRail}
+            </>
+        );
+    },
 }));
 vi.mock("../shared/components/TrendingTopicsWidget", () => ({
-    TrendingTopicsWidget: () => null,
+    TrendingTopicsWidget: () => <div data-testid="trending" />,
 }));
 vi.mock("../shared/components/ui/SEO", () => ({ SEO: () => null }));
 vi.mock("../features/comment/components/CommentList", () => ({
@@ -170,6 +189,15 @@ describe("ArticleDetailPage", () => {
         render(<ArticleDetailPage />);
 
         expect(screen.getByText("An excerpt.")).toBeInTheDocument();
+    });
+
+    it("reads in the wide column and keeps the trending rail", () => {
+        render(<ArticleDetailPage />);
+
+        expect(pageShellProps).toHaveBeenCalledWith(
+            expect.objectContaining({ width: "reading" }),
+        );
+        expect(screen.getByTestId("trending")).toBeInTheDocument();
     });
 
     it("shows a spinner while the article loads", () => {

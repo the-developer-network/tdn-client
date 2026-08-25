@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Bookmark, Clock, Heart, Share2 } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
+import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { MarkdownBody } from "../features/article/components/MarkdownBody";
 import { useArticle } from "../features/article/hooks/useArticle";
 import { useArticleActions } from "../features/article/hooks/useArticleActions";
@@ -22,7 +23,7 @@ export default function ArticleDetailPage() {
     const { article, isLoading, error, retry } = useArticle(slug ?? "");
 
     return (
-        <PageShell width="reading">
+        <PageShell width="reading" rightRail={<TrendingTopicsWidget />}>
             <SEO
                 title={article ? article.title : t("page.article")}
                 description={article?.excerpt}
@@ -134,14 +135,14 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                         className="w-full"
                     />
                     {article.coverImageAlt && (
-                        <figcaption className="px-6 py-2 text-center text-xs text-white/35">
+                        <figcaption className="px-4 py-2 text-center text-xs text-white/35">
                             {article.coverImageAlt}
                         </figcaption>
                     )}
                 </figure>
             )}
 
-            <header className="border-b border-white/10 px-6 pb-6 pt-8">
+            <header className="border-b border-white/10 px-4 pb-6 pt-8">
                 <h1 className="text-[32px] font-bold leading-[1.2] tracking-tight text-white sm:text-[40px]">
                     {article.title}
                 </h1>
@@ -203,7 +204,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
 
             <MarkdownBody body={article.body} />
 
-            <div className="flex items-center gap-6 border-y border-white/10 px-6 py-3 text-white/30">
+            <div className="flex items-center gap-6 border-y border-white/10 px-4 py-3 text-white/30">
                 <button
                     onClick={handleLike}
                     disabled={isLikeLoading}

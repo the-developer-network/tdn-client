@@ -21,7 +21,7 @@ interface MarkdownBodyProps {
  */
 export function MarkdownBody({ body }: MarkdownBodyProps) {
     return (
-        <div className="px-6 py-8 text-[18px] leading-[1.75] text-white/80">
+        <div className="px-4 py-8 text-[18px] leading-[1.75] text-white/80">
             <Markdown
                 skipHtml
                 remarkPlugins={[remarkGfm]}

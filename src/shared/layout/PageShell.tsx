@@ -8,12 +8,20 @@ interface PageShellProps {
     rightRail?: ReactNode;
     /**
      * `"feed"` is the 600px column every timeline uses. `"reading"` widens it
-     * for long-form article bodies and centres it in the space left over by
-     * the sidebar — 600px of 18px prose runs to roughly 45 characters a line,
-     * which is short enough to be tiring over a full article.
+     * to 720px for long-form article bodies — 600px of 18px prose runs to
+     * roughly 45 characters a line, short enough to be tiring over a full
+     * article.
      *
-     * Both branches are written as whole class strings so Tailwind's scanner
-     * still sees them; an interpolated `max-w-[${n}px]` would not be emitted.
+     * Both sit flush against the sidebar. Centring the wider column in the
+     * space the sidebar leaves opened a gap down its left edge and shifted
+     * articles out of line with every other page.
+     *
+     * The outer container widens along with the column, because 275 + 720 +
+     * 320 is 1315 and the feed's 1250 would have squeezed the right rail's
+     * space out of the article pages.
+     *
+     * Every branch is a whole class string so Tailwind's scanner still sees
+     * it; an interpolated `max-w-[${n}px]` would never be emitted.
      */
     width?: "feed" | "reading";
 }
@@ -23,14 +31,16 @@ export function PageShell({
     rightRail,
     width = "feed",
 }: PageShellProps) {
-    const columnClasses =
-        width === "reading"
-            ? "w-full sm:mx-auto sm:max-w-[720px]"
-            : "max-w-full flex-1 sm:max-w-[600px]";
+    const isReading = width === "reading";
+
+    const containerClasses = isReading ? "max-w-[1320px]" : "max-w-[1250px]";
+    const columnClasses = isReading
+        ? "max-w-full flex-1 sm:max-w-[720px]"
+        : "max-w-full flex-1 sm:max-w-[600px]";
 
     return (
         <div className="flex justify-center min-h-screen bg-black">
-            <div className="flex w-full max-w-[1250px]">
+            <div className={`flex w-full ${containerClasses}`}>
                 <div className="hidden sm:block sm:w-[220px] lg:w-[275px] shrink-0">
                     <Sidebar />
                 </div>
