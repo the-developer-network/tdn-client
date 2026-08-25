@@ -49,6 +49,49 @@ const mockComment = {
     },
     parentId: null,
     postId: "post-1",
+    articleId: null,
+};
+
+/**
+ * List responses carry `ArticleSummarySchema` — every field except `body`.
+ * The detail fixture adds it back. Keeping the two apart here is what stops a
+ * card test from passing on a `body` the real list endpoint never sends.
+ */
+const mockArticleSummary = {
+    id: "article-1",
+    slug: "clean-architecture-with-fastify",
+    title: "Clean Architecture with Fastify",
+    excerpt: "How to keep transport concerns out of your domain layer.",
+    coverImageUrl: "https://example.com/cover.png",
+    coverImageAlt: "A cover image",
+    readingTimeMinutes: 7,
+    likeCount: 3,
+    commentCount: 1,
+    isLiked: false,
+    isBookmarked: false,
+    status: "PUBLISHED",
+    publishedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    author: {
+        id: "user-1",
+        username: "testuser",
+        fullName: "Test User",
+        avatarUrl: "https://example.com/avatar.png",
+    },
+    tags: [{ name: "fastify" }],
+    categories: ["BACKEND"],
+};
+
+const mockArticle = {
+    ...mockArticleSummary,
+    body: "# Heading\n\nSome **markdown** body.",
+};
+
+const mockArticleComment = {
+    ...mockComment,
+    id: "article-comment-1",
+    postId: null,
+    articleId: "article-1",
 };
 
 const mockProfile = {
@@ -182,6 +225,42 @@ export const handlers = [
     http.delete(
         `${BASE}/posts/:postId/unsave`,
         () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.get(`${BASE}/articles`, () =>
+        HttpResponse.json({ data: [mockArticleSummary] }),
+    ),
+
+    http.get(`${BASE}/articles/:slug`, () =>
+        HttpResponse.json({ data: mockArticle }),
+    ),
+
+    http.post(
+        `${BASE}/articles/:articleId/like`,
+        () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.delete(
+        `${BASE}/articles/:articleId/like`,
+        () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.post(
+        `${BASE}/articles/:articleId/bookmark`,
+        () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.delete(
+        `${BASE}/articles/:articleId/bookmark`,
+        () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.get(`${BASE}/articles/:articleId/comments`, () =>
+        HttpResponse.json({ data: [mockArticleComment] }),
+    ),
+
+    http.post(`${BASE}/articles/:articleId/comments`, () =>
+        HttpResponse.json({ data: mockArticleComment }),
     ),
 
     http.post(`${BASE}/media`, () =>

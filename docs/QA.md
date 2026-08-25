@@ -44,6 +44,17 @@ src/
     auth/
       auth.store.test.ts
   features/
+    article/
+      api/
+        article.api.test.ts
+      hooks/
+        useArticle.test.ts
+        useArticles.test.ts
+        useArticleActions.test.ts
+      components/
+        ArticleCard.test.tsx
+        ArticleList.test.tsx
+        MarkdownBody.test.tsx
     auth/
       api/
         auth-api.test.ts
@@ -73,6 +84,7 @@ src/
         useComments.test.ts
         useCommentReplies.test.ts
       components/
+        CommentBox.test.tsx
         CommentCard.test.tsx
         CommentList.test.tsx
     notifications/
@@ -102,6 +114,7 @@ src/
     utils/
       error-handler.test.ts
   pages/
+    ArticleDetailPage.test.tsx
     FeedPage.test.tsx
     PostDetailPage.test.tsx
     CommentDetailPage.test.tsx
@@ -114,6 +127,7 @@ worker/
 
 e2e/
   fixtures.ts
+  articles.spec.ts
   auth.spec.ts
   feed.spec.ts
   profile.spec.ts
@@ -347,6 +361,20 @@ Use `renderHook` + `act` from `@testing-library/react`. Override MSW handlers pe
 - Hooks that import `useAuthStore` — add `vi.hoisted` localStorage stub. jsdom 29 `Storage.clear()` is broken; a Map-backed stub is required so that Zustand `persist` captures a working storage at module-evaluation time.
 - Hooks that auto-fetch inside `useEffect` — use `waitFor` instead of `await act` to wait for the async update to settle.
 - Hooks that expose notifications / other shared state via a Zustand store — assert against `useXxxStore.getState()`, not hook return values.
+
+#### Article hooks (`src/features/article/hooks/`)
+
+Three hooks, each cloned from an existing model rather than invented:
+
+| Hook                | Modelled on      | What its tests pin down                                                                                                                                                                       |
+| ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useArticles`       | `useFeed`        | `hasMore` inferred from a full page; page 2 repeats page 1's filters; a failed page 2 keeps page 1 on screen; a stale response from an abandoned filter never overwrites the current list     |
+| `useArticle`        | `useProfile`     | Loading is derived from the slug, so the previous article never shows while the next loads; `retry` returns to loading rather than leaving the stale error; a 404 reads as ordinary not-found |
+| `useArticleActions` | `usePostActions` | Optimistic like/bookmark with rollback plus an error toast; guest interactions open the auth modal; share uses the article's own URL                                                          |
+
+**All three require the `vi.hoisted` localStorage stub** — their module graphs reach `apiClient` or `useAuthStore`.
+
+The undo paths are asserted explicitly in `article.api.test.ts`. Articles undo with `DELETE /articles/:id/like` and `DELETE /articles/:id/bookmark`, where posts use `/unlike` and `/unsave`; the tests exist because copying `feedApi` verbatim would 404 on every undo and the optimistic UI would silently roll back.
 
 #### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
 
@@ -742,6 +770,20 @@ it("renders empty state", () => {
 });
 ```
 
+#### `MarkdownBody` (`src/features/article/components/MarkdownBody.test.tsx`)
+
+The API stores and returns article bodies as **raw, unsanitised markdown** — sanitisation is entirely the client's job. `MarkdownBody` does it by omission: `skipHtml` on `react-markdown`, and no `rehype-raw`. Three tests exist purely to keep it that way, because on a site where anyone can publish, rendering embedded HTML is stored XSS:
+
+| Scenario                        | Assert                                       |
+| ------------------------------- | -------------------------------------------- |
+| `<script>` in the body          | No `script` element reaches the DOM          |
+| `<img onerror=...>` in the body | No `img[onerror]` element                    |
+| `[click](javascript:...)`       | The `href` does not survive as `javascript:` |
+
+The rest cover rendering itself: headings/emphasis/lists as real elements, fenced code inside a scrollable `<pre>`, and GFM tables — which only render if `remark-gfm` is still wired in.
+
+`ArticleCard` has the matching assertion for `excerpt`: it is derived server-side with markdown marks stripped but **HTML left intact**, so the card must print it as text.
+
 #### `PostCard` / `CommentCard`
 
 8 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
@@ -910,11 +952,44 @@ it("redirects unauthenticated users to /", () => {
 
 **`FeedPage`:**
 
-| Scenario                             | Assert                                  |
-| ------------------------------------ | --------------------------------------- |
-| Category tab click                   | API called with correct `type` param    |
-| "Following" toggle — unauthenticated | Auth modal opened                       |
-| "Following" toggle — authenticated   | `followedOnly=true` appended to request |
+The tab strip is **Community, News, Updates, Articles**. Articles replaced Job postings in that fourth slot; `JOB_POSTING` is deliberately still in the `PostType` union so existing job posts keep rendering wherever they are linked, and `FeedPage.test.tsx` asserts the four tabs render **and** that no "Jobs" button exists — reinstating the tab has to be a deliberate edit, not a silent regression.
+
+Articles are a separate resource, not a `PostType`, so the tab cannot live in `useFeed`'s `activeCategory`. The page owns a wider `activeTab` instead and branches on it. That makes two pieces of state that must agree, which is what these tests hold down — and it is why they drive the strip by **clicking**, never by mocking `useFeed`'s `activeCategory`.
+
+| Scenario                             | Assert                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Initial render                       | Four tabs in order; post list showing; `fetchPosts` once                                   |
+| Community → News                     | PostBox hidden; "Following" toggle and category chips appear                               |
+| Articles tab clicked                 | Article list replaces post list; `fetchArticles` called; `fetchPosts` **not** called again |
+| Articles tab                         | PostBox hidden; Following toggle and chips still offered (the endpoint takes both)         |
+| Category chip on Articles            | Refetched with `categories: ["BACKEND"]`                                                   |
+| Articles → Community                 | Post list returns and refetches                                                            |
+| "Following" toggle — unauthenticated | Auth modal opened                                                                          |
+| "Following" toggle — authenticated   | `followedOnly=true` appended to request                                                    |
+
+**`ArticleDetailPage`** (`src/pages/ArticleDetailPage.test.tsx`)
+
+| Scenario            | Assert                                                                         |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Article loaded      | Title, reading time and the rendered markdown body                             |
+| Loading             | Spinner, no body                                                               |
+| Fetch failed        | Error text **with a retry**, not a bare not-found                              |
+| Article absent      | `page.articleNotFound`                                                         |
+| Comments            | `useComments` called with `{ type: "article", id }` — the uuid, never the slug |
+| Like                | Delegates to `useArticleActions`                                               |
+| Action hook seeding | Called with the article's own id **and** slug                                  |
+
+**`ProfilePage` tabs** (`src/pages/ProfilePage.test.tsx`)
+
+There is no per-author articles endpoint — the tab reuses `GET /articles?authorUsername=`, which returns published articles only, so drafts cannot leak onto someone else's profile.
+
+| Scenario                 | Assert                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| Initial render           | Posts tab active; the article list is not mounted                                     |
+| Before the tab is opened | No articles request — most visits never leave Posts, and the endpoint is rate limited |
+| Articles tab clicked     | `fetchArticles({ authorUsername })`; the lists swap                                   |
+| Back to Posts            | The post list returns                                                                 |
+| Profile itself failing   | Neither tab renders                                                                   |
 
 **`NotificationsPage`** (`src/pages/NotificationsPage.test.tsx`)
 
@@ -997,16 +1072,23 @@ await page.route("**/api/v1/**", async (route, request) => {
 
 > `api` client unwraps `ApiResponse<T>.data`, so all mock responses must wrap the payload in `{ data: ... }`.
 
-| Spec           | Scenario                                                        |
-| -------------- | --------------------------------------------------------------- |
-| `auth.spec`    | Clicking "Sign In" opens the identifier input                   |
-| `auth.spec`    | `check: true` response → login step (password field visible)    |
-| `auth.spec`    | `check: false` response → register step ("Create your account") |
-| `feed.spec`    | Mocked posts render as `<article>` elements                     |
-| `feed.spec`    | Clicking "News" tab sends `type=TECH_NEWS` query param          |
-| `feed.spec`    | Clicking like triggers optimistic count increment               |
-| `profile.spec` | Visit `/profile/:username` → full name heading visible          |
-| `profile.spec` | `isMe: true` response → "Edit Profile" button visible           |
+| Spec            | Scenario                                                                       |
+| --------------- | ------------------------------------------------------------------------------ |
+| `auth.spec`     | Clicking "Sign In" opens the identifier input                                  |
+| `auth.spec`     | `check: true` response → login step (password field visible)                   |
+| `auth.spec`     | `check: false` response → register step ("Create your account")                |
+| `feed.spec`     | Mocked posts render as `<article>` elements                                    |
+| `feed.spec`     | Clicking "News" tab sends `type=TECH_NEWS` query param                         |
+| `feed.spec`     | Clicking like triggers optimistic count increment                              |
+| `profile.spec`  | Visit `/profile/:username` → full name heading visible                         |
+| `profile.spec`  | `isMe: true` response → "Edit Profile" button visible                          |
+| `articles.spec` | The Articles tab lists the returned articles as `<article>` elements           |
+| `articles.spec` | No "Jobs" tab; the strip reads Community, News, Updates, Articles in DOM order |
+| `articles.spec` | Category chip sends `categories=BACKEND`                                       |
+| `articles.spec` | Opening an article renders its markdown as elements, not literal `#`/`**`      |
+| `articles.spec` | A body carrying raw HTML is neither rendered nor executed                      |
+| `articles.spec` | Liking increments the count before the request settles                         |
+| `articles.spec` | A 404 shows not-found and never hints at a draft                               |
 
 ---
 

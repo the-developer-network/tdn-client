@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { commentApi } from "../api/comment.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
-import type { Comment } from "../api/comment.types";
+import type { Comment, CommentTarget } from "../api/comment.types";
 
 const LIMIT = 20;
 
@@ -19,7 +19,21 @@ function appendNewOnly(prev: Comment[], incoming: Comment[]): Comment[] {
     return [...prev, ...incoming.filter((comment) => !seen.has(comment.id))];
 }
 
-export function useComments(postId: string) {
+export function useComments(target: CommentTarget) {
+    // Callers pass the target as an object literal, which is a fresh reference
+    // on every render. Depending on it directly would rebuild `fetchComments`
+    // each time, and the pages call that from an effect keyed on it — one
+    // render would schedule the next, forever. Rebuilding from the two
+    // primitives pins the identity to what actually identifies the target.
+    const { type: targetType, id: targetId } = target;
+    const stableTarget = useMemo<CommentTarget>(
+        () =>
+            targetType === "article"
+                ? { type: "article", id: targetId }
+                : { type: "post", id: targetId },
+        [targetType, targetId],
+    );
+
     const [comments, setComments] = useState<Comment[]>([]);
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +54,7 @@ export function useComments(postId: string) {
         setError(null);
         try {
             const data = await commentApi.getComments(
-                postId,
+                stableTarget,
                 { page: 1, limit: LIMIT },
                 !isAuthenticated,
             );
@@ -55,7 +69,7 @@ export function useComments(postId: string) {
         } finally {
             setIsLoading(false);
         }
-    }, [postId, isAuthenticated]);
+    }, [stableTarget, isAuthenticated]);
 
     const loadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
@@ -64,7 +78,7 @@ export function useComments(postId: string) {
 
         try {
             const data = await commentApi.getComments(
-                postId,
+                stableTarget,
                 { page: nextPage, limit: LIMIT },
                 !isAuthenticated,
             );
@@ -76,7 +90,7 @@ export function useComments(postId: string) {
         } finally {
             setIsLoadingMore(false);
         }
-    }, [postId, isAuthenticated, page, hasMore, isLoadingMore]);
+    }, [stableTarget, isAuthenticated, page, hasMore, isLoadingMore]);
 
     const addComment = useCallback((comment: Comment) => {
         setComments((prev) => [comment, ...prev]);

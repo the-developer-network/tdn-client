@@ -1,23 +1,33 @@
 import { api } from "../../../core/api/client";
 import type {
     Comment,
+    CommentTarget,
     CreateCommentBody,
     GetCommentsParams,
 } from "./comment.types";
 
+/**
+ * The collection a comment target owns. Only the two collection routes differ
+ * between posts and articles; everything under `/comments/:id` is shared.
+ */
+const collectionPath = (target: CommentTarget): string =>
+    target.type === "article"
+        ? `/articles/${target.id}/comments`
+        : `/posts/${target.id}/comments`;
+
 export const commentApi = {
     createComment: (
-        postId: string,
+        target: CommentTarget,
         body: CreateCommentBody,
     ): Promise<Comment> =>
-        api.post<Comment>(`/posts/${postId}/comments`, {
+        api.post<Comment>(collectionPath(target), {
             content: body.content,
             mediaUrls: body.mediaUrls ?? [],
             ...(body.parentId ? { parentId: body.parentId } : {}),
         }),
 
     getComments: (
-        postId: string,
+        target: CommentTarget,
         params: GetCommentsParams = {},
         isPublic = true,
     ): Promise<Comment[]> => {
@@ -25,7 +35,7 @@ export const commentApi = {
         query.set("page", String(params.page ?? 1));
         query.set("limit", String(params.limit ?? 20));
         return api.get<Comment[]>(
-            `/posts/${postId}/comments?${query.toString()}`,
+            `${collectionPath(target)}?${query.toString()}`,
             isPublic ? { isPublic: true } : undefined,
         );
     },

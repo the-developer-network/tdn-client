@@ -1,0 +1,251 @@
+import { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Bookmark, Clock, Heart, Share2 } from "lucide-react";
+import { PageShell } from "../shared/layout/PageShell";
+import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
+import { MarkdownBody } from "../features/article/components/MarkdownBody";
+import { useArticle } from "../features/article/hooks/useArticle";
+import { useArticleActions } from "../features/article/hooks/useArticleActions";
+import { CommentBox } from "../features/comment/components/CommentBox";
+import { CommentList } from "../features/comment/components/CommentList";
+import { useComments } from "../features/comment/hooks/useComments";
+import { Button } from "../shared/components/ui/Button";
+import { SEO } from "../shared/components/ui/SEO";
+import { getSafeImageSrc } from "../shared/utils/image-src";
+import { useI18n } from "../shared/hooks/useI18n";
+import type { Article } from "../features/article/api/article.types";
+
+export default function ArticleDetailPage() {
+    const { slug } = useParams<{ slug: string }>();
+    const navigate = useNavigate();
+    const { t } = useI18n();
+
+    const { article, isLoading, error, retry } = useArticle(slug ?? "");
+
+    return (
+        <PageShell rightRail={<TrendingTopicsWidget />}>
+            <SEO
+                title={article ? article.title : t("page.article")}
+                description={article?.excerpt}
+                canonical={slug ? `/articles/${slug}` : undefined}
+            />
+
+            <div className="sticky top-0 z-10 flex items-center gap-6 border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="-ml-2 rounded-full p-2 text-white transition-colors hover:bg-white/10"
+                    aria-label={t("common.back")}
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="truncate text-xl font-bold tracking-wide text-white">
+                    {article ? article.title : t("page.article")}
+                </h2>
+            </div>
+
+            {isLoading ? (
+                <div className="flex h-40 items-center justify-center p-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/10 border-t-white" />
+                </div>
+            ) : error ? (
+                <div className="flex flex-col items-center gap-4 p-10 text-center">
+                    <p className="text-sm text-red-400/60">{error}</p>
+                    <Button variant="outline" size="sm" onClick={retry}>
+                        {t("articleList.tryAgain")}
+                    </Button>
+                </div>
+            ) : article ? (
+                // Keyed by id so navigating from one article to another
+                // remounts the view. The action hook seeds its like and
+                // bookmark state from props in `useState` initialisers, which
+                // only run on mount — without the key the second article would
+                // inherit the first one's counters.
+                <ArticleView
+                    key={article.id}
+                    article={article}
+                    slug={slug ?? ""}
+                />
+            ) : (
+                <div className="p-8 text-center text-white/40">
+                    {t("page.articleNotFound")}
+                </div>
+            )}
+        </PageShell>
+    );
+}
+
+interface ArticleViewProps {
+    article: Article;
+    slug: string;
+}
+
+function ArticleView({ article, slug }: ArticleViewProps) {
+    const { t, locale } = useI18n();
+    const navigate = useNavigate();
+
+    const {
+        isLiked,
+        likeCount,
+        isLikeLoading,
+        handleLike,
+        isBookmarked,
+        isBookmarkLoading,
+        handleBookmark,
+        handleShare,
+    } = useArticleActions(
+        article.id,
+        slug,
+        article.isLiked,
+        article.likeCount,
+        article.isBookmarked,
+        article.title,
+    );
+
+    const {
+        comments,
+        isLoading: commentsLoading,
+        isLoadingMore: commentsLoadingMore,
+        hasMore: hasMoreComments,
+        error: commentsError,
+        fetchComments,
+        loadMore: loadMoreComments,
+        addComment,
+        removeComment,
+        retry: retryComments,
+    } = useComments({ type: "article", id: article.id });
+
+    useEffect(() => {
+        fetchComments();
+    }, [fetchComments]);
+
+    const cover = getSafeImageSrc(article.coverImageUrl);
+    const avatar = getSafeImageSrc(article.author.avatarUrl);
+
+    return (
+        <article>
+            {cover && (
+                <img
+                    src={cover}
+                    alt={article.coverImageAlt ?? ""}
+                    className="aspect-video w-full border-b border-white/10 object-cover"
+                />
+            )}
+
+            <header className="border-b border-white/10 px-4 py-5">
+                <h1 className="text-2xl font-bold leading-tight text-white">
+                    {article.title}
+                </h1>
+                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                    <button
+                        onClick={() =>
+                            navigate(`/profile/${article.author.username}`)
+                        }
+                        className="flex items-center gap-2 hover:underline"
+                    >
+                        {avatar ? (
+                            <img
+                                src={avatar}
+                                alt=""
+                                className="h-8 w-8 rounded-full border border-white/10 object-cover"
+                            />
+                        ) : (
+                            <span className="h-8 w-8 rounded-full bg-white/10" />
+                        )}
+                        <span className="font-medium text-white">
+                            {article.author.fullName ||
+                                `@${article.author.username}`}
+                        </span>
+                    </button>
+                    <span className="text-white/20">·</span>
+                    <span className="text-white/40">
+                        {new Date(
+                            article.publishedAt ?? article.createdAt,
+                        ).toLocaleDateString(locale, {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                        })}
+                    </span>
+                    <span className="text-white/20">·</span>
+                    <span className="flex items-center gap-1 text-white/40">
+                        <Clock size={13} />
+                        {t("article.readingTime", {
+                            n: article.readingTimeMinutes,
+                        })}
+                    </span>
+                </div>
+                {article.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {article.tags.map((tag) => (
+                            <span
+                                key={tag.name}
+                                className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white/50"
+                            >
+                                #{tag.name}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </header>
+
+            <MarkdownBody body={article.body} />
+
+            <div className="flex items-center gap-6 border-y border-white/10 px-4 py-3 text-white/30">
+                <button
+                    onClick={handleLike}
+                    disabled={isLikeLoading}
+                    aria-pressed={isLiked}
+                    aria-label={t("article.like")}
+                    className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors disabled:opacity-50 ${
+                        isLiked
+                            ? "text-pink-500"
+                            : "hover:bg-white/5 hover:text-white/60"
+                    }`}
+                >
+                    <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                    <span className="text-xs">{likeCount}</span>
+                </button>
+                <button
+                    onClick={handleBookmark}
+                    disabled={isBookmarkLoading}
+                    aria-pressed={isBookmarked}
+                    aria-label={t("article.bookmark")}
+                    className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors disabled:opacity-50 ${
+                        isBookmarked
+                            ? "text-blue-400"
+                            : "hover:bg-white/5 hover:text-white/60"
+                    }`}
+                >
+                    <Bookmark
+                        size={16}
+                        fill={isBookmarked ? "currentColor" : "none"}
+                    />
+                </button>
+                <button
+                    onClick={handleShare}
+                    aria-label={t("article.share")}
+                    className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-white/60"
+                >
+                    <Share2 size={16} />
+                </button>
+            </div>
+
+            <CommentBox
+                target={{ type: "article", id: article.id }}
+                onCommentCreated={addComment}
+            />
+            <div className="divide-y divide-white/10">
+                <CommentList
+                    comments={comments}
+                    isLoading={commentsLoading}
+                    error={commentsError}
+                    onCommentDeleted={removeComment}
+                    onRetry={retryComments}
+                    hasMore={hasMoreComments}
+                    isLoadingMore={commentsLoadingMore}
+                    onLoadMore={loadMoreComments}
+                />
+            </div>
+        </article>
+    );
+}

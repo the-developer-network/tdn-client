@@ -6,7 +6,7 @@ const DEFAULT_API_BASE = "https://api.developernetwork.net/api/v1";
 const SITE_URL = "https://developernetwork.net";
 const SITE_NAME = "TDN - The Developer Network";
 const DEFAULT_DESCRIPTION =
-    "TDN is the social network for developers. Share code, tech news, job postings and connect with the dev community.";
+    "TDN is the social network for developers. Share code, tech news, articles and connect with the dev community.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-default.png`;
 
 interface Env {
@@ -29,6 +29,24 @@ interface Post {
     content: string;
     author: { username: string; fullName?: string; avatarUrl: string };
     mediaUrls: string[];
+}
+
+interface ArticleMeta {
+    slug: string;
+    title: string;
+    excerpt: string;
+    coverImageUrl: string | null;
+    author: { username: string; fullName?: string; avatarUrl: string };
+}
+
+interface ApiArticle {
+    slug: string;
+    publishedAt: string | null;
+    createdAt: string;
+}
+
+interface ApiArticlePage {
+    data?: ApiArticle[];
 }
 
 interface Profile {
@@ -105,6 +123,20 @@ async function fetchPost(
     }
 }
 
+async function fetchArticle(
+    apiBase: string,
+    slug: string,
+): Promise<ArticleMeta | null> {
+    try {
+        const res = await fetch(`${apiBase}/articles/${slug}`);
+        if (!res.ok) return null;
+        const json = (await res.json()) as { data: ArticleMeta };
+        return json.data;
+    } catch {
+        return null;
+    }
+}
+
 async function fetchProfile(
     apiBase: string,
     username: string,
@@ -133,6 +165,7 @@ async function handlePage(url: URL, env: Env): Promise<Response> {
 
     const postMatch = pathname.match(/^\/post\/([^/]+)$/);
     const profileMatch = pathname.match(/^\/profile\/([^/]+)$/);
+    const articleMatch = pathname.match(/^\/articles\/([^/]+)$/);
 
     let tags: string;
 
@@ -152,6 +185,32 @@ async function handlePage(url: URL, env: Env): Promise<Response> {
                 description,
                 image,
                 `${SITE_URL}/post/${post.id}`,
+            );
+        } else {
+            tags = buildMetaTags(
+                SITE_NAME,
+                DEFAULT_DESCRIPTION,
+                DEFAULT_IMAGE,
+                url.href,
+            );
+        }
+    } else if (articleMatch) {
+        const article = await fetchArticle(apiBase, articleMatch[1]);
+        if (article) {
+            // The excerpt is already capped at 300 characters server-side and
+            // has its markdown marks stripped, so it needs trimming for the
+            // meta budget but no further processing.
+            const description =
+                article.excerpt.length > 155
+                    ? article.excerpt.slice(0, 152) + "..."
+                    : article.excerpt;
+            tags = buildMetaTags(
+                article.title,
+                description,
+                article.coverImageUrl ||
+                    article.author.avatarUrl ||
+                    DEFAULT_IMAGE,
+                `${SITE_URL}/articles/${article.slug}`,
             );
         } else {
             tags = buildMetaTags(
@@ -244,15 +303,41 @@ async function fetchPostPage(
     }
 }
 
+async function fetchArticlePage(
+    apiBase: string,
+    page: number,
+    limit: number,
+): Promise<ApiArticle[]> {
+    try {
+        const res = await fetch(
+            `${apiBase}/articles?page=${page}&limit=${limit}`,
+        );
+        if (!res.ok) return [];
+        const body = (await res.json()) as ApiArticle[] | ApiArticlePage;
+        if (Array.isArray(body)) return body;
+        return body.data ?? [];
+    } catch {
+        return [];
+    }
+}
+
 async function handleSitemap(env: Env): Promise<Response> {
     const apiBase = resolveApiBase(env);
-    const pages = await Promise.all([
-        fetchPostPage(apiBase, 1, 100),
-        fetchPostPage(apiBase, 2, 100),
-        fetchPostPage(apiBase, 3, 100),
+    // The articles endpoint caps `limit` at 50, unlike posts.
+    const [pages, articlePages] = await Promise.all([
+        Promise.all([
+            fetchPostPage(apiBase, 1, 100),
+            fetchPostPage(apiBase, 2, 100),
+            fetchPostPage(apiBase, 3, 100),
+        ]),
+        Promise.all([
+            fetchArticlePage(apiBase, 1, 50),
+            fetchArticlePage(apiBase, 2, 50),
+        ]),
     ]);
 
     const allPosts = pages.flat();
+    const allArticles = articlePages.flat();
 
     const seenUsernames = new Set<string>();
     const uniquePosts: ApiPost[] = [];
@@ -287,9 +372,18 @@ async function handleSitemap(env: Env): Promise<Response> {
         ),
     );
 
+    const articleEntries = allArticles.map((article) =>
+        urlEntry(
+            `${SITE_URL}/articles/${encodeURIComponent(article.slug)}`,
+            toW3CDate(article.publishedAt ?? article.createdAt),
+            "weekly",
+            "0.8",
+        ),
+    );
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[...staticEntries, ...profileEntries, ...postEntries].join("\n")}
+${[...staticEntries, ...profileEntries, ...articleEntries, ...postEntries].join("\n")}
 </urlset>`;
 
     return new Response(xml, {

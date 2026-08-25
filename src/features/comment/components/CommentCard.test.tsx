@@ -83,6 +83,7 @@ const mockComment: Comment = {
     },
     parentId: null,
     postId: "post-1",
+    articleId: null,
 };
 
 describe("CommentCard", () => {

@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { commentApi } from "../api/comment.api";
 import { feedApi } from "../../feed/api/feed.api";
-import type { Comment } from "../api/comment.types";
+import type { Comment, CommentTarget } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 
 interface CommentBoxProps {
-    postId: string;
+    target: CommentTarget;
     parentId?: string;
     onCommentCreated: (comment: Comment) => void;
     placeholder?: string;
@@ -18,7 +18,7 @@ interface CommentBoxProps {
 const MAX_FILES = 4;
 
 export function CommentBox({
-    postId,
+    target,
     parentId,
     onCommentCreated,
     placeholder,
@@ -82,7 +82,7 @@ export function CommentBox({
                 mediaUrls = res.mediaUrls;
                 setIsUploading(false);
             }
-            const comment = await commentApi.createComment(postId, {
+            const comment = await commentApi.createComment(target, {
                 content,
                 mediaUrls,
                 ...(parentId ? { parentId } : {}),

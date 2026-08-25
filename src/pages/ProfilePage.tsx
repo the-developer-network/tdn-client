@@ -4,10 +4,12 @@ import { ArrowLeft, MapPin, Calendar, LinkIcon, Settings } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
+import { ArticleList } from "../features/article/components/ArticleList";
 import { FollowListModal } from "../features/profile/components/FollowListModal";
 import { EditProfileModal } from "../features/profile/components/EditProfileModal";
 import { useProfile } from "../features/profile/hooks/useProfile";
 import { useUserPosts } from "../features/profile/hooks/useUserPosts";
+import { useArticles } from "../features/article/hooks/useArticles";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
@@ -25,6 +27,7 @@ export default function ProfilePage() {
         "followers" | "following" | null
     >(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [tab, setTab] = useState<"posts" | "articles">("posts");
     const [localProfile, setLocalProfile] = useState<Profile | null>(null);
 
     const updateUser = useAuthStore((state) => state.updateUser);
@@ -76,6 +79,29 @@ export default function ProfilePage() {
         retry: retryPosts,
         removePost,
     } = useUserPosts(username ?? "");
+
+    // There is no per-author articles endpoint; the ordinary list narrowed by
+    // `authorUsername` is it, and it returns published articles only, so a
+    // reader never sees someone else's drafts here.
+    const {
+        articles,
+        isLoading: articlesLoading,
+        isLoadingMore: articlesLoadingMore,
+        error: articlesError,
+        loadMoreError: articlesLoadMoreError,
+        hasMore: hasMoreArticles,
+        fetchArticles,
+        loadMore: loadMoreArticles,
+        retry: retryArticles,
+        retryLoadMore: retryLoadMoreArticles,
+    } = useArticles();
+
+    // Deferred until the tab is opened: most visits never leave Posts, and the
+    // list endpoint is rate limited alongside every other public read.
+    useEffect(() => {
+        if (tab !== "articles" || !username) return;
+        fetchArticles({ authorUsername: username });
+    }, [tab, username, fetchArticles]);
 
     // A session error is handled by reopening the auth modal above, so it must
     // not also render as an inline failure.
@@ -310,6 +336,47 @@ export default function ProfilePage() {
             {/* Posts list — suppressed while the profile itself is failing, so
                 only the page-level error above is shown. */}
             {!hasProfileError && (
+                <>
+                    <div className="flex w-full border-b border-white/10">
+                        {(["posts", "articles"] as const).map((value) => (
+                            <button
+                                key={value}
+                                onClick={() => setTab(value)}
+                                className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
+                                    tab === value
+                                        ? "text-white"
+                                        : "text-white/40 hover:text-white/70"
+                                }`}
+                            >
+                                {t(
+                                    value === "posts"
+                                        ? "profile.tabPosts"
+                                        : "profile.tabArticles",
+                                )}
+                                {tab === value && (
+                                    <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-white" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {!hasProfileError && tab === "articles" && (
+                <ArticleList
+                    articles={articles}
+                    isLoading={articlesLoading}
+                    isLoadingMore={articlesLoadingMore}
+                    hasMore={hasMoreArticles}
+                    error={articlesError}
+                    loadMoreError={articlesLoadMoreError}
+                    onLoadMore={loadMoreArticles}
+                    onRetry={retryArticles}
+                    onRetryLoadMore={retryLoadMoreArticles}
+                />
+            )}
+
+            {!hasProfileError && tab === "posts" && (
                 <>
                     <PostList
                         posts={posts}

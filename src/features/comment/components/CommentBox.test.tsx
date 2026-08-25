@@ -89,7 +89,7 @@ function setup(props?: { parentId?: string }) {
     const onCommentCreated = vi.fn();
     const view = render(
         <CommentBox
-            postId="post-1"
+            target={{ type: "post", id: "post-1" }}
             onCommentCreated={onCommentCreated}
             {...props}
         />,
