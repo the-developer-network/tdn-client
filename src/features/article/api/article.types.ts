@@ -63,3 +63,60 @@ export interface GetArticlesParams {
     categories?: ArticleCategory[];
     followedOnly?: boolean;
 }
+
+export interface GetMyArticlesParams {
+    page?: number;
+    limit?: number;
+    status?: ArticleStatus;
+}
+
+/**
+ * Field limits the server enforces. Validation errors come back as a bare
+ * 400 with "Invalid data format provided." and no field name, so the editor
+ * has to check these itself to say anything useful.
+ */
+export const ARTICLE_LIMITS = {
+    titleMax: 160,
+    bodyMax: 100_000,
+    excerptMax: 300,
+    coverAltMax: 160,
+    tagsMax: 5,
+    categoriesMax: 5,
+    /** The whole request body, not just the markdown. */
+    requestBytesMax: 256 * 1024,
+    coverBytesMax: 5 * 1024 * 1024,
+} as const;
+
+/** Tags are normalised server-side but rejected before that if they fail this. */
+export const TAG_PATTERN = /^[a-z0-9-]{1,30}$/;
+
+export interface CreateArticleBody {
+    title: string;
+    body: string;
+    excerpt?: string;
+    coverImageKey?: string;
+    coverImageAlt?: string;
+    tags?: string[];
+    categories?: ArticleCategory[];
+}
+
+/**
+ * Every field is optional, and the three nullable ones take `null` to clear
+ * them. `null` and `undefined` mean different things here: omitting a field
+ * leaves it alone, sending `null` erases it. Building this from a form that
+ * collapses the two loses the ability to remove a cover.
+ */
+export interface UpdateArticleBody {
+    title?: string;
+    body?: string;
+    excerpt?: string | null;
+    coverImageKey?: string | null;
+    coverImageAlt?: string | null;
+    tags?: string[];
+    categories?: ArticleCategory[];
+}
+
+export interface CoverUploadResponse {
+    coverImageKey: string;
+    coverImageUrl: string;
+}

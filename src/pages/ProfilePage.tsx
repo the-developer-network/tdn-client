@@ -10,6 +10,8 @@ import { EditProfileModal } from "../features/profile/components/EditProfileModa
 import { useProfile } from "../features/profile/hooks/useProfile";
 import { useUserPosts } from "../features/profile/hooks/useUserPosts";
 import { useArticles } from "../features/article/hooks/useArticles";
+import { useMyArticles } from "../features/article/hooks/useMyArticles";
+import type { ArticleStatus } from "../features/article/api/article.types";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
@@ -17,6 +19,13 @@ import type { Profile } from "../features/profile/api/profile.types";
 import { SEO } from "../shared/components/ui/SEO";
 import { Button } from "../shared/components/ui/Button";
 import { useI18n } from "../shared/hooks/useI18n";
+
+function displayProfileIsMe(
+    local: Profile | null,
+    fetched: Profile | null,
+): boolean {
+    return (local ?? fetched)?.isMe === true;
+}
 
 export default function ProfilePage() {
     const { username } = useParams<{ username: string }>();
@@ -28,6 +37,8 @@ export default function ProfilePage() {
     >(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [tab, setTab] = useState<"posts" | "articles">("posts");
+    const [articleStatus, setArticleStatus] =
+        useState<ArticleStatus>("PUBLISHED");
     const [localProfile, setLocalProfile] = useState<Profile | null>(null);
 
     const updateUser = useAuthStore((state) => state.updateUser);
@@ -96,12 +107,58 @@ export default function ProfilePage() {
         retryLoadMore: retryLoadMoreArticles,
     } = useArticles();
 
-    // Deferred until the tab is opened: most visits never leave Posts, and the
-    // list endpoint is rate limited alongside every other public read.
+    /**
+     * Your own profile reads from `/articles/me`, which is the only endpoint
+     * that returns drafts — the public list is filtered to published rows at
+     * the repository, so it cannot show them however it is asked.
+     */
+    const mine = useMyArticles();
+    const isOwnProfile = displayProfileIsMe(localProfile, profile);
+
+    // Deferred until the tab is opened: most visits never leave Posts, and
+    // both endpoints are rate limited alongside every other read.
     useEffect(() => {
         if (tab !== "articles" || !username) return;
+        if (isOwnProfile) {
+            mine.fetchMine(articleStatus);
+            return;
+        }
         fetchArticles({ authorUsername: username });
-    }, [tab, username, fetchArticles]);
+        // `mine` is a fresh object each render; only its fetch identity is
+        // stable, and depending on the whole hook would refetch every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        tab,
+        username,
+        fetchArticles,
+        isOwnProfile,
+        articleStatus,
+        mine.fetchMine,
+    ]);
+
+    const articleList = isOwnProfile
+        ? {
+              articles: mine.articles,
+              isLoading: mine.isLoading,
+              isLoadingMore: mine.isLoadingMore,
+              error: mine.error,
+              loadMoreError: mine.loadMoreError,
+              hasMore: mine.hasMore,
+              onLoadMore: mine.loadMore,
+              onRetry: mine.retry,
+              onRetryLoadMore: mine.retryLoadMore,
+          }
+        : {
+              articles,
+              isLoading: articlesLoading,
+              isLoadingMore: articlesLoadingMore,
+              error: articlesError,
+              loadMoreError: articlesLoadMoreError,
+              hasMore: hasMoreArticles,
+              onLoadMore: loadMoreArticles,
+              onRetry: retryArticles,
+              onRetryLoadMore: retryLoadMoreArticles,
+          };
 
     // A session error is handled by reopening the auth modal above, so it must
     // not also render as an inline failure.
@@ -363,17 +420,41 @@ export default function ProfilePage() {
             )}
 
             {!hasProfileError && tab === "articles" && (
-                <ArticleList
-                    articles={articles}
-                    isLoading={articlesLoading}
-                    isLoadingMore={articlesLoadingMore}
-                    hasMore={hasMoreArticles}
-                    error={articlesError}
-                    loadMoreError={articlesLoadMoreError}
-                    onLoadMore={loadMoreArticles}
-                    onRetry={retryArticles}
-                    onRetryLoadMore={retryLoadMoreArticles}
-                />
+                <>
+                    {/* Status filters are yours alone: a visitor has nothing
+                        to filter, since the public list only ever returns
+                        published articles. */}
+                    {isOwnProfile && (
+                        <div className="flex items-center gap-2 overflow-x-auto px-4 py-2">
+                            {(
+                                [
+                                    "PUBLISHED",
+                                    "DRAFT",
+                                    "ARCHIVED",
+                                ] as ArticleStatus[]
+                            ).map((value) => (
+                                <button
+                                    key={value}
+                                    onClick={() => setArticleStatus(value)}
+                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                                        articleStatus === value
+                                            ? "bg-white text-black"
+                                            : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
+                                    }`}
+                                >
+                                    {t(
+                                        value === "PUBLISHED"
+                                            ? "editor.statusPublished"
+                                            : value === "DRAFT"
+                                              ? "editor.statusDraft"
+                                              : "editor.statusArchived",
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <ArticleList {...articleList} />
+                </>
             )}
 
             {!hasProfileError && tab === "posts" && (

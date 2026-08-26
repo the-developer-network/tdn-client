@@ -51,10 +51,14 @@ src/
         useArticle.test.ts
         useArticles.test.ts
         useArticleActions.test.ts
+        useArticleEditor.test.ts
       components/
         ArticleCard.test.tsx
         ArticleList.test.tsx
         MarkdownBody.test.tsx
+        TagInput.test.tsx
+      utils/
+        tags.test.ts
     auth/
       api/
         auth-api.test.ts
@@ -115,6 +119,7 @@ src/
       error-handler.test.ts
   pages/
     ArticleDetailPage.test.tsx
+    ArticleEditorPage.test.tsx
     FeedPage.test.tsx
     PostDetailPage.test.tsx
     CommentDetailPage.test.tsx
@@ -127,6 +132,7 @@ worker/
 
 e2e/
   fixtures.ts
+  article-editor.spec.ts
   articles.spec.ts
   auth.spec.ts
   feed.spec.ts
@@ -375,6 +381,25 @@ Three hooks, each cloned from an existing model rather than invented:
 **All three require the `vi.hoisted` localStorage stub** — their module graphs reach `apiClient` or `useAuthStore`.
 
 The undo paths are asserted explicitly in `article.api.test.ts`. Articles undo with `DELETE /articles/:id/like` and `DELETE /articles/:id/bookmark`, where posts use `/unlike` and `/unsave`; the tests exist because copying `feedApi` verbatim would 404 on every undo and the optimistic UI would silently roll back.
+
+#### `useArticleEditor` (`src/features/article/hooks/useArticleEditor.test.ts`)
+
+The editor autosaves, and almost everything that can go wrong there is a rate limit or a lost edit rather than a rendering bug. These are the tests that hold the shape:
+
+| Scenario                        | Assert                                                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Title only, or body only        | `canSave` false and **no request** — creation requires both, so firing early only 400s                         |
+| First autosave                  | One `POST /articles`, draft created                                                                            |
+| Every autosave after            | `PATCH`, never a second `POST` — creation is 5/min, and a second one orphans the first draft                   |
+| Nothing changed                 | No request at all                                                                                              |
+| Save failed                     | State `error`, reason surfaced, text still `isDirty`                                                           |
+| A cover, then several autosaves | **Exactly one upload** — the endpoint allows 5/min, and uploading per save spends it in three keystroke pauses |
+| Cover untouched                 | `coverImageKey` **absent** from the PATCH body                                                                 |
+| Cover removed                   | `coverImageKey: null` — `undefined` leaves it alone, `null` erases it                                          |
+| Publish with unsaved text       | Saves first, then publishes                                                                                    |
+| Publish when the save failed    | **Does not publish** — going ahead would put older text live and discard what is on screen                     |
+
+Uses fake timers (`shouldAdvanceTime: true`) to jump the 2 s autosave debounce.
 
 #### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
 
@@ -784,6 +809,12 @@ The rest cover rendering itself: headings/emphasis/lists as real elements, fence
 
 `ArticleCard` has the matching assertion for `excerpt`: it is derived server-side with markdown marks stripped but **HTML left intact**, so the card must print it as text.
 
+#### `TagInput` and `normaliseTag` (`src/features/article/`)
+
+Tags must match `^[a-z0-9-]{1,30}$`, and a tag that fails comes back as a bare 400 that **never names the field** — so the input has to fix or refuse it before it is sent.
+
+`normaliseTag` is tested as a pure function, including the property that every input either normalises to something the server pattern accepts or to the empty string. Turkish letters are transliterated rather than stripped — `yazılım` quietly becoming `yazlm` would be worse than rejecting it — and the component shows the writer what their input will become before they commit it.
+
 #### `PostCard` / `CommentCard`
 
 8 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
@@ -1074,23 +1105,27 @@ await page.route("**/api/v1/**", async (route, request) => {
 
 > `api` client unwraps `ApiResponse<T>.data`, so all mock responses must wrap the payload in `{ data: ... }`.
 
-| Spec            | Scenario                                                                       |
-| --------------- | ------------------------------------------------------------------------------ |
-| `auth.spec`     | Clicking "Sign In" opens the identifier input                                  |
-| `auth.spec`     | `check: true` response → login step (password field visible)                   |
-| `auth.spec`     | `check: false` response → register step ("Create your account")                |
-| `feed.spec`     | Mocked posts render as `<article>` elements                                    |
-| `feed.spec`     | Clicking "News" tab sends `type=TECH_NEWS` query param                         |
-| `feed.spec`     | Clicking like triggers optimistic count increment                              |
-| `profile.spec`  | Visit `/profile/:username` → full name heading visible                         |
-| `profile.spec`  | `isMe: true` response → "Edit Profile" button visible                          |
-| `articles.spec` | The Articles tab lists the returned articles as `<article>` elements           |
-| `articles.spec` | No "Jobs" tab; the strip reads Community, News, Updates, Articles in DOM order |
-| `articles.spec` | Category chip sends `categories=BACKEND`                                       |
-| `articles.spec` | Opening an article renders its markdown as elements, not literal `#`/`**`      |
-| `articles.spec` | A body carrying raw HTML is neither rendered nor executed                      |
-| `articles.spec` | Liking increments the count before the request settles                         |
-| `articles.spec` | A 404 shows not-found and never hints at a draft                               |
+| Spec                  | Scenario                                                                       |
+| --------------------- | ------------------------------------------------------------------------------ |
+| `auth.spec`           | Clicking "Sign In" opens the identifier input                                  |
+| `auth.spec`           | `check: true` response → login step (password field visible)                   |
+| `auth.spec`           | `check: false` response → register step ("Create your account")                |
+| `feed.spec`           | Mocked posts render as `<article>` elements                                    |
+| `feed.spec`           | Clicking "News" tab sends `type=TECH_NEWS` query param                         |
+| `feed.spec`           | Clicking like triggers optimistic count increment                              |
+| `profile.spec`        | Visit `/profile/:username` → full name heading visible                         |
+| `profile.spec`        | `isMe: true` response → "Edit Profile" button visible                          |
+| `articles.spec`       | The Articles tab lists the returned articles as `<article>` elements           |
+| `articles.spec`       | No "Jobs" tab; the strip reads Community, News, Updates, Articles in DOM order |
+| `articles.spec`       | Category chip sends `categories=BACKEND`                                       |
+| `articles.spec`       | Opening an article renders its markdown as elements, not literal `#`/`**`      |
+| `articles.spec`       | A body carrying raw HTML is neither rendered nor executed                      |
+| `articles.spec`       | Liking increments the count before the request settles                         |
+| `articles.spec`       | A 404 shows not-found and never hints at a draft                               |
+| `article-editor.spec` | Write, preview, publish — created **once**, then published                     |
+| `article-editor.spec` | Publish stays disabled until there is a title and a body                       |
+| `article-editor.spec` | A tag is normalised to what the server pattern accepts                         |
+| `article-editor.spec` | A guest is redirected home rather than into the editor                         |
 
 ---
 
