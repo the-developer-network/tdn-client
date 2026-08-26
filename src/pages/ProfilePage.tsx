@@ -20,13 +20,6 @@ import { SEO } from "../shared/components/ui/SEO";
 import { Button } from "../shared/components/ui/Button";
 import { useI18n } from "../shared/hooks/useI18n";
 
-function displayProfileIsMe(
-    local: Profile | null,
-    fetched: Profile | null,
-): boolean {
-    return (local ?? fetched)?.isMe === true;
-}
-
 export default function ProfilePage() {
     const { username } = useParams<{ username: string }>();
     const navigate = useNavigate();
@@ -113,7 +106,15 @@ export default function ProfilePage() {
      * the repository, so it cannot show them however it is asked.
      */
     const mine = useMyArticles();
-    const isOwnProfile = displayProfileIsMe(localProfile, profile);
+
+    // `localProfile` wins because editing your profile updates it before the
+    // fetched copy catches up. Derived once, so the articles tab and the
+    // header cannot disagree about whose profile this is.
+    const displayProfile = useMemo(
+        () => localProfile ?? profile,
+        [localProfile, profile],
+    );
+    const isOwnProfile = displayProfile?.isMe === true;
 
     // Deferred until the tab is opened: most visits never leave Posts, and
     // both endpoints are rate limited alongside every other read.
@@ -173,11 +174,6 @@ export default function ProfilePage() {
         retryProfile();
         retryPosts();
     }, [retryProfile, retryPosts]);
-
-    const displayProfile = useMemo(
-        () => localProfile ?? profile,
-        [localProfile, profile],
-    );
 
     if (!username) {
         navigate("/", { replace: true });

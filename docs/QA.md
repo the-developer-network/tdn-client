@@ -52,6 +52,7 @@ src/
         useArticles.test.ts
         useArticleActions.test.ts
         useArticleEditor.test.ts
+        useMyArticles.test.ts
       components/
         ArticleCard.test.tsx
         ArticleList.test.tsx
@@ -400,6 +401,10 @@ The editor autosaves, and almost everything that can go wrong there is a rate li
 | Publish when the save failed    | **Does not publish** — going ahead would put older text live and discard what is on screen                     |
 
 Uses fake timers (`shouldAdvanceTime: true`) to jump the 2 s autosave debounce.
+
+#### `useMyArticles` (`src/features/article/hooks/useMyArticles.test.ts`)
+
+`/articles/me` is the only endpoint that returns drafts, so it is never flagged public — a stale token replayed anonymously would come back empty rather than erroring, and the writer would think their drafts were gone. The tests cover the status query, that page two repeats the same status, the request-id guard against a slow status switch landing last, and that the token is sent.
 
 #### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
 
