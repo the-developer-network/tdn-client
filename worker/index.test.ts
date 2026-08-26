@@ -244,6 +244,25 @@ describe("worker routing", () => {
             expect(html).toContain("&lt;script&gt;");
         });
 
+        // The slug arrives straight off the request URL, where percent-escapes
+        // survive the route match: `%2f` is not a path separator to the URL
+        // parser, so it reaches here inside a single segment. Spliced in raw
+        // it reaches the API as a slash and resolves to a different route.
+        it("encodes the slug before putting it in the API path", async () => {
+            let requested: string | null = null;
+            server.use(
+                http.get(`${API}/articles/:slug`, ({ request }) => {
+                    requested = new URL(request.url).pathname;
+                    return HttpResponse.json({ data: article });
+                }),
+            );
+            const { env } = makeEnv();
+
+            await worker.fetch(get("/articles/a%2fb"), env);
+
+            expect(requested).toBe("/api/v1/articles/a%252fb");
+        });
+
         // `/articles` is the list page, one segment long — it must not be
         // mistaken for an article slug and sent to the API.
         it("leaves the list page on the site defaults", async () => {

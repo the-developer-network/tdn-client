@@ -83,6 +83,8 @@ export function useArticleEditor(initial: Article | null) {
         initial ? JSON.stringify(draftOf(initial)) : "",
     );
     const isSavingRef = useRef(false);
+    // Set when an edit arrives mid-save; cleared by the follow-up save.
+    const resaveRef = useRef(false);
     const articleIdRef = useRef<string | null>(initial?.id ?? null);
     const draftRef = useRef(draft);
     const coverFileRef = useRef<File | null>(null);
@@ -131,7 +133,13 @@ export function useArticleEditor(initial: Article | null) {
         if (current.title.trim() === "" || current.body.trim() === "") {
             return null;
         }
-        if (isSavingRef.current) return null;
+        // A save already running has captured an older draft. Rather than
+        // dropping this one, mark that another is owed — the running save
+        // picks it up when it finishes.
+        if (isSavingRef.current) {
+            resaveRef.current = true;
+            return null;
+        }
 
         isSavingRef.current = true;
         setSaveState("saving");
@@ -195,6 +203,20 @@ export function useArticleEditor(initial: Article | null) {
         }
     }, [resolveCoverKey]);
 
+    /**
+     * Runs the save, then runs it again if the writer typed while it was in
+     * flight. The autosave effect will not re-fire on its own for that edit —
+     * its dependencies are unchanged by the time the request resolves — so
+     * without this the newer text is never sent and is lost with no error
+     * shown anywhere.
+     */
+    const saveChain = useCallback(async (): Promise<Article | null> => {
+        const first = await save();
+        if (!resaveRef.current) return first;
+        resaveRef.current = false;
+        return (await save()) ?? first;
+    }, [save]);
+
     const isDirty =
         JSON.stringify(draft) !== savedSnapshot ||
         coverFile !== null ||
@@ -206,16 +228,16 @@ export function useArticleEditor(initial: Article | null) {
     useEffect(() => {
         if (!canSave || !isDirty || isBusy) return;
         const timer = setTimeout(() => {
-            void save();
+            void saveChain();
         }, AUTOSAVE_DELAY_MS);
         return () => clearTimeout(timer);
-    }, [draft, coverFile, coverRemoved, canSave, isDirty, isBusy, save]);
+    }, [draft, coverFile, coverRemoved, canSave, isDirty, isBusy, saveChain]);
 
     /** Saves anything outstanding, then moves the article out of DRAFT. */
     const publish = useCallback(async (): Promise<Article | null> => {
         setIsBusy(true);
         try {
-            const saved = await save();
+            const saved = await saveChain();
             const id = articleIdRef.current;
             if (!id) return null;
             // A save that failed leaves the server holding older text; going
@@ -233,7 +255,7 @@ export function useArticleEditor(initial: Article | null) {
         } finally {
             setIsBusy(false);
         }
-    }, [save, isDirty]);
+    }, [saveChain, isDirty]);
 
     const archive = useCallback(async (): Promise<boolean> => {
         const id = articleIdRef.current;
@@ -286,7 +308,7 @@ export function useArticleEditor(initial: Article | null) {
         isBusy,
         saveState,
         saveError,
-        save,
+        save: saveChain,
         publish,
         archive,
         remove,

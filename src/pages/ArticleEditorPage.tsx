@@ -29,12 +29,19 @@ export default function ArticleEditorPage() {
         if (!isAuthenticated) navigate("/", { replace: true });
     }, [isAuthenticated, navigate]);
 
-    const { article, isLoading, error } = useArticle(slug ?? "");
-
     if (!isAuthenticated) return null;
 
-    // A new article has no slug to load, so the editor mounts straight away.
+    // A new article has nothing to load, so it never mounts the loader —
+    // asking the API for an empty slug spends a request on every visit to
+    // the editor and answers with nothing useful.
     if (!slug) return <Editor initial={null} />;
+
+    return <EditExisting slug={slug} />;
+}
+
+function EditExisting({ slug }: { slug: string }) {
+    const { t } = useI18n();
+    const { article, isLoading, error, retry } = useArticle(slug);
 
     if (isLoading) {
         return (
@@ -49,14 +56,26 @@ export default function ArticleEditorPage() {
     if (error || !article) {
         return (
             <PageShell width="reading">
-                <div className="p-10 text-center text-white/40">
-                    {error ?? ""}
+                <div className="flex flex-col items-center gap-4 p-10 text-center">
+                    <p className="text-sm text-white/40">
+                        {error ?? t("page.articleNotFound")}
+                    </p>
+                    {error && (
+                        <Button variant="outline" size="sm" onClick={retry}>
+                            {t("articleList.tryAgain")}
+                        </Button>
+                    )}
                 </div>
             </PageShell>
         );
     }
 
-    return <Editor initial={article} />;
+    // Keyed so moving from one article's edit URL to another remounts
+    // the editor. `useArticleEditor` seeds from `initial` in `useState`
+    // initialisers, which run once per mount — without this the editor keeps
+    // the first article's text while the URL claims the second, and the next
+    // autosave writes it back to whichever id the hook is still holding.
+    return <Editor key={article.id} initial={article} />;
 }
 
 /**

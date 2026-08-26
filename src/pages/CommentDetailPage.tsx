@@ -3,7 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { commentApi } from "../features/comment/api/comment.api";
-import type { Comment } from "../features/comment/api/comment.types";
+import type {
+    Comment,
+    CommentTarget,
+} from "../features/comment/api/comment.types";
 import { CommentCard } from "../features/comment/components/CommentCard";
 import { Button } from "../shared/components/ui/Button";
 import { useCommentReplies } from "../features/comment/hooks/useCommentReplies";
@@ -29,6 +32,14 @@ export default function CommentDetailPage() {
         addReply,
         removeReply,
     } = useCommentReplies(id!);
+
+    // A comment hangs off a post or an article, never both. Derived once so
+    // the reply box and anything else that needs it cannot disagree.
+    const commentTarget: CommentTarget | null = comment?.postId
+        ? { type: "post", id: comment.postId }
+        : comment?.articleId
+          ? { type: "article", id: comment.articleId }
+          : null;
 
     const handleBack = () => {
         if (window.history.length > 1) {
@@ -115,20 +126,19 @@ export default function CommentDetailPage() {
                             );
                         }}
                     />
-                    <CommentBox
-                        target={
-                            comment.postId
-                                ? { type: "post", id: comment.postId }
-                                : {
-                                      type: "article",
-                                      id: comment.articleId ?? "",
-                                  }
-                        }
-                        parentId={id!}
-                        onCommentCreated={(newReply) => {
-                            addReply(newReply);
-                        }}
-                    />
+                    {/* Narrowed rather than asserted. The database guarantees
+                        exactly one parent, but a comment that somehow arrives
+                        with neither has nowhere to send a reply — offering the
+                        box anyway would post to `/articles//comments`. */}
+                    {commentTarget && (
+                        <CommentBox
+                            target={commentTarget}
+                            parentId={id!}
+                            onCommentCreated={(newReply) => {
+                                addReply(newReply);
+                            }}
+                        />
+                    )}
                     {repliesLoading ? (
                         <div className="p-8 text-white/40">
                             {t("page.loadingReplies")}

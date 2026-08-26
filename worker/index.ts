@@ -128,7 +128,14 @@ async function fetchArticle(
     slug: string,
 ): Promise<ArticleMeta | null> {
     try {
-        const res = await fetch(`${apiBase}/articles/${slug}`);
+        // Encoded before it is spliced into the path. The value comes
+        // straight off the request URL, where percent-escapes survive the
+        // route match — `%2e%2e` is read as a path segment by the URL parser
+        // and would resolve the request somewhere other than this article.
+        // The client-side API module already encodes; this matched it.
+        const res = await fetch(
+            `${apiBase}/articles/${encodeURIComponent(slug)}`,
+        );
         if (!res.ok) return null;
         const json = (await res.json()) as { data: ArticleMeta };
         return json.data;
