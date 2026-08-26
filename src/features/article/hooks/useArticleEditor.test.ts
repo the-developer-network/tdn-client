@@ -336,6 +336,49 @@ describe("useArticleEditor", () => {
             expect(result.current.status).toBe("PUBLISHED");
         });
 
+        // The follow-up save carries the newest text. If it fails, publishing
+        // would put the previous version live and quietly drop the last edit.
+        it("refuses to publish when the follow-up save failed", async () => {
+            let calls = 0;
+            let published = false;
+            server.use(
+                http.post(`${BASE}/articles`, () =>
+                    HttpResponse.json({ data: article() }),
+                ),
+                http.patch(`${BASE}/articles/:id`, () => {
+                    calls += 1;
+                    return HttpResponse.json(
+                        {
+                            type: "about:blank",
+                            title: "InternalServerError",
+                            status: 500,
+                            detail: "Nope.",
+                            instance: "/api/v1/articles/article-1",
+                        },
+                        { status: 500 },
+                    );
+                }),
+                http.post(`${BASE}/articles/:id/publish`, () => {
+                    published = true;
+                    return HttpResponse.json({ data: article() });
+                }),
+            );
+
+            const { result } = renderHook(() =>
+                useArticleEditor(article({ status: "DRAFT" })),
+            );
+
+            act(() => {
+                result.current.update("body", "Newer text.");
+            });
+            await act(async () => {
+                await result.current.publish();
+            });
+
+            expect(calls).toBeGreaterThan(0);
+            expect(published).toBe(false);
+        });
+
         // Publishing over a failed save would put the older text live and
         // silently discard what is on screen.
         it("refuses to publish when the save failed", async () => {
