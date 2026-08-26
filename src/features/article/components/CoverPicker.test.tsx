@@ -141,6 +141,14 @@ describe("CoverPicker", () => {
         expect(screen.getByLabelText("Cover description")).toBeInTheDocument();
     });
 
+    // The preview has to be bounded the same way the reading page bounds it,
+    // or the writer sizes their cover against a taller box than readers see.
+    it("bounds the preview's height", () => {
+        const { container } = renderPicker({ file: image() });
+
+        expect(container.querySelector("img")!.className).toMatch(/max-h-/);
+    });
+
     it("shows a cover the article already has", () => {
         const { container } = renderPicker({
             existingUrl: "https://example.com/cover.png",

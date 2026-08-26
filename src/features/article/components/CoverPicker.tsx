@@ -85,7 +85,14 @@ export function CoverPicker({
 
             {preview ? (
                 <div className="relative overflow-hidden rounded-xl border border-white/10">
-                    <img src={preview} alt="" className="w-full" />
+                    {/* Bounded the same way the reading page bounds it, so
+                        the preview is a fair picture of what a reader gets
+                        rather than a taller one the writer has to guess at. */}
+                    <img
+                        src={preview}
+                        alt=""
+                        className="max-h-[60vh] w-full object-cover"
+                    />
                     <button
                         type="button"
                         onClick={() => {
