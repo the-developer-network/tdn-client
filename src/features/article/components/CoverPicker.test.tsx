@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -109,38 +109,59 @@ describe("CoverPicker", () => {
         });
     });
 
-    // The server reads magic bytes, not the extension, and SVG is refused
-    // outright — so a wrong type is worth catching before the writer publishes.
-    it("refuses a type the endpoint does not accept", async () => {
-        const user = userEvent.setup();
+    // The server reads magic bytes, not the extension, and refuses SVG
+    // outright — worth catching before the writer reaches publish.
+    it("refuses a type the endpoint does not accept", () => {
         const { input, onFileChange } = renderPicker();
 
-        await user.upload(input, image("x.svg", "image/svg+xml"));
+        // Driven with a raw change event rather than `userEvent.upload`:
+        // userEvent filters the file against the input's `accept` attribute
+        // and drops it before the handler runs, even with `applyAccept: false`
+        // — which would leave this asserting userEvent's behaviour instead of
+        // the component's. A real file dialog can be talked past; this is what
+        // that looks like from the component's side.
+        fireEvent.change(input, {
+            target: { files: [image("x.svg", "image/svg+xml")] },
+        });
 
         expect(onFileChange).not.toHaveBeenCalled();
         expect(useToastStore.getState().toasts).toHaveLength(1);
     });
 
+    // The preview carries alt="" because the writer describes the image in
+    // the field beneath it — which makes its ARIA role `presentation`, not
+    // `img`, so these query the element rather than the role.
     it("previews a chosen file and offers the alt field", () => {
-        renderPicker({ file: image() });
+        const { container } = renderPicker({ file: image() });
 
-        expect(screen.getByRole("img")).toHaveAttribute("src", "blob:preview");
+        expect(container.querySelector("img")).toHaveAttribute(
+            "src",
+            "blob:preview",
+        );
         expect(screen.getByLabelText("Cover description")).toBeInTheDocument();
     });
 
     it("shows a cover the article already has", () => {
-        renderPicker({ existingUrl: "https://example.com/cover.png" });
+        const { container } = renderPicker({
+            existingUrl: "https://example.com/cover.png",
+        });
 
-        expect(screen.getByRole("img")).toHaveAttribute(
+        expect(container.querySelector("img")).toHaveAttribute(
             "src",
             "https://example.com/cover.png",
         );
     });
 
     it("drops an existing cover URL whose protocol is not trusted", () => {
-        renderPicker({ existingUrl: "javascript:alert(1)" });
+        const { container } = renderPicker({
+            existingUrl: "javascript:alert(1)",
+        });
 
-        expect(screen.queryByRole("img")).not.toBeInTheDocument();
+        expect(container.querySelector("img")).toBeNull();
+        // Falls back to the empty state rather than rendering nothing at all.
+        expect(
+            screen.getByRole("button", { name: /add a cover image/i }),
+        ).toBeInTheDocument();
     });
 
     // Clearing a chosen file and clearing a saved cover are different: one
