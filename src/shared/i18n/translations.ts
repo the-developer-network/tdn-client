@@ -88,6 +88,9 @@ const en = {
     "editor.needsTitleAndBody":
         "A title and some body text are needed before this can be saved.",
     "editor.bodyTooLong": "The body is over the {{max}} character limit.",
+    "editor.titleTooLong": "The title is over the {{max}} character limit.",
+    "editor.tooLarge":
+        "This article is too large to send. Emoji and accented letters each take several bytes, so it can pass the character limit and still be over the size limit — trim the body a little.",
     "editor.publish": "Publish",
     "editor.publishing": "Publishing...",
     "editor.published": "Your article is live.",
@@ -626,6 +629,9 @@ const tr: Record<TranslationKey, string> = {
     "editor.needsTitleAndBody":
         "Kaydedebilmek için bir başlık ve biraz metin gerekiyor.",
     "editor.bodyTooLong": "Metin {{max}} karakter sınırını aşıyor.",
+    "editor.titleTooLong": "Başlık {{max}} karakter sınırını aşıyor.",
+    "editor.tooLarge":
+        "Bu makale gönderilemeyecek kadar büyük. Emoji ve Türkçe harfler birkaç bayt yer kaplar, yani karakter sınırını geçmeden boyut sınırını aşabilir — metni biraz kısalt.",
     "editor.publish": "Yayınla",
     "editor.publishing": "Yayınlanıyor...",
     "editor.published": "Makalen yayında.",

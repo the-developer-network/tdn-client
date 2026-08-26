@@ -80,7 +80,10 @@ function mockEditor(
         coverFile: null,
         setCoverFile: vi.fn(),
         removeExistingCover: vi.fn(),
-        canSave: false,
+        canSave: overrides.canSave ?? false,
+        // Kept in step with `canSave` unless a test says otherwise: the two
+        // always agree in the real hook, where `canSave` is `problem === null`.
+        problem: (overrides.canSave ?? false) ? null : "empty",
         isDirty: false,
         isBusy: false,
         saveState: "idle",
@@ -149,6 +152,33 @@ describe("ArticleEditorPage", () => {
                 "A title and some body text are needed before this can be saved.",
             ),
         ).toBeInTheDocument();
+    });
+
+    // The server answers a breached limit with a bare 400, or a 413 that names
+    // nothing at all, so the editor has to say which one it was.
+    it("names the limit that is stopping the save", () => {
+        mockEditor({ canSave: false, problem: "bodyTooLong" });
+        render(<ArticleEditorPage />);
+
+        expect(
+            screen.getByText("The body is over the 100000 character limit."),
+        ).toBeInTheDocument();
+    });
+
+    // Characters are not bytes: emoji and Turkish letters take several each,
+    // so a body inside the character limit can still be refused for size.
+    it("explains a draft that is under the character limit but too large", () => {
+        mockEditor({ canSave: false, problem: "tooLarge" });
+        render(<ArticleEditorPage />);
+
+        expect(screen.getByText(/too large to send/i)).toBeInTheDocument();
+    });
+
+    it("keeps publish disabled while a limit is breached", () => {
+        mockEditor({ canSave: false, problem: "bodyTooLong" });
+        render(<ArticleEditorPage />);
+
+        expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
     });
 
     it("shows the save state once there is something to save", () => {

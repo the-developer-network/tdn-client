@@ -100,6 +100,7 @@ function Editor({ initial }: { initial: Article | null }) {
         setCoverFile,
         removeExistingCover,
         canSave,
+        problem,
         isDirty,
         isBusy,
         saveState,
@@ -119,7 +120,6 @@ function Editor({ initial }: { initial: Article | null }) {
         return () => window.removeEventListener("beforeunload", warn);
     }, [isDirty]);
 
-    const bodyTooLong = draft.body.length > ARTICLE_LIMITS.bodyMax;
     const isPublished = status === "PUBLISHED";
 
     async function handlePublish() {
@@ -176,7 +176,7 @@ function Editor({ initial }: { initial: Article | null }) {
                 <SaveIndicator
                     state={saveState}
                     isDirty={isDirty}
-                    canSave={canSave}
+                    problem={problem}
                     error={saveError}
                     onRetry={() => void save()}
                 />
@@ -207,7 +207,7 @@ function Editor({ initial }: { initial: Article | null }) {
                             variant="primary"
                             size="sm"
                             onClick={handlePublish}
-                            disabled={!canSave || bodyTooLong || isBusy}
+                            disabled={!canSave || isBusy}
                         >
                             {isBusy
                                 ? t("editor.publishing")
@@ -276,13 +276,6 @@ function Editor({ initial }: { initial: Article | null }) {
                             rows={18}
                             className="w-full resize-y bg-transparent text-[18px] leading-[1.75] text-white/80 outline-none placeholder:text-white/20"
                         />
-                        {bodyTooLong && (
-                            <p className="text-xs text-red-400/80">
-                                {t("editor.bodyTooLong", {
-                                    max: ARTICLE_LIMITS.bodyMax,
-                                })}
-                            </p>
-                        )}
                     </div>
 
                     <Field label={t("editor.excerpt")}>
