@@ -1,6 +1,13 @@
 import { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bookmark, Clock, Heart, Share2 } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+    ArrowLeft,
+    Bookmark,
+    Clock,
+    Heart,
+    Pencil,
+    Share2,
+} from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { MarkdownBody } from "../features/article/components/MarkdownBody";
@@ -242,6 +249,15 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                 >
                     <Share2 size={16} />
                 </button>
+                {article.author.isMe && (
+                    <Link
+                        to={`/articles/${slug}/edit`}
+                        aria-label={t("editor.editTitle")}
+                        className="ml-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-white/60"
+                    >
+                        <Pencil size={16} />
+                    </Link>
+                )}
             </div>
 
             <CommentBox

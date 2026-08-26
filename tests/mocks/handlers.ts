@@ -227,6 +227,40 @@ export const handlers = [
         () => new HttpResponse(null, { status: 204 }),
     ),
 
+    http.get(`${BASE}/articles/me`, () =>
+        HttpResponse.json({ data: [mockArticleSummary] }),
+    ),
+
+    http.post(`${BASE}/articles/cover`, () =>
+        HttpResponse.json({
+            data: {
+                coverImageKey: "articles/covers/user-1/abc.png",
+                coverImageUrl: "https://example.com/cover.png",
+            },
+        }),
+    ),
+
+    http.post(`${BASE}/articles`, () =>
+        HttpResponse.json({ data: mockArticle }),
+    ),
+
+    http.patch(`${BASE}/articles/:articleId`, () =>
+        HttpResponse.json({ data: mockArticle }),
+    ),
+
+    http.post(`${BASE}/articles/:articleId/publish`, () =>
+        HttpResponse.json({ data: { ...mockArticle, status: "PUBLISHED" } }),
+    ),
+
+    http.post(`${BASE}/articles/:articleId/archive`, () =>
+        HttpResponse.json({ data: { ...mockArticle, status: "ARCHIVED" } }),
+    ),
+
+    http.delete(
+        `${BASE}/articles/:articleId`,
+        () => new HttpResponse(null, { status: 204 }),
+    ),
+
     http.get(`${BASE}/articles`, () =>
         HttpResponse.json({ data: [mockArticleSummary] }),
     ),

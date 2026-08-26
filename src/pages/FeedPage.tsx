@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
     Gamepad2,
     Monitor,
     Server,
     Smartphone,
+    PenLine,
     Sparkles,
     Users,
 } from "lucide-react";
@@ -222,6 +224,19 @@ export default function FeedPage() {
                     onPostCreated={addPost}
                     activeCategory={activeCategory}
                 />
+            )}
+
+            {/* Articles have no inline composer — they are long-form and get a
+                whole page — so the slot the PostBox occupies carries the way
+                in to one instead. */}
+            {isArticles && isAuthenticated && (
+                <Link
+                    to="/articles/new"
+                    className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.03] hover:text-white"
+                >
+                    <PenLine size={16} />
+                    {t("editor.writeArticle")}
+                </Link>
             )}
 
             {isArticles ? (

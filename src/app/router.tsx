@@ -6,6 +6,7 @@ import PostDetailPage from "../pages/PostDetailPage";
 import CommentDetailPage from "../pages/CommentDetailPage";
 import ExplorePage from "../pages/ExplorePage";
 import ArticleDetailPage from "../pages/ArticleDetailPage";
+import ArticleEditorPage from "../pages/ArticleEditorPage";
 import ProfilePage from "../pages/ProfilePage";
 import TermsOfServicePage from "../pages/TermsOfServicePage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
@@ -28,9 +29,21 @@ export const router = createBrowserRouter([
         path: "/post/:id",
         element: <PostDetailPage />,
     },
+    // Declared before the slug route for readability; the router ranks the
+    // static segment above the dynamic one either way. The cost is that an
+    // article whose slug is literally "new" would be unreachable — the server
+    // derives slugs from titles, so that is a title of "New" and nothing more.
+    {
+        path: "/articles/new",
+        element: <ArticleEditorPage />,
+    },
     {
         path: "/articles/:slug",
         element: <ArticleDetailPage />,
+    },
+    {
+        path: "/articles/:slug/edit",
+        element: <ArticleEditorPage />,
     },
     {
         path: "/oauth-success",
