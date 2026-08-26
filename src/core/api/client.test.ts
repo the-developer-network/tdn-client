@@ -251,6 +251,72 @@ describe("apiClient", () => {
             expect(result).toEqual([{ id: "public-1" }]);
         });
 
+        // Opening an article fires several public reads at once — the article,
+        // its comments, the trending rail. With a stale token each one takes
+        // this branch, and each used to call refresh directly, bypassing the
+        // single-flight guard the authenticated path uses. Refresh is limited
+        // to five a minute, and a rotating refresh token means the second and
+        // third present one the first has already spent: they fail, and a
+        // failed refresh signs the reader out.
+        it("refreshes once for several concurrent public 401s", async () => {
+            localStorage.setItem("access_token", "expired-token");
+            let refreshes = 0;
+            const seen = new Set<string>();
+
+            server.use(
+                http.get(`${BASE}/articles/:slug`, ({ request }) => {
+                    const key = new URL(request.url).pathname;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        return new HttpResponse(null, { status: 401 });
+                    }
+                    return HttpResponse.json({ data: { id: "a" } });
+                }),
+                http.post(`${BASE}/auth/refresh`, async () => {
+                    refreshes += 1;
+                    await new Promise((resolve) => setTimeout(resolve, 20));
+                    return HttpResponse.json({
+                        data: { accessToken: "fresh" },
+                    });
+                }),
+            );
+
+            await Promise.all([
+                api.get("/articles/one", { isPublic: true }),
+                api.get("/articles/two", { isPublic: true }),
+                api.get("/articles/three", { isPublic: true }),
+            ]);
+            await new Promise((resolve) => setTimeout(resolve, 60));
+
+            expect(refreshes).toBe(1);
+        });
+
+        // A reader who never signed in has no session to renew. Asking anyway
+        // spends a request and then reports the session as expired, which
+        // opens the sign-in modal at someone who never signed in.
+        it("does not try to refresh when no token was sent", async () => {
+            let refreshes = 0;
+            const onExpired = vi.fn();
+            registerSessionExpiredHandler(onExpired);
+
+            server.use(
+                http.get(
+                    `${BASE}/articles`,
+                    () => new HttpResponse(null, { status: 401 }),
+                ),
+                http.post(`${BASE}/auth/refresh`, () => {
+                    refreshes += 1;
+                    return new HttpResponse(null, { status: 401 });
+                }),
+            );
+
+            await api.get("/articles", { isPublic: true }).catch(() => {});
+            await new Promise((resolve) => setTimeout(resolve, 40));
+
+            expect(refreshes).toBe(0);
+            expect(onExpired).not.toHaveBeenCalled();
+        });
+
         it("reports a dropped connection on the retry as a NetworkError", async () => {
             localStorage.setItem("access_token", "expired-token");
             let hit = 0;

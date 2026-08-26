@@ -36,6 +36,19 @@ interface ApiOptions extends RequestInit {
 }
 
 let isRefreshing = false;
+
+/**
+ * The in-flight refresh, shared by every caller that needs one.
+ *
+ * The queue below serialises *authenticated* retries, but the public branch
+ * used to call `attemptTokenRefresh` directly and so escaped it entirely.
+ * Opening an article fires several public reads at once — the article, its
+ * comments, the trending rail — and with a stale token each one asked for its
+ * own refresh. That spends a five-a-minute budget three at a time, and where
+ * the refresh token rotates, the later calls present one the first has
+ * already consumed: they fail, and a failed refresh signs the reader out.
+ */
+let refreshPromise: Promise<string | null> | null = null;
 let failedQueue: Array<{
     resolve: (token: string | null) => void;
     reject: (error: unknown) => void;
@@ -102,6 +115,15 @@ const attemptTokenRefresh = async (): Promise<string | null> => {
     return null;
 };
 
+const refreshOnce = (): Promise<string | null> => {
+    if (!refreshPromise) {
+        refreshPromise = attemptTokenRefresh().finally(() => {
+            refreshPromise = null;
+        });
+    }
+    return refreshPromise;
+};
+
 export const apiClient = async <T>(
     endpoint: string,
     options: ApiOptions = {},
@@ -134,10 +156,21 @@ export const apiClient = async <T>(
         headers,
     });
 
+    // A public request that carried no token was already anonymous, so its
+    // 401 is the endpoint's own answer rather than a stale session. Retrying
+    // it unchanged only repeats the same failure, and renewing a session that
+    // was never opened ends by reporting it expired — which puts the sign-in
+    // modal in front of a reader who never signed in.
+    const isStaleSession =
+        response.status === 401 &&
+        !_retry &&
+        !isAnonymous &&
+        !(isPublic && !token);
+
     // `isAnonymous` endpoints answer 401 to mean "wrong credentials", so the
     // whole recovery apparatus below is skipped and the problem document
     // falls through to the caller.
-    if (response.status === 401 && !_retry && !isAnonymous) {
+    if (isStaleSession) {
         // Public endpoints: retry without token so the request succeeds
         // as unauthenticated, then attempt a background refresh.
         if (isPublic) {
@@ -147,8 +180,10 @@ export const apiClient = async <T>(
                 headers,
             });
 
-            // Background refresh so subsequent authenticated calls work
-            attemptTokenRefresh().then((newToken) => {
+            // Background refresh so subsequent authenticated calls work.
+            // Shared with every other caller, so a page full of public reads
+            // renews the session once rather than once each.
+            refreshOnce().then((newToken) => {
                 if (!newToken) {
                     localStorage.removeItem("access_token");
                     _onSessionExpired?.();
@@ -172,7 +207,7 @@ export const apiClient = async <T>(
 
         isRefreshing = true;
 
-        const newToken = await attemptTokenRefresh();
+        const newToken = await refreshOnce();
         if (newToken) {
             processQueue(null, newToken);
             isRefreshing = false;

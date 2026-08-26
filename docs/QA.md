@@ -297,6 +297,10 @@ The refresh queue is the most critical path: a 401 triggers a single token refre
 
 Flagging a credential endpoint `isPublic` sends every rejected attempt twice and then reports the session as expired — see `auth-api.test.ts` for the four regressions that guard against it.
 
+**Refresh is single-flight, and two tests keep it that way.** Every caller that needs a renewed session shares one in-flight `POST /auth/refresh`. The public branch used to call refresh directly and so escaped the queue the authenticated path uses: opening an article fires several public reads at once — the article, its comments, the trending rail — and with a stale token each one asked for its own. That spends a five-a-minute budget three at a time, and where the refresh token rotates the later calls present one the first has already consumed, fail, and sign the reader out.
+
+The second test covers the guest case: a public request that carried **no** token is already anonymous, so its 401 says nothing about a session. Renewing one that was never opened ends by reporting it expired, which puts the sign-in modal in front of a reader who never signed in.
+
 #### `authApi` (`src/features/auth/api/auth-api.test.ts`)
 
 7 tests. The only `*.api.ts` spec in the suite, because these thunks are the one place where the _choice_ of client flag is itself the behaviour under test.
