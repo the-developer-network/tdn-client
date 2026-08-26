@@ -107,6 +107,12 @@ src/
       hooks/
         useFollowAction.test.ts
         useFollowList.test.ts
+    onboarding/
+      store/
+        onboarding.store.test.ts
+      hooks/
+        useOnboardingSuggestions.test.ts
+        useOnboardingFollows.test.ts
     settings/
       hooks/
         useDeleteAccount.test.ts
@@ -126,7 +132,11 @@ src/
     CommentDetailPage.test.tsx
     BookmarksPage.test.tsx
     NotificationsPage.test.tsx
+    OnboardingPage.test.tsx
     SettingsPage.test.tsx
+  app/
+    OnboardingGate.test.tsx
+    sitemap-routes.test.ts
 
 worker/
   index.test.ts
@@ -137,6 +147,7 @@ e2e/
   articles.spec.ts
   auth.spec.ts
   feed.spec.ts
+  onboarding.spec.ts
   profile.spec.ts
   worker/
     worker.spec.ts
@@ -194,6 +205,21 @@ beforeEach(() => {
 | `addToast()`          | Toast added with unique id                            |
 | Auto-remove after 4 s | `vi.useFakeTimers()` + `vi.advanceTimersByTime(4000)` |
 | `removeToast(id)`     | Only the targeted toast removed                       |
+
+#### `onboarding.store` (`src/features/onboarding/store/onboarding.store.test.ts`)
+
+6 tests. Persists under `tdn-onboarding`, so the **`vi.hoisted` localStorage stub is required**.
+
+Completion is a **list of user ids**, not a boolean: a shared browser would otherwise let a second account skip the flow because the first one finished it. `complete(userId, [])` is the gate's call when the server already reports follows, and it must not wipe interests a real trip through the picker stored.
+
+| Scenario                        | Assert                                              |
+| ------------------------------- | --------------------------------------------------- |
+| Unknown user                    | `isCompleted` false                                  |
+| `complete(id, fields)`          | `isCompleted` true; `interests` stored               |
+| Second user                     | `isCompleted` false for them                         |
+| Same user twice                 | `completedUserIds` holds one entry                   |
+| `complete(id, [])`              | Existing `interests` left alone                      |
+| After `complete`                | `localStorage["tdn-onboarding"]` holds the id        |
 
 ---
 
@@ -783,6 +809,41 @@ HttpResponse.json(
 | Success (204)             | `isAuthenticated=false`; `navigate("/")` called; `error=null`      |
 | Wrong password (400)      | `error` = `detail`; `isLoading=false`; session kept; no navigation |
 
+#### `useOnboardingSuggestions` (`src/features/onboarding/hooks/useOnboardingSuggestions.test.ts`)
+
+9 tests. **Requires the `vi.hoisted` localStorage stub** — `apiClient` reads it on every request and the hook reads `useAuthStore`.
+
+The API has no notion of a user's field: `Profile` carries no category and `/profiles/suggestions` only ranks by follower count. What it does know is the category of a *post* or *article*, so an account's field is inferred from what it publishes — `GET /posts?categories=…` plus `GET /articles?categories=…`, authors collected and ranked by how much they wrote. **This hook is the only place that inference lives**; when the API grows profile categories, only its body changes.
+
+The two content requests are `Promise.allSettled`, not `Promise.all`: one endpoint failing must not cost the authors the other returned. The popularity top-up is not a nicety either — a field nobody has posted in yet would otherwise leave the list empty and the required follows unreachable.
+
+| Scenario                                | Assert                                                      |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Posts and articles both return authors  | Both appear                                                  |
+| An author appears repeatedly            | Listed once; `contentCount` counts every appearance          |
+| Two authors, different volumes          | The more prolific one is first                               |
+| A post by the signed-in user            | Left out of their own suggestions                            |
+| Fewer authors than the target           | Topped up from `/profiles/suggestions`, with `bio`/`followersCount` |
+| Top-up repeats a content author         | Not listed twice                                             |
+| Articles request fails                  | Post authors kept; `error` stays null                        |
+| Every request fails                     | The API's `detail` surfaced; `accounts` empty                |
+| Two fields picked                       | Both sent as `categories` query params                       |
+
+#### `useOnboardingFollows` (`src/features/onboarding/hooks/useOnboardingFollows.test.ts`)
+
+6 tests. **Requires the `vi.hoisted` localStorage stub.**
+
+`useFollowAction` is deliberately **not** reused here. It keeps follow state inside each card, which is right on a profile page and wrong in a flow whose only gate is "how many so far" — a counter cannot be assembled from state the cards hold privately. So the set lives above the list, and a follow the server refused must roll the count back rather than leave a phantom entry pushing the user past the requirement.
+
+| Scenario                    | Assert                                                    |
+| --------------------------- | ---------------------------------------------------------- |
+| Initial                     | `followedCount` 0                                          |
+| `toggle(id)`                | Optimistically followed; count 1                           |
+| `toggle(id)` twice          | Unfollowed; count 0                                        |
+| Follow rejected (429)       | Count back to 0; error toast carrying the API's `detail`   |
+| Unfollow rejected           | The follow is restored                                     |
+| Request in flight           | `isPending(id)` true for that id only, false once settled  |
+
 ---
 
 ### Layer 5 — Components
@@ -1082,6 +1143,45 @@ MSW fails the first `PATCH /users/me/username` and accepts every one after it, s
 | Update fails (409)             | Error rendered; the typed username is still there |
 | Success straight after failure | Success rendered; the field is cleared            |
 
+**`OnboardingPage`:**
+
+9 tests. Both onboarding hooks are mocked wholesale; the page's own job is the two-step machine and the gate on the finish button. Step one is walked by **clicking** ("Backend", then "Continue") rather than by seeding state, because the picked fields have to reach `useOnboardingSuggestions` for step two to mean anything — one test asserts exactly that hand-off.
+
+The required follow count is `Math.min(5, accounts.length)`, not a flat 5: a young deployment may not hold five accounts at all, and a flow that cannot be finished is worse than a shorter one. The escape hatch is narrower — only when suggestions never arrived is the finish button opened with nothing followed.
+
+| Scenario                          | Assert                                                     |
+| --------------------------------- | ----------------------------------------------------------- |
+| Initial                           | Field picker rendered                                        |
+| No field picked                   | "Continue" disabled; enabled after a pick                    |
+| After "Continue"                  | `useOnboardingSuggestions` called with `["BACKEND"]`         |
+| 2 of 6 followed                   | "Go to my feed" disabled; "2 of 5 followed"                  |
+| 5 of 6 followed                   | "Go to my feed" enabled                                      |
+| Only 2 accounts exist, both followed | Requirement drops — "2 of 2 followed", finish enabled  |
+| Suggestions errored               | Finish enabled; "Try again" offered                          |
+| Finish                            | `isCompleted` true, `interests` stored, `navigate("/", { replace: true })` |
+| "Back"                            | Field picker again                                           |
+
+**`OnboardingGate` (`src/app/OnboardingGate.test.tsx`):**
+
+7 tests. A pathless layout route wrapping every app route, rendered here through a `MemoryRouter` with a stub child so the pass/redirect decision is observable. `profileApi` is mocked; **the `vi.hoisted` localStorage stub is required** (two persisted stores).
+
+Two rules are load-bearing and each has a test:
+
+- **It stands down while the auth modal is open.** `RegisterView` calls `setAuth` and then `setStep("verify-email")`, leaving the modal up over the page. Redirecting at that moment unmounts `AuthModal` along with the `PageShell` holding it, and the verification step is lost.
+- **A failed profile request passes rather than redirects.** The gate is a nudge; an account must never be locked out of the app it is already signed into because one request did not come back.
+
+| Scenario                       | Assert                                              |
+| ------------------------------ | ---------------------------------------------------- |
+| Signed out                     | Passes; no profile request                           |
+| Auth modal open                | Passes; no profile request                           |
+| Already completed locally      | Passes; no profile request                           |
+| `followingCount === 0`         | Redirects to `/onboarding`                           |
+| `followingCount > 0`           | Passes and records completion so it stops asking     |
+| Profile request rejects        | Passes                                               |
+| Request in flight              | Spinner; the child is not rendered                   |
+
+**Sitemap routes (`src/app/sitemap-routes.test.ts`):** the path collector walks `children`, not just the top level — since the gate landed, nearly every route sits under a pathless layout route and a flat read would pass vacuously.
+
 ---
 
 ### Layer 7 — E2E (Playwright)
@@ -1102,6 +1202,8 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 **The API behind the `worker` project is a stub, not production.** `e2e/worker/api-stub.ts` is a third webServer serving post detail, profile detail and the post list on `127.0.0.1:8789`, and the Wrangler webServer passes `--var API_BASE:http://127.0.0.1:8789/api/v1` to point the Worker at it. `worker/index.ts` falls back to the production API when `API_BASE` is unset, so nothing has to be set at deploy time. This is what lets the specs assert the metadata the Worker _produced_ (`Stub john.smith (@john.smith) - TDN`, the stub post in the sitemap) instead of only that some tag exists; before it, every `/sitemap.xml` request in CI pulled three pages of one hundred real posts. Fixtures are shared through `e2e/worker/api-stub-data.ts` so an assertion cannot drift from what the stub returns.
 
 > ⚠️ **`reuseExistingServer` will lie to you when comparing two versions of the Worker.** It is `!process.env.CI`, so locally Playwright reuses a Wrangler already on the port — serving a build from before your edit. A run that "passes on the broken version" almost certainly reused the fixed one. Kill the Wrangler process between comparison runs.
+
+**`onboarding.spec.ts`** — the one spec that opts *out* of the shared fixture. `injectAuth` writes `tdn-onboarding` with the mock user's id alongside the auth state, because without it `OnboardingGate` would send **every authenticated spec** to `/onboarding` (the mocked profile reports `followingCount: 0`) and the whole suite would fail on a page it never meant to visit. This spec signs in by hand without that key so the gate actually runs, then drives both steps and asserts the redirect out to `/`. Its follow loop uses `getByRole("button", { name: "Follow", exact: true })`: without `exact`, "Following" also matches and the loop keeps clicking the button it just toggled.
 
 > `wrangler dev` needs `pnpm build` first: `@cloudflare/vite-plugin` writes `.wrangler/deploy/config.json` during the build, which is where `assets.directory` comes from. Without it Wrangler refuses to start. `.wrangler/` is gitignored, so a clean checkout must build before it can preview.
 
