@@ -32,10 +32,23 @@ import { STATIC_ROUTES } from "../../worker/static-routes";
  * before: the sitemap published `/terms-of-service` and `/privacy-policy`
  * while the router declared `/terms` and `/privacy`.
  */
+/**
+ * Walks the tree rather than the top level: most routes sit under the
+ * pathless layout route that carries `OnboardingGate`, so a flat read of
+ * `router.routes` would see almost nothing and pass vacuously.
+ */
+function collectPaths(routes: typeof router.routes, into: Set<string>) {
+    for (const route of routes) {
+        if (route.path) into.add(route.path);
+        if (route.children) {
+            collectPaths(route.children as typeof router.routes, into);
+        }
+    }
+    return into;
+}
+
 describe("sitemap static routes", () => {
-    const declaredPaths = new Set(
-        router.routes.map((route) => route.path).filter(Boolean),
-    );
+    const declaredPaths = collectPaths(router.routes, new Set<string>());
 
     it("advertises only paths the router declares", () => {
         const missing = STATIC_ROUTES.map((route) => route.url).filter(

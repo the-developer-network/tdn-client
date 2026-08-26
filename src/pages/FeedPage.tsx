@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-    Gamepad2,
-    Monitor,
-    Server,
-    Smartphone,
-    PenLine,
-    Sparkles,
-    Users,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { PenLine, Users } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
@@ -24,6 +15,7 @@ import { ProfileSearchDropdown } from "../features/profile/components/ProfileSea
 import { SEO } from "../shared/components/ui/SEO";
 import { useI18n } from "../shared/hooks/useI18n";
 import type { TranslationKey } from "../shared/i18n/translations";
+import { CATEGORY_OPTIONS } from "../shared/constants/categories";
 
 /**
  * Articles are a separate resource, not a `PostType` — they have their own
@@ -44,18 +36,6 @@ const CATEGORIES: { labelKey: TranslationKey; value: FeedTab }[] = [
 ];
 
 const FOLLOWED_ONLY_TABS: FeedTab[] = ["TECH_NEWS", "SYSTEM_UPDATE"];
-
-const FILTER_CATEGORIES: {
-    labelKey: TranslationKey;
-    value: PostCategory;
-    Icon: LucideIcon;
-}[] = [
-    { labelKey: "feed.frontend", value: "FRONTEND", Icon: Monitor },
-    { labelKey: "feed.backend", value: "BACKEND", Icon: Server },
-    { labelKey: "feed.mobile", value: "MOBILE", Icon: Smartphone },
-    { labelKey: "feed.game", value: "GAME", Icon: Gamepad2 },
-    { labelKey: "feed.ai", value: "AI", Icon: Sparkles },
-];
 
 export default function FeedPage() {
     const { t } = useI18n();
@@ -200,7 +180,7 @@ export default function FeedPage() {
                             {t("feed.following")}
                         </button>
                         <div className="w-px h-4 bg-white/10 shrink-0" />
-                        {FILTER_CATEGORIES.map(({ labelKey, value, Icon }) => (
+                        {CATEGORY_OPTIONS.map(({ labelKey, value, Icon }) => (
                             <button
                                 key={value}
                                 onClick={() => handleToggleCategory(value)}

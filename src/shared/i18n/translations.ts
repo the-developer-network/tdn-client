@@ -172,6 +172,23 @@ const en = {
     "follows.emptyBody": "Check back later for personalized recommendations.",
     "follows.tryAgain": "Try again",
 
+    "onboarding.stepOfTwo": "Step {{n}} of 2",
+    "onboarding.fieldsTitle": "What do you build?",
+    "onboarding.fieldsBody":
+        "Pick at least one field. We use it to find the accounts worth your feed.",
+    "onboarding.continue": "Continue",
+    "onboarding.accountsTitle": "Follow at least {{n}} accounts",
+    "onboarding.accountsBody":
+        "Your feed is built from the people you follow. Pick a few to get started.",
+    "onboarding.progress": "{{n}} of {{total}} followed",
+    "onboarding.finish": "Go to my feed",
+    "onboarding.back": "Back",
+    "onboarding.emptyTitle": "No accounts to suggest yet",
+    "onboarding.emptyBody":
+        "There is nobody publishing in these fields right now. Try another field, or carry on and follow people as you find them.",
+    "onboarding.tryAgain": "Try again",
+    "onboarding.loadFailed": "Suggestions could not be loaded.",
+
     "profile.editProfile": "Edit Profile",
     "profile.follow": "Follow",
     "profile.following": "Following",
@@ -716,6 +733,23 @@ const tr: Record<TranslationKey, string> = {
     "follows.emptyBody":
         "Kişiselleştirilmiş öneriler için daha sonra tekrar kontrol et.",
     "follows.tryAgain": "Tekrar dene",
+
+    "onboarding.stepOfTwo": "Adım {{n}} / 2",
+    "onboarding.fieldsTitle": "Ne geliştiriyorsun?",
+    "onboarding.fieldsBody":
+        "En az bir alan seç. Akışına değecek hesapları buna göre buluyoruz.",
+    "onboarding.continue": "Devam",
+    "onboarding.accountsTitle": "En az {{n}} hesap takip et",
+    "onboarding.accountsBody":
+        "Akışın takip ettiğin kişilerden oluşuyor. Başlamak için birkaçını seç.",
+    "onboarding.progress": "{{n}} / {{total}} takip edildi",
+    "onboarding.finish": "Akışıma git",
+    "onboarding.back": "Geri",
+    "onboarding.emptyTitle": "Henüz önerilecek hesap yok",
+    "onboarding.emptyBody":
+        "Şu an bu alanlarda yayın yapan kimse yok. Başka bir alan dene ya da devam edip karşına çıktıkça takip et.",
+    "onboarding.tryAgain": "Tekrar dene",
+    "onboarding.loadFailed": "Öneriler yüklenemedi.",
 
     "profile.editProfile": "Profili Düzenle",
     "profile.follow": "Takip Et",

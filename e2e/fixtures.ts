@@ -19,6 +19,17 @@ async function injectAuth(page: Page) {
                 }),
             );
             localStorage.setItem("access_token", "mock-token");
+            // Without this every authenticated spec lands on /onboarding:
+            // `OnboardingGate` sends an account that follows nobody there, and
+            // the mocked profile reports followingCount 0. Specs that mean to
+            // exercise the flow inject auth without this key instead.
+            localStorage.setItem(
+                "tdn-onboarding",
+                JSON.stringify({
+                    state: { completedUserIds: [user.id], interests: [] },
+                    version: 0,
+                }),
+            );
         },
         { user: mockUser },
     );
