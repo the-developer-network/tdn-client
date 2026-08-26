@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { useBookmarks } from "../features/feed/hooks/useBookmarks";
@@ -22,6 +23,9 @@ vi.mock("../features/feed/components/PostList", () => ({
 }));
 vi.mock("../features/comment/components/CommentList", () => ({
     CommentList: () => <div data-testid="comment-list" />,
+}));
+vi.mock("../features/article/components/ArticleList", () => ({
+    ArticleList: () => <div data-testid="article-list" />,
 }));
 vi.mock("../features/feed/hooks/useBookmarks", () => ({
     useBookmarks: vi.fn(),
@@ -55,6 +59,7 @@ beforeEach(() => {
     vi.mocked(useBookmarks).mockReturnValue({
         posts: [],
         comments: [],
+        articles: [],
         isLoading: false,
         error: null,
         fetchBookmarks: vi.fn(),
@@ -75,6 +80,7 @@ describe("BookmarksPage", () => {
         vi.mocked(useBookmarks).mockReturnValue({
             posts: [],
             comments: [],
+            articles: [],
             isLoading: true,
             error: null,
             fetchBookmarks: vi.fn(),
@@ -88,5 +94,65 @@ describe("BookmarksPage", () => {
     it("renders the empty state when there are no bookmarks", () => {
         render(<BookmarksPage />);
         expect(screen.getByText("Save posts for later")).toBeInTheDocument();
+    });
+
+    // The saved list gained a third collection: `GET /posts/bookmarks` now
+    // answers with `articles` alongside posts and comments.
+    it("shows the posts tab first", () => {
+        vi.mocked(useBookmarks).mockReturnValue({
+            posts: [{ id: "post-1" }],
+            comments: [],
+            articles: [{ id: "article-1" }],
+            isLoading: false,
+            error: null,
+            fetchBookmarks: vi.fn(),
+            retry: vi.fn(),
+            removePost: vi.fn(),
+        } as unknown as ReturnType<typeof useBookmarks>);
+
+        render(<BookmarksPage />);
+
+        expect(screen.getByTestId("post-list")).toBeInTheDocument();
+        expect(screen.queryByTestId("article-list")).not.toBeInTheDocument();
+    });
+
+    // Only one list may be mounted at a time: PostList and ArticleList each
+    // install an IntersectionObserver sentinel that calls the same loadMore.
+    it("swaps the post list for the article list on the Articles tab", async () => {
+        vi.mocked(useBookmarks).mockReturnValue({
+            posts: [{ id: "post-1" }],
+            comments: [],
+            articles: [{ id: "article-1" }],
+            isLoading: false,
+            error: null,
+            fetchBookmarks: vi.fn(),
+            retry: vi.fn(),
+            removePost: vi.fn(),
+        } as unknown as ReturnType<typeof useBookmarks>);
+
+        render(<BookmarksPage />);
+        await userEvent.click(screen.getByRole("button", { name: "Articles" }));
+
+        expect(screen.getByTestId("article-list")).toBeInTheDocument();
+        expect(screen.queryByTestId("post-list")).not.toBeInTheDocument();
+    });
+
+    it("keeps the empty state away when only articles are saved", () => {
+        vi.mocked(useBookmarks).mockReturnValue({
+            posts: [],
+            comments: [],
+            articles: [{ id: "article-1" }],
+            isLoading: false,
+            error: null,
+            fetchBookmarks: vi.fn(),
+            retry: vi.fn(),
+            removePost: vi.fn(),
+        } as unknown as ReturnType<typeof useBookmarks>);
+
+        render(<BookmarksPage />);
+
+        expect(
+            screen.queryByText("Save posts for later"),
+        ).not.toBeInTheDocument();
     });
 });

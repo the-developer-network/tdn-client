@@ -158,7 +158,10 @@ const en = {
     "notif.daysAgo": "{{n}}d ago",
 
     "bookmarks.title": "Bookmarks",
-    "bookmarks.subtitle": "Posts & comments you saved",
+    "bookmarks.subtitle": "Posts, comments & articles you saved",
+    "bookmarks.tabPosts": "Posts",
+    "bookmarks.tabComments": "Comments",
+    "bookmarks.tabArticles": "Articles",
     "bookmarks.emptyTitle": "Save posts for later",
     "bookmarks.emptyBody":
         "Don't let the good ones get away! Bookmark posts to easily find them again in the future.",
@@ -699,7 +702,10 @@ const tr: Record<TranslationKey, string> = {
     "notif.daysAgo": "{{n}}g önce",
 
     "bookmarks.title": "Kaydedilenler",
-    "bookmarks.subtitle": "Kaydettiğiniz gönderiler ve yorumlar",
+    "bookmarks.subtitle": "Kaydettiğiniz gönderiler, yorumlar ve makaleler",
+    "bookmarks.tabPosts": "Gönderiler",
+    "bookmarks.tabComments": "Yorumlar",
+    "bookmarks.tabArticles": "Makaleler",
     "bookmarks.emptyTitle": "Gönderileri sonra için kaydet",
     "bookmarks.emptyBody":
         "Kaçırma! Gönderileri daha sonra kolayca bulmak için kaydet.",

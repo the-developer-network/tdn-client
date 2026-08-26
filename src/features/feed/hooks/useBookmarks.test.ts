@@ -26,6 +26,7 @@ vi.hoisted(() => {
 });
 
 import type { Post } from "../api/feed.types";
+import type { ArticleSummary } from "../../article/api/article.types";
 import { useBookmarks } from "./useBookmarks";
 
 beforeEach(() => {
@@ -54,8 +55,34 @@ const mockPost: Post = {
     tags: [],
 };
 
+// The endpoint returns article *summaries* — every article field but `body`.
+const mockArticle: ArticleSummary = {
+    id: "article-1",
+    slug: "clean-architecture-with-fastify",
+    title: "Clean Architecture with Fastify",
+    excerpt: "A tour of the layers.",
+    coverImageUrl: null,
+    coverImageAlt: null,
+    readingTimeMinutes: 7,
+    likeCount: 0,
+    commentCount: 0,
+    isLiked: false,
+    isBookmarked: true,
+    status: "PUBLISHED",
+    publishedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    author: {
+        id: "user-1",
+        username: "testuser",
+        fullName: "Test User",
+        avatarUrl: "https://example.com/avatar.png",
+    },
+    tags: [],
+    categories: [],
+};
+
 describe("useBookmarks", () => {
-    it("loads posts and comments on mount via the initial useEffect", async () => {
+    it("loads posts, comments and articles on mount via the initial useEffect", async () => {
         const { result } = renderHook(() => useBookmarks());
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -63,13 +90,37 @@ describe("useBookmarks", () => {
         expect(result.current.posts).toHaveLength(1);
         expect(result.current.posts[0].id).toBe("post-1");
         expect(result.current.comments).toHaveLength(0);
+        expect(result.current.articles).toHaveLength(1);
+        expect(result.current.articles[0].id).toBe("article-1");
+        expect(result.current.error).toBeNull();
+    });
+
+    // `articles` landed in a later API version than `posts` and `comments`, so
+    // a server that predates it answers without the field at all.
+    it("treats a response with no articles field as no saved articles", async () => {
+        server.use(
+            http.get(`${BASE}/posts/bookmarks`, () =>
+                HttpResponse.json({
+                    data: { posts: [mockPost], comments: [] },
+                }),
+            ),
+        );
+
+        const { result } = renderHook(() => useBookmarks());
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.articles).toEqual([]);
+        expect(result.current.posts).toHaveLength(1);
         expect(result.current.error).toBeNull();
     });
 
     it("returns an empty list when the API returns no bookmarks", async () => {
         server.use(
             http.get(`${BASE}/posts/bookmarks`, () =>
-                HttpResponse.json({ data: { posts: [], comments: [] } }),
+                HttpResponse.json({
+                    data: { posts: [], comments: [], articles: [] },
+                }),
             ),
         );
 
@@ -78,6 +129,7 @@ describe("useBookmarks", () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         expect(result.current.posts).toHaveLength(0);
+        expect(result.current.articles).toHaveLength(0);
         expect(result.current.error).toBeNull();
     });
 
@@ -204,6 +256,60 @@ describe("useBookmarks", () => {
             // onto the pages already collected.
             expect(result.current.posts).toHaveLength(20);
             expect(result.current.hasMore).toBe(true);
+        });
+
+        /** Serves `total` bookmarked articles and no posts or comments. */
+        function serveArticleBookmarks(total: number) {
+            const all = Array.from({ length: total }, (_, i) => ({
+                ...mockArticle,
+                id: `article-${i}`,
+            }));
+
+            server.use(
+                http.get(`${BASE}/posts/bookmarks`, ({ request }) => {
+                    const q = new URL(request.url).searchParams;
+                    const page = Number(q.get("page") ?? 1);
+                    const limit = Number(q.get("limit") ?? 20);
+                    const start = (page - 1) * limit;
+                    return HttpResponse.json({
+                        data: {
+                            posts: [],
+                            comments: [],
+                            articles: all.slice(start, start + limit),
+                        },
+                        meta: {
+                            postTotal: 0,
+                            commentTotal: 0,
+                            articleTotal: total,
+                            page,
+                            timestamp: new Date().toISOString(),
+                        },
+                    });
+                }),
+            );
+        }
+
+        // The three collections page together, so a full page of articles has
+        // to keep paging even when posts and comments are exhausted.
+        it("keeps paging when only the articles fill a page", async () => {
+            serveArticleBookmarks(25);
+
+            const { result } = renderHook(() => useBookmarks());
+            await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+            expect(result.current.posts).toHaveLength(0);
+            expect(result.current.articles).toHaveLength(20);
+            expect(result.current.hasMore).toBe(true);
+
+            await act(async () => {
+                result.current.loadMore();
+            });
+
+            await waitFor(() =>
+                expect(result.current.articles).toHaveLength(25),
+            );
+            expect(result.current.articles[24].id).toBe("article-24");
+            expect(result.current.hasMore).toBe(false);
         });
     });
 
