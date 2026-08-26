@@ -84,12 +84,18 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                             {children}
                         </pre>
                     ),
+                    // Bounded in both directions. `max-w-full` alone leaves a
+                    // tall image free to run past the viewport, so a single
+                    // portrait screenshot fills the screen and pushes the
+                    // paragraph it belongs to out of sight. Constraining both
+                    // axes without a fixed width scales it down whole, so
+                    // nothing is cropped out of the author's illustration.
                     img: ({ src, alt }) => (
                         <img
                             src={typeof src === "string" ? src : undefined}
                             alt={alt ?? ""}
                             loading="lazy"
-                            className="my-4 max-w-full rounded-xl border border-white/10"
+                            className="mx-auto my-6 block max-h-[70vh] max-w-full rounded-xl border border-white/10"
                         />
                     ),
                     hr: () => <hr className="my-8 border-white/10" />,
