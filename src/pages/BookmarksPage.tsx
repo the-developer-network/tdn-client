@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
@@ -7,10 +7,21 @@ import { useBookmarks } from "../features/feed/hooks/useBookmarks";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { CommentList } from "../features/comment/components/CommentList";
+import { ArticleList } from "../features/article/components/ArticleList";
 import { useI18n } from "../shared/hooks/useI18n";
+import type { TranslationKey } from "../shared/i18n/translations";
+
+type BookmarkTab = "POSTS" | "COMMENTS" | "ARTICLES";
+
+const TABS: { labelKey: TranslationKey; value: BookmarkTab }[] = [
+    { labelKey: "bookmarks.tabPosts", value: "POSTS" },
+    { labelKey: "bookmarks.tabComments", value: "COMMENTS" },
+    { labelKey: "bookmarks.tabArticles", value: "ARTICLES" },
+];
 
 export default function BookmarksPage() {
     const { t } = useI18n();
+    const [activeTab, setActiveTab] = useState<BookmarkTab>("POSTS");
     const {
         posts,
         isLoading,
@@ -18,6 +29,7 @@ export default function BookmarksPage() {
         hasMore,
         error,
         comments,
+        articles,
         removePost,
         retry,
         loadMore,
@@ -36,17 +48,44 @@ export default function BookmarksPage() {
 
     if (!isAuthenticated) return null;
 
+    const isEmpty =
+        posts.length === 0 && comments.length === 0 && articles.length === 0;
+
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             {/*  Header */}
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4">
-                <h1 className="text-xl font-bold text-white">
-                    {t("bookmarks.title")}
-                </h1>
-                {/* Username */}
-                <p className="text-sm text-white/40 mt-1">
-                    @{user?.username} ({t("bookmarks.subtitle")})
-                </p>
+            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
+                <div className="px-4 py-4">
+                    <h1 className="text-xl font-bold text-white">
+                        {t("bookmarks.title")}
+                    </h1>
+                    {/* Username */}
+                    <p className="text-sm text-white/40 mt-1">
+                        @{user?.username} ({t("bookmarks.subtitle")})
+                    </p>
+                </div>
+
+                {/* One list is mounted at a time on purpose: PostList and
+                    ArticleList each install their own IntersectionObserver
+                    sentinel, and side by side both would call loadMore. */}
+                <div className="flex w-full border-b border-white/5">
+                    {TABS.map((tab) => (
+                        <button
+                            key={tab.value}
+                            onClick={() => setActiveTab(tab.value)}
+                            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+                                activeTab === tab.value
+                                    ? "text-white"
+                                    : "text-white/40 hover:text-white/70"
+                            }`}
+                        >
+                            {t(tab.labelKey)}
+                            {activeTab === tab.value && (
+                                <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-white rounded-full" />
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Loading */}
@@ -56,11 +95,9 @@ export default function BookmarksPage() {
                 </div>
             )}
 
-            {/* (Empty State) */}
-            {!isLoading &&
-            posts.length === 0 &&
-            comments.length === 0 &&
-            !error ? (
+            {/* (Empty State) — nothing saved at all; a tab that is empty on its
+                own falls through to the list's own empty state. */}
+            {!isLoading && isEmpty && !error ? (
                 <div className="flex flex-col items-center justify-center p-12 text-center border-b border-white/10">
                     <div className="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center mb-4">
                         <svg
@@ -85,9 +122,9 @@ export default function BookmarksPage() {
                     </p>
                 </div>
             ) : (
-                <>
-                    {!isLoading && (
-                        <>
+                !isLoading && (
+                    <>
+                        {activeTab === "POSTS" && (
                             <PostList
                                 posts={posts}
                                 isLoading={false}
@@ -98,17 +135,28 @@ export default function BookmarksPage() {
                                 onLoadMore={loadMore}
                                 onRetry={retry}
                             />
-                            {comments.length > 0 && (
-                                <CommentList
-                                    comments={comments}
-                                    isLoading={false}
-                                    error={error}
-                                    onRetry={retry}
-                                />
-                            )}
-                        </>
-                    )}
-                </>
+                        )}
+                        {activeTab === "COMMENTS" && (
+                            <CommentList
+                                comments={comments}
+                                isLoading={false}
+                                error={error}
+                                onRetry={retry}
+                            />
+                        )}
+                        {activeTab === "ARTICLES" && (
+                            <ArticleList
+                                articles={articles}
+                                isLoading={false}
+                                isLoadingMore={isLoadingMore}
+                                hasMore={hasMore}
+                                error={error}
+                                onLoadMore={loadMore}
+                                onRetry={retry}
+                            />
+                        )}
+                    </>
+                )
             )}
         </PageShell>
     );

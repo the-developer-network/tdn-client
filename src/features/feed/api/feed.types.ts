@@ -1,4 +1,5 @@
 import type { Comment } from "../../comment/api/comment.types";
+import type { ArticleSummary } from "../../article/api/article.types";
 
 export type PostType =
     "COMMUNITY" | "TECH_NEWS" | "SYSTEM_UPDATE" | "JOB_POSTING";
@@ -39,7 +40,12 @@ export interface GetPostsParams {
     categories?: PostCategory[];
 }
 
+/**
+ * Articles arrive as summaries, not full items — the endpoint leaves `body`
+ * out because it can run to 100 KB of markdown, and a saved list renders cards.
+ */
 export interface BookmarksResponse {
     posts: Post[];
     comments: Comment[];
+    articles: ArticleSummary[];
 }

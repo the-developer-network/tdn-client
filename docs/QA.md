@@ -467,9 +467,11 @@ The share cases set `useLanguageStore.setState({ locale: "en" })` in `beforeEach
 
 #### `useBookmarks` (`src/features/feed/hooks/useBookmarks.test.ts`)
 
-9 tests. `useBookmarks` does not import `useAuthStore` directly, but `apiClient` calls `localStorage.getItem` at runtime — the `vi.hoisted` stub is still required.
+11 tests. `useBookmarks` does not import `useAuthStore` directly, but `apiClient` calls `localStorage.getItem` at runtime — the `vi.hoisted` stub is still required.
 
-`/posts/bookmarks` pages by `page`/`limit` (max 100) and returns posts and comments together. `meta.postTotal` is stripped by the client's `.data` unwrapping, so `hasMore` is derived from a full page of _either_ list. The pagination handler slices on the query it is given — a fixed array would answer page 1 and page 2 identically and hide the very bug these tests cover.
+`/posts/bookmarks` pages by `page`/`limit` (max 100) and returns posts, comments **and articles** together — articles as summaries, without `body`. `meta.postTotal` and its siblings are stripped by the client's `.data` unwrapping, so `hasMore` is derived from a full page of _any_ of the three. The pagination handler slices on the query it is given — a fixed array would answer page 1 and page 2 identically and hide the very bug these tests cover.
+
+`articles` shipped in a later API version than the other two, so the hook reads it as `data.articles ?? []`; one test pins that an older server's response is not a crash.
 
 ```ts
 // Hook auto-fetches in useEffect → use waitFor, not await act
@@ -480,15 +482,17 @@ expect(result.current.posts).toHaveLength(1);
 
 | Scenario                                    | Assert                                                 |
 | ------------------------------------------- | ------------------------------------------------------ |
-| Mount (default handler)                     | `posts` populated, `isLoading=false`, `error=null`     |
+| Mount (default handler)                     | `posts` and `articles` populated, `isLoading=false`, `error=null` |
 | Connection dropped on mount                 | `error.network` message; `posts=[]`; `isLoading=false` |
 | 429 with a `detail`                         | The API's `detail` rendered, not a fixed string        |
 | `retry()` after error with restored handler | `error=null`; `posts` populated                        |
 | `removePost(id)`                            | Removes post from local state; no API call             |
-| API returns empty list                      | `posts=[]`; `error=null`                               |
+| API returns empty list                      | `posts=[]`; `articles=[]`; `error=null`                |
 | 25 bookmarks, then `loadMore()`             | 20 then 25; `hasMore` true then false                  |
 | 3 bookmarks                                 | `hasMore` false without a second request               |
 | `retry()` after `loadMore()`                | Back to 20 — the list is replaced, not appended to     |
+| Response with no `articles` field           | `articles=[]`; `posts` still populated; `error=null`   |
+| 25 saved articles, no posts, then `loadMore()` | 20 then 25 articles; `hasMore` true then false      |
 
 #### `useComments` (`src/features/comment/hooks/useComments.test.ts`)
 
@@ -989,6 +993,23 @@ it("redirects unauthenticated users to /", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
 });
 ```
+
+**`BookmarksPage`:**
+
+6 tests. `useBookmarks` is mocked wholesale, and `PostList`, `CommentList` and `ArticleList` are stubbed to `data-testid` divs — the page's own job is the tab strip and the empty state, not the lists.
+
+The strip is **Posts, Comments, Articles**, and exactly one list is mounted at a time. That is not cosmetic: `PostList` and `ArticleList` each install an `IntersectionObserver` sentinel calling the same `loadMore`, and side by side both would fire in one tick past the `isLoadingMore` guard. A test that lets two lists render together would pass while re-opening that hole.
+
+The illustrated empty state belongs to the page and covers all three collections at once; a tab that is empty on its own falls through to its list's own empty state.
+
+| Scenario                          | Assert                                                    |
+| --------------------------------- | --------------------------------------------------------- |
+| Unauthenticated                   | Renders nothing; `navigate("/", { replace: true })`       |
+| `isLoading`                       | `.animate-spin` present                                    |
+| Nothing saved at all              | "Save posts for later" rendered                            |
+| Default tab                       | `post-list` present; `article-list` absent                 |
+| Click **Articles**                | `article-list` present; `post-list` gone                   |
+| Only articles saved               | Illustrated empty state **not** rendered                   |
 
 **`FeedPage`:**
 

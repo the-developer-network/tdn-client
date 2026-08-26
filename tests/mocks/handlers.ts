@@ -195,7 +195,13 @@ export const handlers = [
     http.post(`${BASE}/posts`, () => HttpResponse.json({ data: mockPost })),
 
     http.get(`${BASE}/posts/bookmarks`, () =>
-        HttpResponse.json({ data: { posts: [mockPost], comments: [] } }),
+        HttpResponse.json({
+            data: {
+                posts: [mockPost],
+                comments: [],
+                articles: [mockArticleSummary],
+            },
+        }),
     ),
 
     http.get(`${BASE}/posts/:postId`, () =>
