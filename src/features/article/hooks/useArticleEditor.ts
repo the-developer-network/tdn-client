@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { articleApi } from "../api/article.api";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { ARTICLE_LIMITS } from "../api/article.types";
 import type {
     Article,
     ArticleCategory,
@@ -17,6 +18,38 @@ import type {
 const AUTOSAVE_DELAY_MS = 2000;
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
+
+/** Why a draft cannot be sent, or `null` when it can. */
+export type DraftProblem =
+    "empty" | "titleTooLong" | "bodyTooLong" | "tooLarge";
+
+/**
+ * The server answers a schema violation with a bare 400 and a 413 with
+ * nothing more specific, and neither names a field — so every limit has to be
+ * checked here or the writer is told only that something went wrong.
+ *
+ * `serialised` is passed in rather than computed: the caller already has it
+ * for the dirty check, and stringifying a hundred thousand characters twice
+ * per render is not free.
+ */
+export function checkDraft(
+    draft: ArticleDraft,
+    serialised: string,
+): DraftProblem | null {
+    if (draft.title.trim() === "" || draft.body.trim() === "") return "empty";
+    if (draft.title.length > ARTICLE_LIMITS.titleMax) return "titleTooLong";
+    if (draft.body.length > ARTICLE_LIMITS.bodyMax) return "bodyTooLong";
+    // Characters are not bytes. A body inside the character limit still
+    // breaches the request cap once it carries Turkish letters or emoji, and
+    // that arrives as a 413 rather than a validation error.
+    if (
+        new TextEncoder().encode(serialised).length >
+        ARTICLE_LIMITS.requestBytesMax
+    ) {
+        return "tooLarge";
+    }
+    return null;
+}
 
 export interface ArticleDraft {
     title: string;
@@ -107,9 +140,14 @@ export function useArticleEditor(initial: Article | null) {
         [],
     );
 
-    /** Creation needs both, so nothing can be saved before they exist. */
-    const canSave =
-        draft.title.trim().length > 0 && draft.body.trim().length > 0;
+    // Serialised once per change and reused: the dirty check and the byte
+    // check both need it, and it runs over the whole body.
+    const serialised = useMemo(() => JSON.stringify(draft), [draft]);
+    const problem = useMemo(
+        () => checkDraft(draft, serialised),
+        [draft, serialised],
+    );
+    const canSave = problem === null;
 
     const resolveCoverKey = useCallback(async (): Promise<
         string | null | undefined
@@ -130,7 +168,9 @@ export function useArticleEditor(initial: Article | null) {
 
     const save = useCallback(async (): Promise<Article | null> => {
         const current = draftRef.current;
-        if (current.title.trim() === "" || current.body.trim() === "") {
+        // Re-checked here rather than trusted from the caller: `save` is also
+        // reached from the retry button and from publish.
+        if (checkDraft(current, JSON.stringify(current)) !== null) {
             return null;
         }
         // A save already running has captured an older draft. Rather than
@@ -218,9 +258,7 @@ export function useArticleEditor(initial: Article | null) {
     }, [save]);
 
     const isDirty =
-        JSON.stringify(draft) !== savedSnapshot ||
-        coverFile !== null ||
-        coverRemoved;
+        serialised !== savedSnapshot || coverFile !== null || coverRemoved;
 
     // Autosave. Deliberately keyed on the serialised draft rather than on a
     // dirty flag, so the timer restarts on every edit and only the pause at
@@ -304,6 +342,7 @@ export function useArticleEditor(initial: Article | null) {
             setExistingCoverUrl(null);
         },
         canSave,
+        problem,
         isDirty,
         isBusy,
         saveState,

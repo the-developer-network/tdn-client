@@ -228,6 +228,49 @@ describe("useArticleEditor", () => {
         expect(result.current.isDirty).toBe(false);
     });
 
+    describe("limits the server enforces", () => {
+        // Publish is disabled past the limit, but autosave was not — so an
+        // over-length body kept being sent on every pause, each rejected with
+        // a bare 400, spending the update budget and telling the writer
+        // nothing useful.
+        it("does not autosave a body past the character limit", async () => {
+            const { creates } = recordWrites();
+            const { result } = renderHook(() => useArticleEditor(null));
+
+            type(result, "My Article", "x".repeat(100_001));
+            await flushAutosave();
+
+            expect(creates).toHaveLength(0);
+            expect(result.current.canSave).toBe(false);
+        });
+
+        // The whole request body is capped at 256 KB independently of the
+        // character count. Multi-byte text reaches that first — Turkish and
+        // emoji both — and the server answers 413 rather than a schema error,
+        // so nothing downstream explains it.
+        it("does not autosave a body that is within the character limit but over 256 KB", async () => {
+            const { creates } = recordWrites();
+            const { result } = renderHook(() => useArticleEditor(null));
+
+            // Well under 100.000 characters, comfortably over 256 KB encoded.
+            type(result, "My Article", "🙂".repeat(90_000));
+            await flushAutosave();
+
+            expect(creates).toHaveLength(0);
+            expect(result.current.canSave).toBe(false);
+        });
+
+        it("saves normally when the body is inside both limits", async () => {
+            const { creates } = recordWrites();
+            const { result } = renderHook(() => useArticleEditor(null));
+
+            type(result, "My Article", "x".repeat(1000));
+            await flushAutosave();
+
+            await waitFor(() => expect(creates).toHaveLength(1));
+        });
+    });
+
     it("reports a failed save and keeps the text dirty", async () => {
         server.use(
             http.post(`${BASE}/articles`, () =>

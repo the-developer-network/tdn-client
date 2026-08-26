@@ -1,11 +1,13 @@
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useI18n } from "../../../shared/hooks/useI18n";
-import type { SaveState } from "../hooks/useArticleEditor";
+import { ARTICLE_LIMITS } from "../api/article.types";
+import type { DraftProblem, SaveState } from "../hooks/useArticleEditor";
 
 interface SaveIndicatorProps {
     state: SaveState;
     isDirty: boolean;
-    canSave: boolean;
+    /** What is stopping the draft from being sent, or `null` when nothing is. */
+    problem: DraftProblem | null;
     error: string | null;
     onRetry: () => void;
 }
@@ -19,7 +21,7 @@ interface SaveIndicatorProps {
 export function SaveIndicator({
     state,
     isDirty,
-    canSave,
+    problem,
     error,
     onRetry,
 }: SaveIndicatorProps) {
@@ -50,12 +52,24 @@ export function SaveIndicator({
         );
     }
 
-    // Nothing can reach the server until both required fields exist, so say
-    // that rather than showing "unsaved changes" the writer cannot act on.
-    if (!canSave) {
+    // Nothing reaches the server while a limit is breached, so name the one
+    // that is — "unsaved changes" would be true and useless, and the server's
+    // own answer is a bare 400 or 413 that names nothing.
+    if (problem !== null) {
+        const message =
+            problem === "empty"
+                ? t("editor.needsTitleAndBody")
+                : problem === "titleTooLong"
+                  ? t("editor.titleTooLong", { max: ARTICLE_LIMITS.titleMax })
+                  : problem === "bodyTooLong"
+                    ? t("editor.bodyTooLong", { max: ARTICLE_LIMITS.bodyMax })
+                    : t("editor.tooLarge");
+
         return (
-            <span className="text-xs text-white/30">
-                {t("editor.needsTitleAndBody")}
+            <span
+                className={`text-xs ${problem === "empty" ? "text-white/30" : "text-red-400/80"}`}
+            >
+                {message}
             </span>
         );
     }
