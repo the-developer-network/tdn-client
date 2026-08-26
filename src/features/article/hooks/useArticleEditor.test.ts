@@ -183,6 +183,51 @@ describe("useArticleEditor", () => {
         expect(updates).toHaveLength(0);
     });
 
+    // An edit made while a save is in flight must not be dropped. The save
+    // captures the draft as it was when it started, and nothing re-runs the
+    // autosave effect afterwards, so without an explicit follow-up the newer
+    // text is never sent and the writer loses it with no error shown.
+    it("saves again for an edit made while a save was in flight", async () => {
+        let releaseCreate: (() => void) | null = null;
+        const bodies: string[] = [];
+
+        server.use(
+            http.post(`${BASE}/articles`, async ({ request }) => {
+                const json = (await request.json()) as { body: string };
+                bodies.push(json.body);
+                await new Promise<void>((resolve) => {
+                    releaseCreate = resolve;
+                });
+                return HttpResponse.json({ data: article() });
+            }),
+            http.patch(`${BASE}/articles/:id`, async ({ request }) => {
+                const json = (await request.json()) as { body: string };
+                bodies.push(json.body);
+                return HttpResponse.json({ data: article() });
+            }),
+        );
+
+        const { result } = renderHook(() => useArticleEditor(null));
+        type(result, "My Article", "First version.");
+        await flushAutosave();
+        await waitFor(() => expect(bodies).toHaveLength(1));
+
+        // Typed while the create is still open.
+        act(() => {
+            result.current.update("body", "Second version.");
+        });
+        await flushAutosave();
+
+        await act(async () => {
+            releaseCreate?.();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        });
+        await flushAutosave();
+
+        await waitFor(() => expect(bodies).toContain("Second version."));
+        expect(result.current.isDirty).toBe(false);
+    });
+
     it("reports a failed save and keeps the text dirty", async () => {
         server.use(
             http.post(`${BASE}/articles`, () =>

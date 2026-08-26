@@ -122,12 +122,14 @@ describe("ArticleEditorPage", () => {
         expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
     });
 
-    it("opens a blank editor when there is no slug", () => {
+    it("opens a blank editor without asking the API for anything", () => {
         render(<ArticleEditorPage />);
 
         expect(screen.getByLabelText("Title")).toBeInTheDocument();
-        // Nothing to load, so nothing should be waiting on the network.
-        expect(useArticle).toHaveBeenCalledWith("");
+        // There is nothing to load. Calling the loader with an empty slug
+        // spends a request on every visit to the editor and answers with
+        // nothing useful — this assertion used to bake that in.
+        expect(useArticle).not.toHaveBeenCalled();
     });
 
     it("types into the title and body", async () => {
