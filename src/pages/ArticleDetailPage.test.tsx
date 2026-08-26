@@ -172,6 +172,23 @@ describe("ArticleDetailPage", () => {
         expect(screen.getByText("A wide cover")).toBeInTheDocument();
     });
 
+    // The class is the behaviour here: without a height bound a portrait
+    // cover renders taller than the viewport and the title lands below the
+    // fold, which is exactly the regression this guards.
+    it("bounds the cover's height instead of letting it run at its natural ratio", () => {
+        setArticleState({
+            article: {
+                ...article,
+                coverImageUrl: "https://example.com/cover.png",
+            },
+        });
+        const { container } = render(<ArticleDetailPage />);
+
+        const cover = container.querySelector("figure img")!;
+        expect(cover.className).toMatch(/max-h-/);
+        expect(cover.className).toContain("object-cover");
+    });
+
     it("starts at the title and reserves no space when there is no cover", () => {
         const { container } = render(<ArticleDetailPage />);
 

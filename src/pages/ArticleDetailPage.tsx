@@ -136,10 +136,15 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                 rather than as a picture that failed to load. */}
             {cover && (
                 <figure className="border-b border-white/10">
+                    {/* Full width, but bounded in height. Left to its natural
+                        ratio, a portrait cover renders 720 wide by over a
+                        thousand tall and the reader opens the article to a
+                        wall of image with the title below the fold. Capping
+                        the height and cropping keeps it a banner. */}
                     <img
                         src={cover}
                         alt={article.coverImageAlt ?? ""}
-                        className="w-full"
+                        className="max-h-[60vh] w-full object-cover"
                     />
                     {article.coverImageAlt && (
                         <figcaption className="px-4 py-2 text-center text-xs text-white/35">

@@ -82,6 +82,31 @@ describe("MarkdownBody", () => {
         expect(anchor?.getAttribute("rel")).toContain("noopener");
     });
 
+    // `max-w-full` alone leaves a tall image free to run past the viewport,
+    // so one portrait screenshot fills the screen and pushes the paragraph it
+    // belongs to out of sight.
+    it("bounds a body image on both axes", () => {
+        const { container } = render(
+            <MarkdownBody body={"![a diagram](https://example.com/a.png)"} />,
+        );
+
+        const image = container.querySelector("img")!;
+        expect(image.className).toMatch(/max-w-full/);
+        expect(image.className).toMatch(/max-h-/);
+    });
+
+    it("keeps the author's illustration whole rather than cropping it", () => {
+        const { container } = render(
+            <MarkdownBody body={"![a diagram](https://example.com/a.png)"} />,
+        );
+
+        // Cropping a diagram loses part of what it was drawn to show, so the
+        // image scales down entire rather than being covered to a box.
+        expect(container.querySelector("img")!.className).not.toContain(
+            "object-cover",
+        );
+    });
+
     it("renders an empty body without crashing", () => {
         const { container } = render(<MarkdownBody body="" />);
 
