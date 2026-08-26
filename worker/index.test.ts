@@ -318,6 +318,48 @@ describe("worker routing", () => {
         });
     });
 
+    describe("a malformed row in the sitemap", () => {
+        // `handleSitemap` is not wrapped in a catch, so a throw while building
+        // an entry fails the whole request. One bad record should cost one
+        // URL's accuracy, not the sitemap crawlers depend on.
+        it("still serves a sitemap when an article has no dates", async () => {
+            server.use(
+                http.get(`${API}/posts`, () => HttpResponse.json({ data: [] })),
+                http.get(`${API}/articles`, () =>
+                    HttpResponse.json({ data: [{ slug: "no-dates" }] }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const res = await worker.fetch(get("/sitemap.xml"), env);
+            const xml = await res.text();
+
+            expect(res.status).toBe(200);
+            expect(xml).toContain(
+                "<loc>https://developernetwork.net/articles/no-dates</loc>",
+            );
+        });
+
+        it("falls back rather than emitting an unparseable lastmod", async () => {
+            server.use(
+                http.get(`${API}/posts`, () => HttpResponse.json({ data: [] })),
+                http.get(`${API}/articles`, () =>
+                    HttpResponse.json({
+                        data: [{ slug: "bad", publishedAt: "not-a-date" }],
+                    }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const xml = await (
+                await worker.fetch(get("/sitemap.xml"), env)
+            ).text();
+
+            expect(xml).not.toContain("not-a-date");
+            expect(xml).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
+        });
+    });
+
     // The Worker reads post and profile metadata over the network, so with a
     // hardcoded base every run of the e2e suite calls the production API.
     // `API_BASE` is what lets a test deployment point somewhere else; these

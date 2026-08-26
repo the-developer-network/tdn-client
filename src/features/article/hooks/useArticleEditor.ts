@@ -212,9 +212,12 @@ export function useArticleEditor(initial: Article | null) {
      */
     const saveChain = useCallback(async (): Promise<Article | null> => {
         const first = await save();
-        if (!resaveRef.current) return first;
+        if (!first || !resaveRef.current) return first;
         resaveRef.current = false;
-        return (await save()) ?? first;
+        // Returned as-is rather than falling back to `first`. A follow-up that
+        // failed must not read as success: publish would then go ahead with
+        // text one edit behind what the writer is looking at.
+        return save();
     }, [save]);
 
     const isDirty =

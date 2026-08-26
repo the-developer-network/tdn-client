@@ -276,8 +276,23 @@ function escapeXml(str: string): string {
         .replace(/'/g, "&apos;");
 }
 
-function toW3CDate(iso: string): string {
-    return iso.slice(0, 10);
+/**
+ * Tolerant on purpose. The sitemap is built from whatever the API returns,
+ * and one row with a missing or unparseable date used to throw here — which
+ * is not caught anywhere above, so a single bad record took the entire
+ * sitemap down with a 500 rather than costing one URL.
+ *
+ * Falling back to today keeps the URL advertised; `lastmod` is a hint to
+ * crawlers, so a slightly wrong one is far cheaper than no sitemap at all.
+ */
+function toW3CDate(iso: string | null | undefined): string {
+    if (iso) {
+        const parsed = new Date(iso);
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed.toISOString().slice(0, 10);
+        }
+    }
+    return new Date().toISOString().slice(0, 10);
 }
 
 function urlEntry(
