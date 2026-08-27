@@ -40,9 +40,13 @@ vi.mock("../features/onboarding/hooks/useOnboardingSuggestions", () => ({
 vi.mock("../features/onboarding/hooks/useOnboardingFollows", () => ({
     useOnboardingFollows: vi.fn(),
 }));
+vi.mock("../features/onboarding/hooks/useFollowingCount", () => ({
+    useFollowingCount: vi.fn(),
+}));
 
 import { useOnboardingSuggestions } from "../features/onboarding/hooks/useOnboardingSuggestions";
 import { useOnboardingFollows } from "../features/onboarding/hooks/useOnboardingFollows";
+import { useFollowingCount } from "../features/onboarding/hooks/useFollowingCount";
 import { useOnboardingStore } from "../features/onboarding/store/onboarding.store";
 import { useAuthStore } from "../core/auth/auth.store";
 import OnboardingPage from "./OnboardingPage";
@@ -100,6 +104,10 @@ beforeEach(() => {
     });
     mockSuggestions();
     mockFollows();
+    vi.mocked(useFollowingCount).mockReturnValue({
+        count: 0,
+        isLoading: false,
+    });
 });
 
 describe("OnboardingPage", () => {
@@ -197,6 +205,27 @@ describe("OnboardingPage", () => {
         expect(useOnboardingStore.getState().isCompleted("user-1")).toBe(true);
         expect(useOnboardingStore.getState().interests).toEqual(["BACKEND"]);
         expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
+    });
+
+    // The gate opens at five in total, so follows already on the books count.
+    // Asking someone who follows three for five more is a different rule.
+    it("credits the follows the account already had", async () => {
+        vi.mocked(useFollowingCount).mockReturnValue({
+            count: 3,
+            isLoading: false,
+        });
+        mockSuggestions({
+            accounts: ["a", "b", "c", "d", "e", "f"].map(account),
+        });
+        mockFollows(["a", "b"]);
+
+        renderPage();
+        await goToAccounts();
+
+        expect(screen.getByText("2 of 2 followed")).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Go to my feed" }),
+        ).toBeEnabled();
     });
 
     it("goes back to the field picker", async () => {

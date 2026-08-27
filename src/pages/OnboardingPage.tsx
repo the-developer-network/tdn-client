@@ -5,6 +5,7 @@ import { InterestPicker } from "../features/onboarding/components/InterestPicker
 import { AccountCard } from "../features/onboarding/components/AccountCard";
 import { useOnboardingSuggestions } from "../features/onboarding/hooks/useOnboardingSuggestions";
 import { useOnboardingFollows } from "../features/onboarding/hooks/useOnboardingFollows";
+import { useFollowingCount } from "../features/onboarding/hooks/useFollowingCount";
 import { useOnboardingStore } from "../features/onboarding/store/onboarding.store";
 import { MIN_FOLLOWS } from "../features/onboarding/onboarding.types";
 import { useAuthStore } from "../core/auth/auth.store";
@@ -111,21 +112,30 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
         useOnboardingSuggestions(categories);
     const { followedIds, followedCount, isPending, toggle } =
         useOnboardingFollows();
+    const { count: alreadyFollowing } = useFollowingCount();
 
-    // A brand-new deployment may not hold five accounts at all, and the flow
+    // The gate opens at MIN_FOLLOWS in total, so follows already on the books
+    // count — asking someone who follows four people for five more would be a
+    // different requirement than the one that sent them here.
+    const stillNeeded = Math.max(0, MIN_FOLLOWS - alreadyFollowing);
+    // A young deployment may not hold that many accounts at all, and the flow
     // cannot demand more than exists — the requirement drops to whatever the
     // list can supply.
-    const required = accounts.length
-        ? Math.min(MIN_FOLLOWS, accounts.length)
-        : 0;
+    const required = Math.min(stillNeeded, accounts.length);
     // The one agreed escape: if suggestions never arrived there is nothing to
     // follow, so the gate must not hold the account hostage to a failing API.
-    const canFinish = accounts.length === 0 || followedCount >= required;
+    const canFinish = followedCount >= required;
 
     return (
         <>
             <h1 className="mt-2 text-2xl font-bold">
-                {t("onboarding.accountsTitle", { n: MIN_FOLLOWS })}
+                {/* "at least 1 accounts" reads badly, and this heading is the
+                    one place the number is spelled out in a sentence. */}
+                {stillNeeded === 1
+                    ? t("onboarding.accountsTitleOne")
+                    : t("onboarding.accountsTitle", {
+                          n: stillNeeded || MIN_FOLLOWS,
+                      })}
             </h1>
             <p className="mt-2 text-[15px] text-white/50">
                 {t("onboarding.accountsBody")}
