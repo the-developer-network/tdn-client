@@ -147,6 +147,7 @@ e2e/
   articles.spec.ts
   auth.spec.ts
   feed.spec.ts
+  mobile-zoom.spec.ts
   onboarding.spec.ts
   profile.spec.ts
   worker/
@@ -1238,6 +1239,14 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 **`onboarding.spec.ts`** — the one spec that opts *out* of the shared fixture. `injectAuth` writes `tdn-onboarding` with the mock user's id alongside the auth state, because without it `OnboardingGate` would send **every authenticated spec** to `/onboarding` (the mocked profile reports `followingCount: 0`) and the whole suite would fail on a page it never meant to visit. This spec signs in by hand without that key so the gate actually runs, then drives both steps and asserts the redirect out to `/`. Its follow loop uses `getByRole("button", { name: "Follow", exact: true })`: without `exact`, "Following" also matches and the loop keeps clicking the button it just toggled.
 
 Four tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
+
+**`mobile-zoom.spec.ts`** — the only spec that overrides the viewport (`test.use({ viewport: { width: 390, height: 844 } })`), and it has to: the rule it guards lives behind a `max-width` media query, so at the desktop width every other spec runs at, the assertion would pass while proving nothing.
+
+iOS Safari zooms the page in when it focuses a field rendering text under 16px, and never zooms back out. The fix is one rule in `src/app/index.css` rather than a class on each field — the per-field version had already been missed, with the search box carrying `text-[16px] sm:text-sm` while the comment and post boxes still sat at 15px.
+
+The spec reads `getComputedStyle(el).fontSize` on every visible field, not the class list: what matters is the pixel value the browser resolved, whatever produced it. `expectNoFieldZooms` asserts a minimum field count first, so a page that rendered no fields cannot pass the loop vacuously. Removing the CSS rule fails all three tests, naming the offending placeholders.
+
+Two mobile-only facts are baked into how it drives the app, and both bit on the first run: the sidebar is `hidden sm:block`, so the way into the auth modal is BottomNav's profile **button** (not a link); and comments live at `/posts/:id/comments`, so a route mock matching `/posts/` before `/comments` answers the comment list with a single post object.
 
 > `wrangler dev` needs `pnpm build` first: `@cloudflare/vite-plugin` writes `.wrangler/deploy/config.json` during the build, which is where `assets.directory` comes from. Without it Wrangler refuses to start. `.wrangler/` is gitignored, so a clean checkout must build before it can preview.
 
