@@ -96,7 +96,7 @@ This is distinct from `useTranslation` (`src/shared/hooks/useTranslation.ts`), w
 
 ### Styling
 
-Tailwind CSS 4 utilities only — no CSS Modules, styled-components, or inline style objects. Dark theme throughout: `bg-black`, white text, `white/10` borders, `zinc-*` surfaces, accents in `blue-*` / `pink-*` / `red-*`. Icons from `lucide-react` exclusively. Layout widths: outer `max-w-[1250px]`, feed column `max-w-[600px]`, right rail `w-[320px]`. Sidebar is `hidden sm:block`; `BottomNav` covers mobile.
+Tailwind CSS 4 utilities only — no CSS Modules, styled-components, or inline style objects. The one hand-written rule lives in `src/app/index.css`: below the `sm` breakpoint every `input`/`textarea`/`select` is forced to `font-size: 16px !important`, because iOS Safari zooms the page in when it focuses a field rendering smaller text and never zooms back out. It is `!important` because a Tailwind utility on the element outranks a plain element selector, and global because the per-field version was already missed once. **Do not size a field below 16px on mobile to work around it** — `e2e/mobile-zoom.spec.ts` fails. Dark theme throughout: `bg-black`, white text, `white/10` borders, `zinc-*` surfaces, accents in `blue-*` / `pink-*` / `red-*`. Icons from `lucide-react` exclusively. Layout widths: outer `max-w-[1250px]`, feed column `max-w-[600px]`, right rail `w-[320px]`. Sidebar is `hidden sm:block`; `BottomNav` covers mobile.
 
 ### Worker
 

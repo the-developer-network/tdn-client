@@ -4,3 +4,25 @@ body {
     background-color: black;
     margin: 0;
 }
+
+/*
+ * iOS Safari zooms the whole page in when it focuses a field whose text
+ * renders under 16px, and it does not zoom back out afterwards.
+ *
+ * Set here rather than on each field: there are thirty-odd inputs across
+ * fifteen files, several sized 15px or `text-sm` by design, and a per-field
+ * fix is one somebody has to remember on every new form. That is exactly what
+ * happened — the search box was fixed with `text-[16px] sm:text-sm` while the
+ * comment and post boxes kept zooming.
+ *
+ * `!important` is what makes it hold: a Tailwind utility on the element
+ * outranks a plain element selector. Scoped below Tailwind's `sm` breakpoint,
+ * so pointer devices keep the smaller type the design asks for.
+ */
+@media (max-width: 639.98px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}
