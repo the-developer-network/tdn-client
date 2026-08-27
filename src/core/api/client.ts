@@ -38,6 +38,46 @@ interface ApiOptions extends RequestInit {
 let isRefreshing = false;
 
 /**
+ * Reads a response body as JSON, turning anything unreadable into a problem
+ * document instead of letting it escape as a bare `SyntaxError`.
+ *
+ * An empty body, an HTML error page from a proxy, or a plugin that answered
+ * outside the API's error format all used to throw a `SyntaxError`, which
+ * carries neither `status` nor `title` — so `getErrorMessage` could say
+ * nothing better than "An unexpected error occurred." and the real status
+ * code never reached the caller. That is the least useful message the app
+ * can show and the hardest to chase.
+ */
+const readBody = async (
+    response: Response,
+): Promise<
+    { ok: true; body: unknown } | { ok: false; body: ApiErrorResponse }
+> => {
+    const text = await response.text();
+
+    if (text) {
+        try {
+            return { ok: true, body: JSON.parse(text) };
+        } catch {
+            // fall through to the problem document below
+        }
+    }
+
+    return {
+        ok: false,
+        body: {
+            type: "about:blank",
+            title: response.statusText || "Unreadable response",
+            status: response.status,
+            detail: text
+                ? `The server answered ${response.status} with a body that is not JSON.`
+                : `The server answered ${response.status} with an empty body.`,
+            instance: "",
+        },
+    };
+};
+
+/**
  * The in-flight refresh, shared by every caller that needs one.
  *
  * The queue below serialises *authenticated* retries, but the public branch
@@ -191,9 +231,10 @@ export const apiClient = async <T>(
             });
 
             if (retryRes.status === 204) return {} as T;
-            const retryResult = await retryRes.json();
-            if (!retryRes.ok) throw retryResult as ApiErrorResponse;
-            return (retryResult as ApiResponse<T>).data;
+            const retryParsed = await readBody(retryRes);
+            if (!retryParsed.ok) throw retryParsed.body;
+            if (!retryRes.ok) throw retryParsed.body as ApiErrorResponse;
+            return (retryParsed.body as ApiResponse<T>).data;
         }
 
         // Authenticated endpoints: queue behind an in-flight refresh
@@ -225,13 +266,17 @@ export const apiClient = async <T>(
         return {} as T;
     }
 
-    const result = await response.json();
+    const parsed = await readBody(response);
 
-    if (!response.ok) {
-        throw result as ApiErrorResponse;
+    if (!parsed.ok) {
+        throw parsed.body;
     }
 
-    return (result as ApiResponse<T>).data;
+    if (!response.ok) {
+        throw parsed.body as ApiErrorResponse;
+    }
+
+    return (parsed.body as ApiResponse<T>).data;
 };
 
 export const api = {

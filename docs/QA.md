@@ -315,6 +315,11 @@ The refresh queue is the most critical path: a 401 triggers a single token refre
 | 401 → refresh succeeds → original request retried | Request called twice total                                     |
 | Concurrent 401s                                   | Exactly one refresh call; all queued requests resolved         |
 | Refresh fails                                     | `_onSessionExpired` handler called, `"Session Expired"` thrown |
+| Error response with an empty body                 | Rejects with `status` and a detail naming the empty body       |
+| Error response that is not JSON                   | Rejects with `status` and a detail saying so                   |
+| Error response that _is_ problem+json             | The API's own `detail` is preserved                            |
+
+**Three of those rows are about one message.** "An unexpected error occurred." was all the app could say when a body would not parse, because `response.json()` threw a bare `SyntaxError` — no `status`, no `title`, nothing `getErrorMessage` can read, and the real HTTP status lost. Every unreadable body is now turned into a problem document carrying the status, so a 502 from a proxy or a plugin answering outside the error format says which it was.
 
 **`isPublic` vs `isAnonymous`.** Both skip the authenticated 401 path, and they are not interchangeable:
 

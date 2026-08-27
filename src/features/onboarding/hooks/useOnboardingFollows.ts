@@ -41,6 +41,14 @@ export function useOnboardingFollows() {
                     else next.delete(userId);
                     return next;
                 });
+                // The toast only ever shows a message meant for a reader. The
+                // raw rejection is the only thing that says which request
+                // failed and what the server actually answered, and without
+                // it a failure here cannot be chased at all.
+                console.error(
+                    `${wasFollowing ? "Unfollow" : "Follow"} failed for ${userId}:`,
+                    err,
+                );
                 addToast({ type: "error", message: getErrorMessage(err) });
             } finally {
                 setPendingIds((prev) => {
