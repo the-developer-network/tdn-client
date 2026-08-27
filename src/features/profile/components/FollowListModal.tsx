@@ -61,6 +61,19 @@ function FollowListRow({
         handleFollow();
     }
 
+    // 44px tall below `sm`. The compact pill measured 26px on a phone, and a
+    // thumb aimed at it lands on the row instead — which opens the profile,
+    // so the button reads as doing nothing.
+    const buttonClasses = [
+        "ml-auto shrink-0 flex items-center justify-center",
+        "min-h-11 px-4 sm:min-h-0 sm:px-3 sm:py-1",
+        "rounded-full text-xs font-semibold transition-colors",
+        "disabled:opacity-50",
+        isFollowing
+            ? "bg-transparent border border-white/30 text-white hover:border-red-500/60 hover:text-red-400"
+            : "bg-white text-black hover:bg-white/90",
+    ].join(" ");
+
     return (
         <div
             role="button"
@@ -100,11 +113,7 @@ function FollowListRow({
                     type="button"
                     onClick={handleFollowClick}
                     disabled={isLoading}
-                    className={`ml-auto shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
-                        isFollowing
-                            ? "bg-transparent border border-white/30 text-white hover:border-red-500/60 hover:text-red-400"
-                            : "bg-white text-black hover:bg-white/90"
-                    }`}
+                    className={buttonClasses}
                 >
                     {isFollowing ? t("profile.following") : t("profile.follow")}
                 </button>
