@@ -1259,6 +1259,8 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 
 Four tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
 
+**The follow control in the follower/following list is measured, not asserted by class.** It sits inside a row that navigates to the profile, so every pixel the thumb misses opens the profile instead — which is indistinguishable, to the person holding the phone, from a button that does nothing. `profile.spec` sets a 390px viewport and reads `boundingBox().height`, because the number is the whole point: the pill shipped at 26px against a 44px minimum, and only a measurement catches it going back.
+
 **`mobile-zoom.spec.ts`** — the only spec that overrides the viewport (`test.use({ viewport: { width: 390, height: 844 } })`), and it has to: the rule it guards lives behind a `max-width` media query, so at the desktop width every other spec runs at, the assertion would pass while proving nothing.
 
 iOS Safari zooms the page in when it focuses a field rendering text under 16px, and never zooms back out. The fix is one rule in `src/app/index.css` rather than a class on each field — the per-field version had already been missed, with the search box carrying `text-[16px] sm:text-sm` while the comment and post boxes still sat at 15px.
@@ -1309,6 +1311,7 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `feed.spec`           | Clicking like triggers optimistic count increment                              |
 | `profile.spec`        | Visit `/profile/:username` → full name heading visible                         |
 | `profile.spec`        | `isMe: true` response → "Edit Profile" button visible                          |
+| `profile.spec`        | Following-list follow button is ≥44px tall at 390px wide, and unfollows rather than opening the profile |
 | `articles.spec`       | The Articles tab lists the returned articles as `<article>` elements           |
 | `articles.spec`       | No "Jobs" tab; the strip reads Community, News, Updates, Articles in DOM order |
 | `articles.spec`       | Category chip sends `categories=BACKEND`                                       |
