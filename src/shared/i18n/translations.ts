@@ -178,6 +178,7 @@ const en = {
         "Pick at least one field. We use it to find the accounts worth your feed.",
     "onboarding.continue": "Continue",
     "onboarding.accountsTitle": "Follow at least {{n}} accounts",
+    "onboarding.accountsTitleOne": "Follow one more account",
     "onboarding.accountsBody":
         "Your feed is built from the people you follow. Pick a few to get started.",
     "onboarding.progress": "{{n}} of {{total}} followed",
@@ -740,6 +741,7 @@ const tr: Record<TranslationKey, string> = {
         "En az bir alan seç. Akışına değecek hesapları buna göre buluyoruz.",
     "onboarding.continue": "Devam",
     "onboarding.accountsTitle": "En az {{n}} hesap takip et",
+    "onboarding.accountsTitleOne": "Bir hesap daha takip et",
     "onboarding.accountsBody":
         "Akışın takip ettiğin kişilerden oluşuyor. Başlamak için birkaçını seç.",
     "onboarding.progress": "{{n}} / {{total}} takip edildi",

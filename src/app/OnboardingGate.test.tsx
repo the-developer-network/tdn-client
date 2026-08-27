@@ -103,14 +103,39 @@ describe("OnboardingGate", () => {
         expect(await screen.findByText("onboarding")).toBeInTheDocument();
     });
 
-    it("passes an account that already follows people and remembers it", async () => {
+    // The requirement is five, not one: an account that got partway and
+    // wandered off still has to finish.
+    it("sends an account short of the requirement to /onboarding", async () => {
         signIn();
         vi.mocked(profileApi.getProfile).mockResolvedValue(profile(3));
 
         renderGate();
 
+        expect(await screen.findByText("onboarding")).toBeInTheDocument();
+        expect(useOnboardingStore.getState().isCompleted("user-1")).toBe(false);
+    });
+
+    it("passes an account that already meets the requirement and remembers it", async () => {
+        signIn();
+        vi.mocked(profileApi.getProfile).mockResolvedValue(profile(5));
+
+        renderGate();
+
         expect(await screen.findByText("feed")).toBeInTheDocument();
         expect(useOnboardingStore.getState().isCompleted("user-1")).toBe(true);
+    });
+
+    // Finishing once settles it. Without this the account would be pulled back
+    // in the moment it unfollowed someone, which is nagging, not onboarding.
+    it("never asks again once the flow has been completed", async () => {
+        signIn();
+        useOnboardingStore.getState().complete("user-1", ["BACKEND"]);
+        vi.mocked(profileApi.getProfile).mockResolvedValue(profile(1));
+
+        renderGate();
+
+        expect(screen.getByText("feed")).toBeInTheDocument();
+        expect(profileApi.getProfile).not.toHaveBeenCalled();
     });
 
     // The gate is a nudge. A failed request must never lock an account out of

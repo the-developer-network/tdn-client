@@ -844,6 +844,10 @@ The two content requests are `Promise.allSettled`, not `Promise.all`: one endpoi
 | Unfollow rejected           | The follow is restored                                     |
 | Request in flight           | `isPending(id)` true for that id only, false once settled  |
 
+#### `useFollowingCount` (`src/features/onboarding/hooks/useFollowingCount.ts`)
+
+Reads `followingCount` off the signed-in account's own profile so the page can credit follows already on the books. Read here rather than handed over from the gate so the page is still right on a reload or a direct visit to `/onboarding`, where no gate ran. A failure counts as zero — the same fail-open the gate takes, and it can only ever ask for more, never fewer.
+
 ---
 
 ### Layer 5 — Components
@@ -1145,9 +1149,9 @@ MSW fails the first `PATCH /users/me/username` and accepts every one after it, s
 
 **`OnboardingPage`:**
 
-9 tests. Both onboarding hooks are mocked wholesale; the page's own job is the two-step machine and the gate on the finish button. Step one is walked by **clicking** ("Backend", then "Continue") rather than by seeding state, because the picked fields have to reach `useOnboardingSuggestions` for step two to mean anything — one test asserts exactly that hand-off.
+10 tests. All three onboarding hooks are mocked wholesale; the page's own job is the two-step machine and the gate on the finish button. Step one is walked by **clicking** ("Backend", then "Continue") rather than by seeding state, because the picked fields have to reach `useOnboardingSuggestions` for step two to mean anything — one test asserts exactly that hand-off.
 
-The required follow count is `Math.min(5, accounts.length)`, not a flat 5: a young deployment may not hold five accounts at all, and a flow that cannot be finished is worse than a shorter one. The escape hatch is narrower — only when suggestions never arrived is the finish button opened with nothing followed.
+The required count is `min(MIN_FOLLOWS - alreadyFollowing, accounts.length)`, and both terms earn their place. The gate opens at five *in total*, so follows already on the books count — asking someone who follows four for five more is a different requirement than the one that sent them here. And a young deployment may not hold that many accounts at all; a flow that cannot be finished is worse than a shorter one. The escape hatch is narrower — only when suggestions never arrived (`accounts.length === 0`, so `required` is 0) does the finish button open with nothing followed.
 
 | Scenario                          | Assert                                                     |
 | --------------------------------- | ----------------------------------------------------------- |
@@ -1158,17 +1162,19 @@ The required follow count is `Math.min(5, accounts.length)`, not a flat 5: a you
 | 5 of 6 followed                   | "Go to my feed" enabled                                      |
 | Only 2 accounts exist, both followed | Requirement drops — "2 of 2 followed", finish enabled  |
 | Suggestions errored               | Finish enabled; "Try again" offered                          |
+| Already following 3, 2 more done  | "2 of 2 followed"; finish enabled                            |
 | Finish                            | `isCompleted` true, `interests` stored, `navigate("/", { replace: true })` |
 | "Back"                            | Field picker again                                           |
 
 **`OnboardingGate` (`src/app/OnboardingGate.test.tsx`):**
 
-7 tests. A pathless layout route wrapping every app route, rendered here through a `MemoryRouter` with a stub child so the pass/redirect decision is observable. `profileApi` is mocked; **the `vi.hoisted` localStorage stub is required** (two persisted stores).
+9 tests. A pathless layout route wrapping every app route, rendered here through a `MemoryRouter` with a stub child so the pass/redirect decision is observable. `profileApi` is mocked; **the `vi.hoisted` localStorage stub is required** (two persisted stores).
 
-Two rules are load-bearing and each has a test:
+The threshold is `followingCount < MIN_FOLLOWS`, not `=== 0` — an account that got partway and wandered off still has to finish. Three rules are load-bearing and each has a test:
 
 - **It stands down while the auth modal is open.** `RegisterView` calls `setAuth` and then `setStep("verify-email")`, leaving the modal up over the page. Redirecting at that moment unmounts `AuthModal` along with the `PageShell` holding it, and the verification step is lost.
-- **A failed profile request passes rather than redirects.** The gate is a nudge; an account must never be locked out of the app it is already signed into because one request did not come back.
+- **A failed profile request passes rather than redirects**, and warns to the console. Passing is deliberate — the gate is a requirement, not a trap — but silence made the whole feature look like it was never built: a profile endpoint that is down disables onboarding with no trace at all.
+- **Finishing once settles it for good.** With a `< 5` check and no local completion flag, the account would be dragged back the moment it unfollowed someone, which is nagging rather than onboarding.
 
 | Scenario                       | Assert                                              |
 | ------------------------------ | ---------------------------------------------------- |
@@ -1176,7 +1182,9 @@ Two rules are load-bearing and each has a test:
 | Auth modal open                | Passes; no profile request                           |
 | Already completed locally      | Passes; no profile request                           |
 | `followingCount === 0`         | Redirects to `/onboarding`                           |
-| `followingCount > 0`           | Passes and records completion so it stops asking     |
+| `followingCount === 3`         | Redirects; completion **not** recorded               |
+| `followingCount === 5`         | Passes and records completion so it stops asking     |
+| Completed locally, count 1     | Passes; no profile request — finishing is final      |
 | Profile request rejects        | Passes                                               |
 | Request in flight              | Spinner; the child is not rendered                   |
 
@@ -1204,6 +1212,8 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 > ⚠️ **`reuseExistingServer` will lie to you when comparing two versions of the Worker.** It is `!process.env.CI`, so locally Playwright reuses a Wrangler already on the port — serving a build from before your edit. A run that "passes on the broken version" almost certainly reused the fixed one. Kill the Wrangler process between comparison runs.
 
 **`onboarding.spec.ts`** — the one spec that opts *out* of the shared fixture. `injectAuth` writes `tdn-onboarding` with the mock user's id alongside the auth state, because without it `OnboardingGate` would send **every authenticated spec** to `/onboarding` (the mocked profile reports `followingCount: 0`) and the whole suite would fail on a page it never meant to visit. This spec signs in by hand without that key so the gate actually runs, then drives both steps and asserts the redirect out to `/`. Its follow loop uses `getByRole("button", { name: "Follow", exact: true })`: without `exact`, "Following" also matches and the loop keeps clicking the button it just toggled.
+
+Four tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
 
 > `wrangler dev` needs `pnpm build` first: `@cloudflare/vite-plugin` writes `.wrangler/deploy/config.json` during the build, which is where `assets.directory` comes from. Without it Wrangler refuses to start. `.wrangler/` is gitignored, so a clean checkout must build before it can preview.
 
