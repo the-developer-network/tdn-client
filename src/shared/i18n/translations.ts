@@ -391,6 +391,8 @@ const en = {
         "Unable to connect. Please check your internet connection.",
     "error.api": "An API error occurred.",
     "error.unexpected": "An unexpected error occurred.",
+    "error.server":
+        "The server could not complete the request. Please try again.",
 
     "ad.promotion": "Promotion",
     "ad.label": "Ad",
@@ -954,6 +956,7 @@ const tr: Record<TranslationKey, string> = {
     "error.network": "Bağlantı kurulamadı. İnternet bağlantınızı kontrol edin.",
     "error.api": "Bir API hatası oluştu.",
     "error.unexpected": "Beklenmeyen bir hata oluştu.",
+    "error.server": "Sunucu isteği tamamlayamadı. Lütfen tekrar deneyin.",
 
     "ad.promotion": "Tanıtım",
     "ad.label": "Reklam",

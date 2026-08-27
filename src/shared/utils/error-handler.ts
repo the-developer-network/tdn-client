@@ -3,6 +3,47 @@ import { NetworkError } from "../../core/api/api-types";
 import { translate } from "../i18n/translate";
 import type { ApiErrorResponse } from "../../core/api/api-types";
 
+/**
+ * `detail` values the API produces when it has nothing specific to say.
+ *
+ * `error-handler.plugin.ts` writes one of these for any non-`CustomError`
+ * 5xx, deliberately hiding what actually broke. They are the only server
+ * sentences safe to replace with a translated one, because they carry no
+ * information to lose.
+ */
+const GENERIC_SERVER_DETAILS = new Set([
+    "An unexpected error occurred.",
+    "The server could not complete the request.",
+]);
+
+/**
+ * `type` on the problem documents `apiClient` synthesises for a body it could
+ * not read. Those are ours, not the server's, so their wording is always
+ * ours to translate.
+ */
+const UNREADABLE_RESPONSE_TYPE = "tdn:unreadable-response";
+
+/**
+ * Whether the server said anything worth preserving.
+ *
+ * The API answers in English only — it reads no `Accept-Language` — so every
+ * `detail` shown verbatim reaches a Turkish reader in English. The fix cannot
+ * be "translate by status": a 401 from `/auth/login` means "wrong password",
+ * not "your session ended", and `error-handler.plugin.ts` lets a `CustomError`
+ * carry its own message at *any* status, 5xx included. Matching the handful of
+ * sentences the API emits when it is being deliberately vague is the only cut
+ * that loses nothing.
+ *
+ * Everything else keeps the server's own words — "Invalid credentials.",
+ * "You cannot follow yourself.", "Articles are unavailable." Localising those
+ * is the API's job; the client cannot infer them from a status code.
+ */
+function isGenericServerError(err: ApiErrorResponse): boolean {
+    if (err.type === UNREADABLE_RESPONSE_TYPE) return true;
+    if (err.status < 500) return false;
+    return !err.detail || GENERIC_SERVER_DETAILS.has(err.detail.trim());
+}
+
 export function isNetworkError(err: unknown): err is NetworkError {
     return err instanceof NetworkError;
 }
@@ -22,6 +63,9 @@ export const getErrorMessage = (err: unknown): string => {
         if (err.validation && err.validation.length > 0) {
             return err.validation[0].message;
         }
+
+        if (isGenericServerError(err)) return translate("error.server");
+
         return err.detail || err.title || translate("error.api");
     }
 

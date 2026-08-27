@@ -66,7 +66,9 @@ const readBody = async (
     return {
         ok: false,
         body: {
-            type: "about:blank",
+            // Marks the document as ours rather than the server's, so
+            // `getErrorMessage` knows the wording is safe to translate.
+            type: "tdn:unreadable-response",
             title: response.statusText || "Unreadable response",
             status: response.status,
             detail: text

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // `getErrorMessage` now reaches the persisted language store, which captures
 // storage at module-evaluation time — the stub must exist before imports run.
@@ -22,7 +22,12 @@ vi.hoisted(() => {
 });
 
 import { NetworkError } from "../../core/api/api-types";
+import { useLanguageStore } from "../store/language.store";
 import { getErrorMessage } from "./error-handler";
+
+beforeEach(() => {
+    useLanguageStore.setState({ locale: "en" });
+});
 
 describe("getErrorMessage", () => {
     describe("NetworkError", () => {
@@ -56,23 +61,102 @@ describe("getErrorMessage", () => {
             expect(getErrorMessage(err)).toBe("username too short");
         });
 
-        it("returns the detail field when no validation array is present", () => {
+        // A 409 says something the client could not have worded better
+        // ("Username already taken"), so the server's own text survives.
+        it("returns the detail field for a status it has no message for", () => {
             expect(
                 getErrorMessage({
-                    status: 404,
-                    title: "Not Found",
-                    detail: "User not found",
+                    status: 409,
+                    title: "Conflict",
+                    detail: "Username already taken",
                 }),
-            ).toBe("User not found");
+            ).toBe("Username already taken");
         });
 
         it("returns the title field when detail is absent", () => {
             expect(
                 getErrorMessage({
-                    status: 500,
-                    title: "Internal Server Error",
+                    status: 409,
+                    title: "Conflict",
                 }),
-            ).toBe("Internal Server Error");
+            ).toBe("Conflict");
+        });
+    });
+
+    // The API answers in English only — it reads no Accept-Language — so a
+    // `detail` shown verbatim reaches a Turkish reader in English. Only the
+    // sentences it writes when it has nothing specific to say are replaced.
+    describe("localisation", () => {
+        it.each([
+            "An unexpected error occurred.",
+            "The server could not complete the request.",
+        ])("translates the generic 5xx sentence %j", (detail) => {
+            const err = { status: 500, title: "Error", detail };
+
+            expect(getErrorMessage(err)).toBe(
+                "The server could not complete the request. Please try again.",
+            );
+
+            useLanguageStore.setState({ locale: "tr" });
+            expect(getErrorMessage(err)).toBe(
+                "Sunucu isteği tamamlayamadı. Lütfen tekrar deneyin.",
+            );
+        });
+
+        it("translates a 5xx that carries no detail at all", () => {
+            useLanguageStore.setState({ locale: "tr" });
+            expect(getErrorMessage({ status: 503, title: "Error" })).toBe(
+                "Sunucu isteği tamamlayamadı. Lütfen tekrar deneyin.",
+            );
+        });
+
+        // apiClient writes these itself for a body it could not read, so the
+        // wording is ours to translate whatever the status was.
+        it("translates a document apiClient synthesised", () => {
+            useLanguageStore.setState({ locale: "tr" });
+            expect(
+                getErrorMessage({
+                    type: "tdn:unreadable-response",
+                    status: 502,
+                    title: "Bad Gateway",
+                    detail: "The server answered 502 with an empty body.",
+                }),
+            ).toBe("Sunucu isteği tamamlayamadı. Lütfen tekrar deneyin.");
+        });
+
+        // A CustomError carries its own message at any status, 5xx included,
+        // and a 4xx always says something the client could not word better.
+        it.each([
+            [401, "Invalid credentials."],
+            [403, "You cannot edit this article."],
+            [404, "User not found."],
+            [429, "Too many requests, please try again later."],
+            [503, "Articles are unavailable."],
+        ])("leaves %i to the server's own words", (status, detail) => {
+            useLanguageStore.setState({ locale: "tr" });
+            expect(getErrorMessage({ status, title: "x", detail })).toBe(
+                detail,
+            );
+        });
+
+        it("still prefers a validation message", () => {
+            useLanguageStore.setState({ locale: "tr" });
+            expect(
+                getErrorMessage({
+                    status: 400,
+                    title: "Validation Error",
+                    detail: "Invalid data format provided.",
+                    validation: [
+                        {
+                            message: "username too short",
+                            instancePath: "/username",
+                            schemaPath: "#/x",
+                            keyword: "minLength",
+                            params: {},
+                        },
+                    ],
+                }),
+            ).toBe("username too short");
         });
     });
 
