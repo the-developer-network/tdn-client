@@ -1,13 +1,116 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useFollowList } from "../hooks/useFollowList";
+import { useFollowAction } from "../hooks/useFollowAction";
+import { useAuthStore } from "../../../core/auth/auth.store";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import type { FollowUser } from "../api/profile.types";
 
 interface FollowListModalProps {
     isOpen: boolean;
     onClose: () => void;
     username: string;
     type: "followers" | "following";
+    /**
+     * Called with `1` or `-1` when a row in this list is followed or
+     * unfollowed. Only wired up where the change actually moves a counter the
+     * page is showing — see `ProfilePage`.
+     */
+    onFollowChange?: (delta: 1 | -1) => void;
+}
+
+interface FollowListRowProps {
+    user: FollowUser;
+    onNavigate: (username: string) => void;
+    onAuthRequired: () => void;
+    onFollowChange?: (delta: 1 | -1) => void;
+}
+
+function FollowListRow({
+    user,
+    onNavigate,
+    onAuthRequired,
+    onFollowChange,
+}: FollowListRowProps) {
+    const { t } = useI18n();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    // `FollowUser` carries no follower count and this list shows none, so the
+    // count this hook tracks is passed in as 0 and ignored.
+    const { isFollowing, isLoading, handleFollow } = useFollowAction(
+        user.userId,
+        user.isFollowing,
+        0,
+    );
+
+    // Reporting the change by watching `isFollowing` rather than from the
+    // click handler means a rolled-back request reports its reversal too, so
+    // a counter fed from here cannot drift away from the button.
+    const reported = useRef(isFollowing);
+    useEffect(() => {
+        if (reported.current === isFollowing) return;
+        reported.current = isFollowing;
+        onFollowChange?.(isFollowing ? 1 : -1);
+    }, [isFollowing, onFollowChange]);
+
+    function handleFollowClick(e: React.MouseEvent) {
+        e.stopPropagation();
+        // `handleFollow` opens the auth modal itself, and that modal shares
+        // this one's z-index — close the list first so they do not stack.
+        if (!isAuthenticated) onAuthRequired();
+        handleFollow();
+    }
+
+    return (
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onNavigate(user.username)}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onNavigate(user.username);
+                }
+            }}
+            className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/5 transition-colors text-left cursor-pointer"
+        >
+            <img
+                src={
+                    user.avatarUrl ||
+                    `https://ui-avatars.com/api/?name=${user.username}`
+                }
+                alt={user.username}
+                className="w-10 h-10 rounded-full border border-white/10 object-cover shrink-0"
+            />
+            <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                    {user.fullName || user.username}
+                </p>
+                <p className="text-xs text-white/40 truncate">
+                    @{user.username}
+                </p>
+                {user.bio && (
+                    <p className="text-xs text-white/30 truncate mt-0.5">
+                        {user.bio}
+                    </p>
+                )}
+            </div>
+            {!user.isMe && (
+                <button
+                    type="button"
+                    onClick={handleFollowClick}
+                    disabled={isLoading}
+                    className={`ml-auto shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
+                        isFollowing
+                            ? "bg-transparent border border-white/30 text-white hover:border-red-500/60 hover:text-red-400"
+                            : "bg-white text-black hover:bg-white/90"
+                    }`}
+                >
+                    {isFollowing ? t("profile.following") : t("profile.follow")}
+                </button>
+            )}
+        </div>
+    );
 }
 
 export function FollowListModal({
@@ -15,6 +118,7 @@ export function FollowListModal({
     onClose,
     username,
     type,
+    onFollowChange,
 }: FollowListModalProps) {
     const navigate = useNavigate();
     const { t } = useI18n();
@@ -58,38 +162,13 @@ export function FollowListModal({
 
                     {!isLoading &&
                         users.map((user) => (
-                            <button
+                            <FollowListRow
                                 key={user.userId}
-                                onClick={() => handleUserClick(user.username)}
-                                className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/5 transition-colors text-left"
-                            >
-                                <img
-                                    src={
-                                        user.avatarUrl ||
-                                        `https://ui-avatars.com/api/?name=${user.username}`
-                                    }
-                                    alt={user.username}
-                                    className="w-10 h-10 rounded-full border border-white/10 object-cover shrink-0"
-                                />
-                                <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-white truncate">
-                                        {user.fullName || user.username}
-                                    </p>
-                                    <p className="text-xs text-white/40 truncate">
-                                        @{user.username}
-                                    </p>
-                                    {user.bio && (
-                                        <p className="text-xs text-white/30 truncate mt-0.5">
-                                            {user.bio}
-                                        </p>
-                                    )}
-                                </div>
-                                {user.isFollowing && !user.isMe && (
-                                    <span className="ml-auto shrink-0 text-xs text-white/40 border border-white/10 rounded-full px-2 py-0.5">
-                                        {t("profile.following")}
-                                    </span>
-                                )}
-                            </button>
+                                user={user}
+                                onNavigate={handleUserClick}
+                                onAuthRequired={onClose}
+                                onFollowChange={onFollowChange}
+                            />
                         ))}
 
                     {hasMore && !isLoadingMore && (

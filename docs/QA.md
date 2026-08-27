@@ -107,6 +107,8 @@ src/
       hooks/
         useFollowAction.test.ts
         useFollowList.test.ts
+      components/
+        FollowListModal.test.tsx
     onboarding/
       store/
         onboarding.store.test.ts
@@ -693,6 +695,23 @@ The handler must slice against the `limit`/`offset` it is given rather than retu
 | 5 followers                     | All 5; `hasMore` false without a second request |
 | Type switched to `following`    | List replaced, not appended                     |
 | 404                             | `detail` surfaced; `isLoading` false            |
+
+#### `FollowListModal` (`src/features/profile/components/FollowListModal.test.tsx`)
+
+6 tests. Each row carries a live follow button, so the list is where an account is unfollowed — the old row was a single `<button>` that could only navigate, and the "Following" text beside it was an inert `<span>`.
+
+The row is a `role="button"` `<div>` rather than a `<button>` because a button cannot legally contain the follow button; keyboard access is kept via `tabIndex`/`onKeyDown`. The follow control calls `stopPropagation`, which is the behaviour two of these tests exist to pin.
+
+`onFollowChange` is reported from an effect watching the hook's `isFollowing`, not from the click handler, so a rolled-back request reports its reversal too — `ProfilePage` feeds its own `followingCount` from it and would otherwise drift.
+
+| Scenario                          | Assert                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| Click "Following"                 | `DELETE /follows` with `{ targetId }`; label flips to "Follow"; row still present; `onFollowChange(-1)` |
+| Click the follow button           | `navigate` not called, `onClose` not called                                  |
+| Click the row itself              | `onClose` + `navigate("/profile/bob")`                                       |
+| `DELETE /follows` fails           | Label back to "Following"; `onFollowChange` called `-1` then `1`             |
+| Signed-out click                  | `onClose` called and auth modal `isOpen=true` — both modals share `z-[100]`, so the list must close first |
+| `isMe` row                        | No follow button rendered                                                    |
 
 #### `useNetworkStatus` (`src/shared/hooks/useNetworkStatus.test.ts`)
 
