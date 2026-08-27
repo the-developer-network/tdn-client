@@ -268,7 +268,26 @@ it("unknown input → fallback message", () => {
 });
 ```
 
-> `getErrorMessage` resolves its fallback strings through `translate()`, which reads `useLanguageStore`. That store is persisted, so this spec needs the `vi.hoisted` Map-backed `localStorage` stub. Assertions above hold because the store defaults to `en` under jsdom.
+> `getErrorMessage` resolves its fallback strings through `translate()`, which reads `useLanguageStore`. That store is persisted, so this spec needs the `vi.hoisted` Map-backed `localStorage` stub. `beforeEach` pins the locale to `en`; the localisation tests below set `tr` explicitly.
+
+**Localisation, and where the line is drawn.** The API answers in English only — it reads no `Accept-Language` — so every `detail` shown verbatim reaches a Turkish reader in English. Only the sentences the API writes when it has nothing specific to say are replaced with a translated one:
+
+- `"An unexpected error occurred."` and `"The server could not complete the request."` — what `error-handler.plugin.ts` emits for a non-`CustomError` 5xx, deliberately hiding what broke
+- a 5xx with no `detail` at all
+- any document `apiClient` synthesised for an unreadable body (`type: "tdn:unreadable-response"`) — those are ours, so the wording is ours
+
+**Translating by status instead would be wrong twice over**, and both ways are covered:
+
+- a 401 from `/auth/login` means "wrong password", not "your session ended" — `LoginView.test.tsx` and four other auth specs fail loudly on that mistake
+- `error-handler.plugin.ts` lets a `CustomError` carry its own message at **any** status, 5xx included, so `"Articles are unavailable."` on a 503 must survive — `useArticles.test.ts` and `useMyArticles.test.ts` pin it
+
+| Scenario                                            | Assert                                     |
+| --------------------------------------------------- | ------------------------------------------ |
+| Generic 5xx sentence, `en` then `tr`                | Translated both times                      |
+| 5xx with no detail                                  | Translated                                 |
+| `type: "tdn:unreadable-response"`                   | Translated whatever the status             |
+| 401 / 403 / 404 / 429, and a 503 with a real detail | The server's own words, untouched          |
+| Validation array present                            | Still wins over everything above           |
 
 #### `translate` / `translateWith` (`src/shared/i18n/translate.ts`)
 
@@ -315,6 +334,11 @@ The refresh queue is the most critical path: a 401 triggers a single token refre
 | 401 → refresh succeeds → original request retried | Request called twice total                                     |
 | Concurrent 401s                                   | Exactly one refresh call; all queued requests resolved         |
 | Refresh fails                                     | `_onSessionExpired` handler called, `"Session Expired"` thrown |
+| Error response with an empty body                 | Rejects with `status` and a detail naming the empty body       |
+| Error response that is not JSON                   | Rejects with `status` and a detail saying so                   |
+| Error response that _is_ problem+json             | The API's own `detail` is preserved                            |
+
+**Three of those rows are about one message.** "An unexpected error occurred." was all the app could say when a body would not parse, because `response.json()` threw a bare `SyntaxError` — no `status`, no `title`, nothing `getErrorMessage` can read, and the real HTTP status lost. Every unreadable body is now turned into a problem document carrying the status, so a 502 from a proxy or a plugin answering outside the error format says which it was.
 
 **`isPublic` vs `isAnonymous`.** Both skip the authenticated 401 path, and they are not interchangeable:
 

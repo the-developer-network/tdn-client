@@ -60,7 +60,8 @@ Everything network goes through `api.get/post/patch/delete`. Base URL switches o
 - Authenticated 401 → single in-flight refresh; concurrent requests queue in `failedQueue` and replay after the new token lands. Refresh failure clears `access_token` and fires the session-expired handler registered in `AppInit.tsx` (clears auth store, reopens the auth modal at the `identifier` step).
 - `{ contentType: false }` for `FormData` — never set `Content-Type` manually.
 - 15 s `AbortController` timeout → `NetworkError`. 204 → `{}`.
-- Surface errors to users via `getErrorMessage(err)` from `src/shared/utils/error-handler.ts`.
+- A body that will not parse — empty, HTML from a proxy, anything outside the API's problem+json — is thrown as a synthesised RFC 7807 document carrying the real HTTP status, never as a bare `SyntaxError`. A `SyntaxError` has no `status` and no `title`, so `getErrorMessage` can only say "An unexpected error occurred." and the status never reaches the caller.
+- Surface errors to users via `getErrorMessage(err)` from `src/shared/utils/error-handler.ts`. The API answers in English only, so a `detail` shown verbatim reaches a Turkish reader in English. `getErrorMessage` replaces only the sentences the API writes when it has nothing specific to say (the generic 5xx details, a 5xx with no detail, and documents the client synthesised). Everything else keeps the server's words — translating by status would turn a 401 from `/auth/login` into "your session ended" when it means "wrong password", and would bury a `CustomError` that carries a real message at a 5xx status.
 
 Feature API modules (`*.api.ts`) are plain object literals of typed thunks that build query strings and call `api` — see `src/features/feed/api/feed.api.ts` for the canonical shape.
 

@@ -128,6 +128,71 @@ describe("apiClient", () => {
         });
     });
 
+    // "An unexpected error occurred." was the only thing the app could say
+    // when a body would not parse: a bare SyntaxError carries no status and no
+    // title, so `getErrorMessage` had nothing to work with and the real HTTP
+    // status never reached the caller.
+    describe("unreadable response bodies", () => {
+        it("reports the status when an error response carries no body", async () => {
+            server.use(
+                http.post(
+                    `${BASE}/follows`,
+                    () => new HttpResponse(null, { status: 500 }),
+                ),
+            );
+
+            await expect(
+                api.post("/follows", { targetId: "u1" }),
+            ).rejects.toMatchObject({
+                status: 500,
+                detail: expect.stringContaining("empty body"),
+            });
+        });
+
+        it("reports the status when an error response is not JSON", async () => {
+            server.use(
+                http.post(
+                    `${BASE}/follows`,
+                    () =>
+                        new HttpResponse("<html>Bad Gateway</html>", {
+                            status: 502,
+                            headers: { "Content-Type": "text/html" },
+                        }),
+                ),
+            );
+
+            await expect(
+                api.post("/follows", { targetId: "u1" }),
+            ).rejects.toMatchObject({
+                status: 502,
+                detail: expect.stringContaining("not JSON"),
+            });
+        });
+
+        it("still throws the problem document when the API sends one", async () => {
+            server.use(
+                http.post(`${BASE}/follows`, () =>
+                    HttpResponse.json(
+                        {
+                            type: "about:blank",
+                            title: "TooManyRequests",
+                            status: 429,
+                            detail: "Too many requests, please try again later.",
+                        },
+                        { status: 429 },
+                    ),
+                ),
+            );
+
+            await expect(
+                api.post("/follows", { targetId: "u1" }),
+            ).rejects.toMatchObject({
+                status: 429,
+                detail: "Too many requests, please try again later.",
+            });
+        });
+    });
+
     describe("401 — token refresh queue", () => {
         it("retries the original request once after a successful token refresh", async () => {
             localStorage.setItem("access_token", "old-token");
