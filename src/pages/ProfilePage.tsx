@@ -116,6 +116,23 @@ export default function ProfilePage() {
     );
     const isOwnProfile = displayProfile?.isMe === true;
 
+    // Unfollowing from your own Following list moves a number this page is
+    // already showing. Nobody else's `followingCount` changes when you follow
+    // or unfollow, so the modal is only handed this on your own list.
+    const handleFollowingChange = useCallback(
+        (delta: 1 | -1) => {
+            setLocalProfile((prev) => {
+                const base = prev ?? profile;
+                if (!base) return prev;
+                return {
+                    ...base,
+                    followingCount: (base.followingCount ?? 0) + delta,
+                };
+            });
+        },
+        [profile],
+    );
+
     // Deferred until the tab is opened: most visits never leave Posts, and
     // both endpoints are rate limited alongside every other read.
     useEffect(() => {
@@ -492,6 +509,11 @@ export default function ProfilePage() {
                 onClose={() => setFollowModal(null)}
                 username={username}
                 type={followModal ?? "followers"}
+                onFollowChange={
+                    isOwnProfile && followModal === "following"
+                        ? handleFollowingChange
+                        : undefined
+                }
             />
 
             {/* Edit Profile modal */}
