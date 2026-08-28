@@ -29,6 +29,10 @@ import { useToastStore } from "../shared/store/toast.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useNotificationStore } from "../features/notifications/store/notification.store";
+// The state type, not `ReturnType<typeof useNotificationStore>`: a Zustand
+// bound store is an overloaded call signature and `ReturnType` picks the
+// selector overload, which resolves to `unknown`.
+import type { NotificationState } from "../features/notifications/store/notification.store";
 import { useAuthStore } from "../core/auth/auth.store";
 import NotificationsPage from "./NotificationsPage";
 
@@ -69,16 +73,17 @@ function makeAuth(isAuthenticated: boolean) {
 }
 
 function makeNotificationStore(
-    overrides: Partial<ReturnType<typeof useNotificationStore>> = {},
-): ReturnType<typeof useNotificationStore> {
+    overrides: Partial<NotificationState> = {},
+): NotificationState {
     return {
         notifications: [],
         unreadCount: 0,
         setNotifications: vi.fn(),
         addNotification: vi.fn(),
+        incrementUnread: vi.fn(),
         markAllRead: vi.fn(),
         ...overrides,
-    } as unknown as ReturnType<typeof useNotificationStore>;
+    };
 }
 
 function makeNotification() {
@@ -168,7 +173,7 @@ describe("NotificationsPage", () => {
                 notifications: [
                     makeNotification(),
                     makeNotification(),
-                ] as ReturnType<typeof useNotificationStore>["notifications"],
+                ] as NotificationState["notifications"],
             }),
         );
         vi.mocked(useNotifications).mockReturnValue(
