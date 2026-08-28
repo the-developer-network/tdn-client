@@ -1033,11 +1033,33 @@ Tags must match `^[a-z0-9-]{1,30}$`, and a tag that fails comes back as a bare 4
 
 #### `NotificationCard`
 
-| Scenario            | Assert                                   |
-| ------------------- | ---------------------------------------- |
-| `FOLLOW` type click | `navigate("/profile/<username>")` called |
-| `LIKE` type click   | `navigate("/post/<referenceId>")` called |
-| `isRead: false`     | Element has `border-l-blue-500` class    |
+`NotificationType` must mirror the API's enum exactly, and `COMMENT_REPLY`
+showed what it costs when it does not. `MESSAGE_KEYS` is a
+`Record<NotificationType, TranslationKey>`, so a value missing from the *union*
+is missing from the map too — and a `Record` cannot flag a member its key type
+does not have, so TypeScript saw nothing wrong. The card then called
+`t(undefined)`, which throws inside `{{var}}` interpolation rather than
+returning a fallback string. One `COMMENT_REPLY` in the feed took down the
+whole notification list.
+
+The API owns that enum and can grow it after any build ships, so the union is
+no longer the only defence: an unrecognised type falls back to a generic
+message and to the issuer's profile, which is always a valid destination. Two
+tests cover the unknown-type path specifically, because the *next* enum value
+will arrive the same way this one did.
+
+| Scenario                   | Assert                                        |
+| -------------------------- | --------------------------------------------- |
+| `FOLLOW` type click        | `navigate("/profile/<username>")` called      |
+| `LIKE` type click          | `navigate("/post/<referenceId>")` called      |
+| `NEW_POST` type click      | `navigate("/post/<referenceId>")` called      |
+| `NEW_POST`, no reference   | Falls back to `/profile/<username>`           |
+| `COMMENT` type click       | `navigate("/comments/<referenceId>")` called  |
+| `COMMENT_REPLY` render     | Its own message, not a crash                  |
+| `COMMENT_REPLY` click      | `navigate("/comments/<referenceId>")` called  |
+| An unknown type            | Renders a generic message; does not throw     |
+| An unknown type, clicked   | Falls back to `/profile/<username>`           |
+| `isRead: false`            | Element has `border-l-blue-500` class         |
 
 #### `AuthModal`
 

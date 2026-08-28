@@ -13,6 +13,7 @@ const MESSAGE_KEYS: Record<NotificationType, TranslationKey> = {
     LIKE: "notif.like",
     COMMENT: "notif.comment",
     COMMENT_LIKE: "notif.commentLike",
+    COMMENT_REPLY: "notif.commentReply",
 };
 
 type Translate = ReturnType<typeof useI18n>["t"];
@@ -37,6 +38,13 @@ export function NotificationCard({ notification }: NotificationCardProps) {
     const navigate = useNavigate();
     const { t, locale } = useI18n();
 
+    // `notification.type` is what the server sent, not what this union says it
+    // can be. A value added to the API's enum after this build shipped lands
+    // here as a `MESSAGE_KEYS` miss, and `t(undefined)` throws inside its
+    // interpolation — which took the whole notification list down with it.
+    const messageKey: TranslationKey =
+        MESSAGE_KEYS[notification.type] ?? "notif.generic";
+
     function handleClick() {
         switch (notification.type) {
             case "FOLLOW":
@@ -52,10 +60,16 @@ export function NotificationCard({ notification }: NotificationCardProps) {
                 break;
             case "COMMENT":
             case "COMMENT_LIKE":
+            case "COMMENT_REPLY":
                 if (notification.referenceId) {
                     navigate(`/comments/${notification.referenceId}`);
                 }
                 break;
+            default:
+                // A type this build has never heard of. The API owns the enum
+                // and can grow it at any time, so the card degrades to the
+                // issuer's profile rather than becoming a dead row.
+                navigate(`/profile/${notification.username}`);
         }
     }
 
@@ -84,9 +98,7 @@ export function NotificationCard({ notification }: NotificationCardProps) {
             {/* Content */}
             <div className="flex-1 min-w-0">
                 <p className="text-white/90 text-[15px] leading-snug">
-                    {t(MESSAGE_KEYS[notification.type], {
-                        username: notification.username,
-                    })}
+                    {t(messageKey, { username: notification.username })}
                 </p>
                 <p className="text-white/40 text-xs mt-1">
                     {getRelativeTime(notification.createdAt, t, locale)}

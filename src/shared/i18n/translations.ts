@@ -151,6 +151,8 @@ const en = {
     "notif.like": "@{{username}} liked your post",
     "notif.comment": "@{{username}} commented on your post",
     "notif.commentLike": "@{{username}} liked your comment",
+    "notif.commentReply": "@{{username}} replied to your comment",
+    "notif.generic": "@{{username}} sent you a notification",
 
     "notif.justNow": "just now",
     "notif.minutesAgo": "{{n}}m ago",
@@ -717,6 +719,8 @@ const tr: Record<TranslationKey, string> = {
     "notif.like": "@{{username}} gönderinizi beğendi",
     "notif.comment": "@{{username}} gönderinize yorum yaptı",
     "notif.commentLike": "@{{username}} yorumunuzu beğendi",
+    "notif.commentReply": "@{{username}} yorumunuza cevap verdi",
+    "notif.generic": "@{{username}} size bir bildirim gönderdi",
 
     "notif.justNow": "az önce",
     "notif.minutesAgo": "{{n}}dk önce",
