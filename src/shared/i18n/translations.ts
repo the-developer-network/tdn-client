@@ -180,13 +180,15 @@ const en = {
     "onboarding.accountsTitle": "Follow at least {{n}} accounts",
     "onboarding.accountsTitleOne": "Follow one more account",
     "onboarding.accountsBody":
-        "Your feed is built from the people you follow. Pick a few to get started.",
+        "These news bots publish in the fields you picked. Follow a few and your feed starts full.",
     "onboarding.progress": "{{n}} of {{total}} followed",
+    "onboarding.loadMore": "Show more",
+    "onboarding.loadingMore": "Loading…",
     "onboarding.finish": "Go to my feed",
     "onboarding.back": "Back",
-    "onboarding.emptyTitle": "No accounts to suggest yet",
+    "onboarding.emptyTitle": "No bots for these fields yet",
     "onboarding.emptyBody":
-        "There is nobody publishing in these fields right now. Try another field, or carry on and follow people as you find them.",
+        "Nothing is publishing in these fields right now. Go back and pick another field, or carry on and follow people as you find them.",
     "onboarding.tryAgain": "Try again",
     "onboarding.loadFailed": "Suggestions could not be loaded.",
 
@@ -745,13 +747,15 @@ const tr: Record<TranslationKey, string> = {
     "onboarding.accountsTitle": "En az {{n}} hesap takip et",
     "onboarding.accountsTitleOne": "Bir hesap daha takip et",
     "onboarding.accountsBody":
-        "Akışın takip ettiğin kişilerden oluşuyor. Başlamak için birkaçını seç.",
+        "Bu haber botları seçtiğin alanlarda yayın yapıyor. Birkaçını takip et, akışın dolu başlasın.",
     "onboarding.progress": "{{n}} / {{total}} takip edildi",
+    "onboarding.loadMore": "Daha fazla göster",
+    "onboarding.loadingMore": "Yükleniyor…",
     "onboarding.finish": "Akışıma git",
     "onboarding.back": "Geri",
-    "onboarding.emptyTitle": "Henüz önerilecek hesap yok",
+    "onboarding.emptyTitle": "Bu alanlar için henüz bot yok",
     "onboarding.emptyBody":
-        "Şu an bu alanlarda yayın yapan kimse yok. Başka bir alan dene ya da devam edip karşına çıktıkça takip et.",
+        "Şu an bu alanlarda yayın yapan bir bot yok. Geri dönüp başka bir alan seç ya da devam edip karşına çıktıkça takip et.",
     "onboarding.tryAgain": "Tekrar dene",
     "onboarding.loadFailed": "Öneriler yüklenemedi.",
 

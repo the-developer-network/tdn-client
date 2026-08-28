@@ -21,58 +21,44 @@ async function signInWithoutOnboarding(page: import("@playwright/test").Page) {
     );
 }
 
-function author(id: string) {
+function bot(id: string, isFollowing = false) {
     return {
-        id,
+        userId: id,
         username: id,
         fullName: `${id} name`,
         avatarUrl: "",
-        isMe: false,
+        bannerUrl: "",
+        bio: "Tech Developer News",
+        categories: ["BACKEND"],
+        followersCount: 42,
+        isFollowing,
     };
 }
 
-function post(id: string, authorId: string) {
-    return {
-        id,
-        content: "a post",
-        type: "COMMUNITY",
-        mediaUrls: [],
-        createdAt: new Date().toISOString(),
-        likeCount: 0,
-        commentCount: 0,
-        isLiked: false,
-        isBookmarked: false,
-        author: author(authorId),
-        tags: [],
-    };
-}
+const BOTS = ["a1", "a2", "a3", "a4", "a5", "a6"].map((id) => bot(id));
 
 /**
  * @param followingCount what `GET /profiles/:username` reports — 0 is the
  *   account that has to be sent through onboarding.
+ * @param bots what `GET /profiles/bots` returns for the picked fields.
  */
 async function mockApi(
     page: import("@playwright/test").Page,
     followingCount: number,
+    bots = BOTS,
 ) {
     await page.route("**/api/v1/**", async (route, request) => {
         const url = request.url();
 
-        if (url.includes("/profiles/suggestions")) {
+        // Before the generic `/profiles/` arm: that one matches this URL too,
+        // and would answer the bot list with a profile.
+        if (url.includes("/profiles/bots")) {
+            await route.fulfill({ json: { data: bots } });
+        } else if (url.includes("/profiles/suggestions")) {
             await route.fulfill({ json: { data: [] } });
         } else if (url.includes("/profiles/")) {
             await route.fulfill({
                 json: { data: { ...mockUser, followingCount } },
-            });
-        } else if (url.includes("/articles")) {
-            await route.fulfill({ json: { data: [] } });
-        } else if (url.includes("/posts")) {
-            await route.fulfill({
-                json: {
-                    data: ["a1", "a2", "a3", "a4", "a5", "a6"].map((id, i) =>
-                        post(`p${i}`, id),
-                    ),
-                },
             });
         } else if (url.includes("/follows")) {
             await route.fulfill({ status: 204, body: "" });
@@ -133,10 +119,49 @@ test.describe("Onboarding", () => {
         await page.getByRole("button", { name: "Continue" }).click();
 
         // Four already on the books, so only one more is asked for.
-        await expect(
-            page.getByText("Follow one more account"),
-        ).toBeVisible();
+        await expect(page.getByText("Follow one more account")).toBeVisible();
         await expect(page.getByText("0 of 1 followed")).toBeVisible();
+    });
+
+    // A returning user's bots come back marked, and the profile's
+    // followingCount already counts them. Counting the marked cards as
+    // progress too would open the finish button having followed nobody.
+    test("marks the bots the account already follows without crediting them twice", async ({
+        page,
+    }) => {
+        await signInWithoutOnboarding(page);
+        await mockApi(page, 3, [
+            bot("a1", true),
+            bot("a2", true),
+            bot("a3", true),
+            bot("a4"),
+            bot("a5"),
+            bot("a6"),
+        ]);
+
+        await page.goto("/");
+        await expect(page).toHaveURL(/\/onboarding$/);
+
+        await page.getByRole("button", { name: "Backend" }).click();
+        await page.getByRole("button", { name: "Continue" }).click();
+
+        await expect(
+            page.getByRole("button", { name: "Following", exact: true }),
+        ).toHaveCount(3);
+        await expect(page.getByText("0 of 2 followed")).toBeVisible();
+
+        const finish = page.getByRole("button", { name: "Go to my feed" });
+        await expect(finish).toBeDisabled();
+
+        const followButtons = page.getByRole("button", {
+            name: "Follow",
+            exact: true,
+        });
+        await followButtons.first().click();
+        await followButtons.first().click();
+
+        await expect(page.getByText("2 of 2 followed")).toBeVisible();
+        await expect(finish).toBeEnabled();
     });
 
     test("leaves an account that already meets the requirement alone", async ({
@@ -184,21 +209,13 @@ test.describe("Onboarding after a real registration", () => {
                 });
             } else if (url.includes("/auth/")) {
                 await route.fulfill({ json: { data: {} } });
+            } else if (url.includes("/profiles/bots")) {
+                await route.fulfill({ json: { data: BOTS } });
             } else if (url.includes("/profiles/suggestions")) {
                 await route.fulfill({ json: { data: [] } });
             } else if (url.includes("/profiles/")) {
                 await route.fulfill({
                     json: { data: { ...mockUser, followingCount: 0 } },
-                });
-            } else if (url.includes("/articles")) {
-                await route.fulfill({ json: { data: [] } });
-            } else if (url.includes("/posts")) {
-                await route.fulfill({
-                    json: {
-                        data: ["a1", "a2", "a3", "a4", "a5", "a6"].map(
-                            (id, i) => post(`p${i}`, id),
-                        ),
-                    },
                 });
             } else {
                 await route.fulfill({ json: { data: null } });

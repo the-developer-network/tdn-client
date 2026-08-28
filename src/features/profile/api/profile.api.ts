@@ -1,13 +1,14 @@
 import { api } from "../../../core/api/client";
 import type {
     Profile,
+    BotProfile,
     FollowUser,
     SuggestedUser,
     UpdateProfileBody,
     AvatarUploadResponse,
     BannerUploadResponse,
 } from "./profile.types";
-import type { Post } from "../../feed/api/feed.types";
+import type { Post, PostCategory } from "../../feed/api/feed.types";
 
 export interface FollowListParams {
     limit?: number;
@@ -27,6 +28,45 @@ export const FOLLOW_LIST_MAX_LIMIT = 50;
 function followListQuery({ limit = 20, offset = 0 }: FollowListParams): string {
     const query = new URLSearchParams();
     query.set("limit", String(Math.min(limit, FOLLOW_LIST_MAX_LIMIT)));
+    query.set("offset", String(offset));
+    return query.toString();
+}
+
+/**
+ * `GET /profiles/bots` takes the same pagination schema as the follow lists —
+ * `limit` default 20, min 1, max 50 — and answers an out-of-range value with a
+ * 400, so it is clamped here rather than sent and rendered as an error.
+ */
+export const BOT_LIST_MAX_LIMIT = 50;
+
+export interface BotListParams {
+    /**
+     * Omitted entirely when empty, which is not the same request: no
+     * `categories` means every categorised bot, and the flow relies on that
+     * for a user who somehow reaches step two without a field.
+     */
+    categories?: PostCategory[];
+    limit?: number;
+    offset?: number;
+}
+
+/**
+ * The endpoint accepts both a comma-joined value and a repeated key, and they
+ * mean the same thing. Comma-joined is the one to send: a bot matches if it
+ * carries *any* of the categories, so several fields are one request, not one
+ * request per field.
+ */
+function botListQuery({
+    categories = [],
+    limit = 20,
+    offset = 0,
+}: BotListParams): string {
+    const query = new URLSearchParams();
+    if (categories.length) query.set("categories", categories.join(","));
+    query.set(
+        "limit",
+        String(Math.min(Math.max(limit, 1), BOT_LIST_MAX_LIMIT)),
+    );
     query.set("offset", String(offset));
     return query.toString();
 }
@@ -99,6 +139,15 @@ export const profileApi = {
 
     getSuggestions: (limit = 10): Promise<SuggestedUser[]> =>
         api.get<SuggestedUser[]>(`/profiles/suggestions?limit=${limit}`),
+
+    /**
+     * Deliberately not `isPublic`. Auth is optional on this endpoint, but the
+     * token is what fills `isFollowing` — without it every bot comes back
+     * `false` and a returning account is handed back the bots it already
+     * follows as fresh suggestions.
+     */
+    getBots: (params: BotListParams = {}): Promise<BotProfile[]> =>
+        api.get<BotProfile[]>(`/profiles/bots?${botListQuery(params)}`),
 
     follow: (targetId: string): Promise<void> =>
         api.post<void>("/follows", { targetId }),

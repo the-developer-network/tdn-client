@@ -1,6 +1,17 @@
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
+import { CATEGORY_OPTIONS } from "../../../shared/constants/categories";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import type { TranslationKey } from "../../../shared/i18n/translations";
+import type { PostCategory } from "../../feed/api/feed.types";
 import type { OnboardingAccount } from "../onboarding.types";
+
+/**
+ * Built from the same five options the picker offers, so a chip can never name
+ * a field the user was not able to choose.
+ */
+const CATEGORY_LABELS = new Map<PostCategory, TranslationKey>(
+    CATEGORY_OPTIONS.map(({ value, labelKey }) => [value, labelKey]),
+);
 
 interface AccountCardProps {
     account: OnboardingAccount;
@@ -61,21 +72,37 @@ export function AccountCard({
                     </button>
                 </div>
 
-                {/* Post and article authors carry neither a bio nor a follower
-                    count; only the popularity fallback does. */}
+                {/* Bot bios open with an emoji and a headline and then run on
+                    for a paragraph, so the row clamps rather than grows. */}
                 {account.bio && (
-                    <p className="mt-1 line-clamp-2 text-sm text-white/60">
+                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-white/60">
                         {account.bio}
                     </p>
                 )}
-                {account.followersCount !== undefined && (
-                    <p className="mt-1.5 text-xs text-white/40">
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-xs text-white/40">
                         {account.followersCount}{" "}
                         {account.followersCount === 1
                             ? t("profile.follower")
                             : t("profile.followerPlural")}
-                    </p>
-                )}
+                    </span>
+                    {/* Why this bot is on the list. It earns its place when
+                        two fields were picked and the rows look interleaved
+                        for no visible reason. */}
+                    {account.categories.map((category) => {
+                        const labelKey = CATEGORY_LABELS.get(category);
+                        if (!labelKey) return null;
+                        return (
+                            <span
+                                key={category}
+                                className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-white/50"
+                            >
+                                {t(labelKey)}
+                            </span>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

@@ -1,3 +1,5 @@
+import type { PostCategory } from "../../feed/api/feed.types";
+
 export interface Profile {
     id?: string;
     userId: string;
@@ -64,4 +66,28 @@ export interface SuggestedUser {
     followersCount: number;
     isFollowing: boolean;
     isMe: boolean;
+}
+
+/**
+ * A news bot from `GET /profiles/bots`.
+ *
+ * Only news bots reach this list. The platform also runs persona accounts that
+ * are `isBot` and read as people; the endpoint keeps them out, so there is no
+ * client-side filtering to do here.
+ *
+ * `isFollowing` is only true when the request carried a token — sent
+ * anonymously the endpoint answers `false` for everything, which is why
+ * `getBots` is neither `isPublic` nor `isAnonymous`.
+ */
+export interface BotProfile {
+    userId: string;
+    username: string;
+    fullName: string;
+    avatarUrl: string;
+    bannerUrl: string;
+    bio: string;
+    /** Never empty: the endpoint only returns bots that carry a category. */
+    categories: PostCategory[];
+    followersCount: number;
+    isFollowing: boolean;
 }

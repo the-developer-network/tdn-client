@@ -855,38 +855,60 @@ HttpResponse.json(
 
 #### `useOnboardingSuggestions` (`src/features/onboarding/hooks/useOnboardingSuggestions.test.ts`)
 
-9 tests. **Requires the `vi.hoisted` localStorage stub** — `apiClient` reads it on every request and the hook reads `useAuthStore`.
+13 tests. **Requires the `vi.hoisted` localStorage stub** — `apiClient` reads it on every request and the hook reads `useAuthStore`.
 
-The API has no notion of a user's field: `Profile` carries no category and `/profiles/suggestions` only ranks by follower count. What it does know is the category of a *post* or *article*, so an account's field is inferred from what it publishes — `GET /posts?categories=…` plus `GET /articles?categories=…`, authors collected and ranked by how much they wrote. **This hook is the only place that inference lives**; when the API grows profile categories, only its body changes.
+The hook used to infer an account's field from the categories of the posts and articles it had written, because `Profile` carried no category of its own. `GET /profiles/bots` is that data source arriving for real, so the inference is gone: one request, filtered server-side, ranked by follower count.
 
-The two content requests are `Promise.allSettled`, not `Promise.all`: one endpoint failing must not cost the authors the other returned. The popularity top-up is not a nicety either — a field nobody has posted in yet would otherwise leave the list empty and the required follows unreachable.
+Four properties of that request are asserted because getting any of them wrong is invisible until it is expensive:
 
-| Scenario                                | Assert                                                      |
-| --------------------------------------- | ------------------------------------------------------------ |
-| Posts and articles both return authors  | Both appear                                                  |
-| An author appears repeatedly            | Listed once; `contentCount` counts every appearance          |
-| Two authors, different volumes          | The more prolific one is first                               |
-| A post by the signed-in user            | Left out of their own suggestions                            |
-| Fewer authors than the target           | Topped up from `/profiles/suggestions`, with `bio`/`followersCount` |
-| Top-up repeats a content author         | Not listed twice                                             |
-| Articles request fails                  | Post authors kept; `error` stays null                        |
-| Every request fails                     | The API's `detail` surfaced; `accounts` empty                |
-| Two fields picked                       | Both sent as `categories` query params                       |
+- **One comma-joined request, not one per field.** A bot matches on *any* of its categories, so a request per field refetches the same bots and spends the 100/minute budget doing it.
+- **No `categories` parameter at all when nothing was picked**, which is a different request from an empty one — it means every categorised bot.
+- **`limit=50`**, the endpoint's ceiling. One page is the whole flow for almost everyone: the thinnest field carries 25 bots, well past `MIN_FOLLOWS`.
+- **The token goes with it.** `getBots` is neither `isPublic` nor `isAnonymous`; auth is optional on the endpoint, but the token is what fills `isFollowing`, and without it a returning account is handed back the bots it already follows as fresh suggestions.
+
+Paging is a "show more" button over `offset`, not infinite scroll. The append **deduplicates by `userId`** even though the endpoint promises a deterministic order — following a bot raises its follower count, which *is* the ranking key, so a bot can slide across the page boundary mid-flow and arrive twice. A failed second page toasts and keeps the list; raising it into `error` would swap out a screen of bots the user may already have followed.
+
+`load` sets no state synchronously because it runs from an effect (`react-hooks/set-state-in-effect`); `retry` is an event handler and does, or the button looks dead until the request returns.
+
+| Scenario                                 | Assert                                                            |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| Endpoint returns bots                    | Listed in the order given; `error` null                           |
+| A bot with bio, fields, follow state     | All mapped through, `isFollowing` included                        |
+| Two fields picked                        | One request, `categories=BACKEND,AI`                              |
+| No field picked                          | No `categories` parameter at all                                  |
+| Any request                              | `limit=50`                                                        |
+| First page short                         | `hasMore` false                                                   |
+| First page full, `loadMore()`            | Next page appended; `hasMore` false once short                    |
+| Next page repeats a bot                  | Listed once; the new bots still appended                          |
+| Next page fails (429)                    | List kept, `error` null, error toast with the API's `detail`      |
+| First page fails (429)                   | The API's `detail` surfaced; `accounts` empty; `hasMore` false    |
+| `retry()` after a failure                | `error` cleared; the list arrives                                 |
+| Fields change                            | Refetched with the new `categories`                               |
+| Same fields, new array identity          | Not refetched                                                     |
 
 #### `useOnboardingFollows` (`src/features/onboarding/hooks/useOnboardingFollows.test.ts`)
 
-6 tests. **Requires the `vi.hoisted` localStorage stub.**
+11 tests. **Requires the `vi.hoisted` localStorage stub.**
 
 `useFollowAction` is deliberately **not** reused here. It keeps follow state inside each card, which is right on a profile page and wrong in a flow whose only gate is "how many so far" — a counter cannot be assembled from state the cards hold privately. So the set lives above the list, and a follow the server refused must roll the count back rather than leave a phantom entry pushing the user past the requirement.
 
-| Scenario                    | Assert                                                    |
-| --------------------------- | ---------------------------------------------------------- |
-| Initial                     | `followedCount` 0                                          |
-| `toggle(id)`                | Optimistically followed; count 1                           |
-| `toggle(id)` twice          | Unfollowed; count 0                                        |
-| Follow rejected (429)       | Count back to 0; error toast carrying the API's `detail`   |
-| Unfollow rejected           | The follow is restored                                     |
-| Request in flight           | `isPending(id)` true for that id only, false once settled  |
+The hook keeps **two** sets, because they answer different questions. `followedIds` is what a card renders. `serverFollowedIds` is what was already true when the bot arrived (`isFollowing` from the endpoint), and subtracting it gives `netFollowChange` — the only honest input to the gate, since the profile's `followingCount` already counts every bot the user followed on an earlier visit. Counting the seeded ones again would let a returning user out having followed nobody, which is the bug the double-count tests exist to catch.
+
+A `seenIds` ref records every bot the seeding has already ruled on. Without it, appending a second page re-runs the seeding over the first one and quietly restores a bot the user had just unfollowed.
+
+| Scenario                              | Assert                                                     |
+| ------------------------------------- | ----------------------------------------------------------- |
+| Initial                               | Nothing followed; `netFollowChange` 0                        |
+| `toggle(id)`                          | Optimistically followed; net 1                               |
+| `toggle(id)` twice                    | Unfollowed; net 0                                            |
+| A bot arrives with `isFollowing`      | Rendered as followed; the others are not                     |
+| A seeded bot                          | Net stays 0; it is in `serverFollowedIds`                     |
+| Unfollowing a seeded bot              | Net −1                                                       |
+| Second page re-lists an unfollowed bot| Stays unfollowed; net still −1                               |
+| Follow rejected (429)                 | Net back to 0; error toast carrying the API's `detail`       |
+| Unfollow rejected                     | The follow is restored                                       |
+| Any follow                            | Body is `{ targetId }` with the **id**, never the username   |
+| Request in flight                     | `isPending(id)` true for that id only; a second toggle sends no second request |
 
 #### `useFollowingCount` (`src/features/onboarding/hooks/useFollowingCount.ts`)
 
@@ -1193,22 +1215,34 @@ MSW fails the first `PATCH /users/me/username` and accepts every one after it, s
 
 **`OnboardingPage`:**
 
-10 tests. All three onboarding hooks are mocked wholesale; the page's own job is the two-step machine and the gate on the finish button. Step one is walked by **clicking** ("Backend", then "Continue") rather than by seeding state, because the picked fields have to reach `useOnboardingSuggestions` for step two to mean anything — one test asserts exactly that hand-off.
+15 tests. All three onboarding hooks are mocked wholesale; the page's own job is the two-step machine and the gate on the finish button. Step one is walked by **clicking** ("Backend", then "Continue") rather than by seeding state, because the picked fields have to reach `useOnboardingSuggestions` for step two to mean anything — one test asserts exactly that hand-off.
 
-The required count is `min(MIN_FOLLOWS - alreadyFollowing, accounts.length)`, and both terms earn their place. The gate opens at five *in total*, so follows already on the books count — asking someone who follows four for five more is a different requirement than the one that sent them here. And a young deployment may not hold that many accounts at all; a flow that cannot be finished is worse than a shorter one. The escape hatch is narrower — only when suggestions never arrived (`accounts.length === 0`, so `required` is 0) does the finish button open with nothing followed.
+The gate opens at five follows *in total*, which makes the arithmetic worth spelling out:
 
-| Scenario                          | Assert                                                     |
-| --------------------------------- | ----------------------------------------------------------- |
-| Initial                           | Field picker rendered                                        |
-| No field picked                   | "Continue" disabled; enabled after a pick                    |
-| After "Continue"                  | `useOnboardingSuggestions` called with `["BACKEND"]`         |
-| 2 of 6 followed                   | "Go to my feed" disabled; "2 of 5 followed"                  |
-| 5 of 6 followed                   | "Go to my feed" enabled                                      |
-| Only 2 accounts exist, both followed | Requirement drops — "2 of 2 followed", finish enabled  |
-| Suggestions errored               | Finish enabled; "Try again" offered                          |
-| Already following 3, 2 more done  | "2 of 2 followed"; finish enabled                            |
-| Finish                            | `isCompleted` true, `interests` stored, `navigate("/", { replace: true })` |
-| "Back"                            | Field picker again                                           |
+- `stillNeeded = MIN_FOLLOWS − alreadyFollowing`, from the profile's own `followingCount`. Asking someone who follows four for five more is a different requirement than the one that sent them here.
+- Progress is `netFollowChange`, **not** the size of the followed set. Bots that arrived already followed are inside `alreadyFollowing` already; counting the marked cards again would open the finish button for a returning user who followed nobody this time. Unfollowing one has to move the number back down, too.
+- `required` drops to what the list can supply, but **only once the list is final** — an empty answer, or an endpoint that never answered. While a page is in flight the full requirement stands, or the finish button sits briefly open over a list that has not arrived.
+
+The escape hatch is narrow by design: only a final, empty list (a failed request, or a field with no bots) opens the finish button with nothing followed. The flow is a requirement, not a trap.
+
+Step one writes the picked fields to `useOnboardingStore` as they are picked rather than at the end. The API has nowhere to keep them — a profile carries no interests and `/profiles/bots` only takes them as a query parameter — so the store is the whole record, and writing late means a reload on step two comes back to an empty picker.
+
+| Scenario                             | Assert                                                     |
+| ------------------------------------ | ----------------------------------------------------------- |
+| Initial                              | Field picker rendered                                        |
+| No field picked                      | "Continue" disabled; enabled after a pick                    |
+| After "Continue"                     | `useOnboardingSuggestions` called with `["BACKEND"]`; `interests` stored |
+| 2 of 6 followed                      | "Go to my feed" disabled; "2 of 5 followed"                  |
+| 5 of 6 followed                      | "Go to my feed" enabled                                      |
+| Only 2 accounts exist, both followed | Requirement drops — "2 of 2 followed", finish enabled        |
+| Suggestions errored                  | Finish enabled; "Try again" offered                          |
+| Already following 3, 2 more done     | "2 of 2 followed"; finish enabled                            |
+| Already following 3, all 3 seeded    | "0 of 2 followed"; finish **disabled**                       |
+| List still loading                   | Finish disabled — an empty list and a late one look alike    |
+| `hasMore`                            | "Show more" calls `loadMore`                                 |
+| List complete                        | No "Show more"                                               |
+| Finish                               | `isCompleted` true, `interests` stored, `navigate("/", { replace: true })` |
+| "Back"                               | Field picker again                                           |
 
 **`OnboardingGate` (`src/app/OnboardingGate.test.tsx`):**
 
@@ -1257,7 +1291,9 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 
 **`onboarding.spec.ts`** — the one spec that opts *out* of the shared fixture. `injectAuth` writes `tdn-onboarding` with the mock user's id alongside the auth state, because without it `OnboardingGate` would send **every authenticated spec** to `/onboarding` (the mocked profile reports `followingCount: 0`) and the whole suite would fail on a page it never meant to visit. This spec signs in by hand without that key so the gate actually runs, then drives both steps and asserts the redirect out to `/`. Its follow loop uses `getByRole("button", { name: "Follow", exact: true })`: without `exact`, "Following" also matches and the loop keeps clicking the button it just toggled.
 
-Four tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
+The route handler matches `/profiles/bots` **before** the generic `/profiles/` arm — that one matches the bot URL too, and would answer the list with a profile object.
+
+Five tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; a returning account whose bots come back `isFollowing: true` (three cards read "Following", the counter still says "0 of 2", and the finish button stays shut until two *new* follows land — the double-count bug, end to end); an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
 
 **`mobile-zoom.spec.ts`** — the only spec that overrides the viewport (`test.use({ viewport: { width: 390, height: 844 } })`), and it has to: the rule it guards lives behind a `max-width` media query, so at the desktop width every other spec runs at, the assertion would pass while proving nothing.
 

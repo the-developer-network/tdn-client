@@ -1,152 +1,177 @@
-import { useCallback, useEffect, useState } from "react";
-import { feedApi } from "../../feed/api/feed.api";
-import { articleApi } from "../../article/api/article.api";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { profileApi } from "../../profile/api/profile.api";
-import { useAuthStore } from "../../../core/auth/auth.store";
+import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import type { PostCategory } from "../../feed/api/feed.types";
+import type { BotProfile } from "../../profile/api/profile.types";
 import type { OnboardingAccount } from "../onboarding.types";
 
-/** `GET /posts` and `GET /articles` both cap `limit` at 50. */
-const CONTENT_LIMIT = 50;
+/**
+ * The endpoint's ceiling, and one page is the whole flow for almost everyone:
+ * the thinnest field carries 25 bots, well past `MIN_FOLLOWS`. The second page
+ * exists for the user who wants to keep scrolling, not for the requirement.
+ */
+export const BOT_PAGE_SIZE = 50;
 
-/** Below this many accounts the list is topped up with popular profiles. */
-const TARGET_ACCOUNTS = 12;
-
-/** `/profiles/suggestions` caps `limit` at 20. */
-const SUGGESTIONS_LIMIT = 20;
-
-interface RawAuthor {
-    id: string;
-    username?: string;
-    fullName?: string | null;
-    avatarUrl: string;
-    isMe?: boolean;
+function toAccount(bot: BotProfile): OnboardingAccount {
+    return {
+        userId: bot.userId,
+        username: bot.username,
+        fullName: bot.fullName || bot.username,
+        avatarUrl: bot.avatarUrl,
+        bio: bot.bio ?? "",
+        followersCount: bot.followersCount,
+        categories: bot.categories ?? [],
+        isFollowing: bot.isFollowing,
+    };
 }
 
 /**
- * Turns the accounts writing in the chosen fields into a follow list.
+ * The news bots publishing in the chosen fields, newest page appended.
  *
- * The API has no notion of a user's field: `Profile` carries no category and
- * `/profiles/suggestions` only ranks by follower count. What it does know is
- * which category a *post* or *article* is in, so an account's field is
- * inferred from what it publishes.
+ * This used to infer an account's field from the categories of the posts and
+ * articles it had written, because `Profile` carried no category of its own.
+ * `GET /profiles/bots` is that data source arriving for real, so the inference
+ * is gone: one request, filtered server-side, ranked by follower count, and
+ * carrying `isFollowing` so a returning user is not re-sold the bots they
+ * already follow.
  *
- * This is the one place that inference lives. When the API grows profile
- * categories, only the body of `load` changes — a single
- * `profileApi.getSuggestions({ categories })` — and the page, the cards and
- * the gate stay as they are.
+ * Several fields go out as one comma-joined request — a bot matches on *any*
+ * of them, so a request per field would fetch the same bots repeatedly and
+ * spend the 100/minute budget doing it.
  */
 export function useOnboardingSuggestions(categories: PostCategory[]) {
-    const [accounts, setAccounts] = useState<OnboardingAccount[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const addToast = useToastStore((state) => state.addToast);
 
-    const currentUserId = useAuthStore((state) => state.user?.id);
-
-    // The array identity changes on every render of the caller, so the effect
-    // keys off the values instead.
+    // The array identity changes on every render of the caller, so everything
+    // downstream keys off the values instead.
     const categoryKey = categories.join(",");
 
-    const load = useCallback(async (): Promise<OnboardingAccount[]> => {
-        const picked = categoryKey
-            ? (categoryKey.split(",") as PostCategory[])
-            : [];
+    const [accounts, setAccounts] = useState<OnboardingAccount[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState(false);
 
-        const [postResult, articleResult] = await Promise.allSettled([
-            feedApi.getPosts({ categories: picked, limit: CONTENT_LIMIT }),
-            articleApi.getArticles({
-                categories: picked,
-                limit: CONTENT_LIMIT,
-            }),
-        ]);
+    /**
+     * Bumped whenever the list is restarted or thrown away. A "show more"
+     * still in flight when the fields change would otherwise append a page of
+     * the old field's bots onto the new list.
+     */
+    const generation = useRef(0);
 
-        const byId = new Map<string, OnboardingAccount>();
+    const fetchPage = useCallback(
+        (offset: number): Promise<OnboardingAccount[]> =>
+            profileApi
+                .getBots({
+                    categories: categoryKey
+                        ? (categoryKey.split(",") as PostCategory[])
+                        : [],
+                    limit: BOT_PAGE_SIZE,
+                    offset,
+                })
+                .then((bots) => bots.map(toAccount)),
+        [categoryKey],
+    );
 
-        const add = (author: RawAuthor) => {
-            if (author.isMe || author.id === currentUserId) return;
-            if (!author.username) return;
+    /**
+     * Deliberately sets no state synchronously: this runs from an effect, and
+     * a `setState` in an effect body is a cascading render (and a lint error).
+     * `isLoading` starts true and `error` starts null, so the first run needs
+     * nothing set up front, and every later run clears the error on the way
+     * through instead.
+     */
+    const load = useCallback((): Promise<void> => {
+        const run = ++generation.current;
 
-            const existing = byId.get(author.id);
-            if (existing) {
-                existing.contentCount += 1;
-                return;
-            }
-            byId.set(author.id, {
-                userId: author.id,
-                username: author.username,
-                fullName: author.fullName || author.username,
-                avatarUrl: author.avatarUrl,
-                contentCount: 1,
-            });
-        };
-
-        if (postResult.status === "fulfilled") {
-            postResult.value.forEach((post) => add(post.author));
-        }
-        if (articleResult.status === "fulfilled") {
-            articleResult.value.forEach((article) => add(article.author));
-        }
-
-        const ranked = [...byId.values()].sort(
-            (a, b) => b.contentCount - a.contentCount,
-        );
-
-        // Not a nicety: a field nobody has posted in yet would leave the list
-        // empty, and the flow cannot be completed without accounts to follow.
-        if (ranked.length < TARGET_ACCOUNTS) {
-            const suggested =
-                await profileApi.getSuggestions(SUGGESTIONS_LIMIT);
-            suggested.forEach((user) => {
-                if (byId.has(user.userId)) return;
-                if (user.isMe || user.userId === currentUserId) return;
-                ranked.push({
-                    userId: user.userId,
-                    username: user.username,
-                    fullName: user.fullName || user.username,
-                    avatarUrl: user.avatarUrl,
-                    bio: user.bio ?? undefined,
-                    followersCount: user.followersCount,
-                    contentCount: 0,
-                });
-                byId.set(user.userId, ranked[ranked.length - 1]);
-            });
-        }
-
-        return ranked;
-    }, [categoryKey, currentUserId]);
-
-    const fetchAccounts = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            setAccounts(await load());
-        } catch (err) {
-            setError(getErrorMessage(err));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [load]);
-
-    // `isLoading` starts true and `error` starts null, so the first run needs
-    // no synchronous setState here — a re-run only happens if the chosen
-    // fields change, which unmounts and remounts this step anyway.
-    useEffect(() => {
-        let cancelled = false;
-        load()
-            .then((next) => {
-                if (!cancelled) setAccounts(next);
+        return fetchPage(0)
+            .then((page) => {
+                if (generation.current !== run) return;
+                setAccounts(page);
+                setHasMore(page.length === BOT_PAGE_SIZE);
+                setError(null);
             })
             .catch((err) => {
-                if (!cancelled) setError(getErrorMessage(err));
+                if (generation.current !== run) return;
+                setAccounts([]);
+                setHasMore(false);
+                setError(getErrorMessage(err));
             })
             .finally(() => {
-                if (!cancelled) setIsLoading(false);
+                if (generation.current === run) setIsLoading(false);
             });
+    }, [fetchPage]);
+
+    useEffect(() => {
+        load();
+        // Invalidates whatever is in flight, which covers both a change of
+        // fields and an unmount.
         return () => {
-            cancelled = true;
+            generation.current += 1;
         };
     }, [load]);
 
-    return { accounts, isLoading, error, retry: fetchAccounts };
+    // Pressing "try again" is an event, so this one *can* show the spinner
+    // straight away — and it has to, or the retry button looks dead until the
+    // request comes back.
+    const retry = useCallback((): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        return load();
+    }, [load]);
+
+    const loadMore = useCallback(() => {
+        if (isLoading || isLoadingMore || !hasMore) return;
+
+        const run = generation.current;
+        setIsLoadingMore(true);
+
+        fetchPage(accounts.length)
+            .then((page) => {
+                if (generation.current !== run) return;
+                setAccounts((prev) => {
+                    // The ranking key is follower count and following a bot
+                    // raises it, so a bot can slide across the page boundary
+                    // mid-flow and arrive twice. React would then render two
+                    // rows under one key.
+                    const seen = new Set(prev.map((a) => a.userId));
+                    return [
+                        ...prev,
+                        ...page.filter((a) => !seen.has(a.userId)),
+                    ];
+                });
+                setHasMore(page.length === BOT_PAGE_SIZE);
+            })
+            .catch((err) => {
+                if (generation.current !== run) return;
+                // Toasted rather than raised into `error`: the page renders
+                // the error state instead of the list, and losing a screen of
+                // bots the user may already have followed to report a failed
+                // second page is the wrong trade.
+                addToast({ type: "error", message: getErrorMessage(err) });
+            })
+            .finally(() => {
+                // Unconditional, unlike the first-page load: nothing else ever
+                // raises this flag, so a superseded page that left it set
+                // would disable "show more" for good.
+                setIsLoadingMore(false);
+            });
+    }, [
+        accounts.length,
+        fetchPage,
+        hasMore,
+        isLoading,
+        isLoadingMore,
+        addToast,
+    ]);
+
+    return {
+        accounts,
+        isLoading,
+        isLoadingMore,
+        error,
+        hasMore,
+        loadMore,
+        retry,
+    };
 }
