@@ -193,13 +193,31 @@ beforeEach(() => {
 
 #### `notification.store`
 
-| Scenario                               | Assert                                    |
-| -------------------------------------- | ----------------------------------------- |
-| `setNotifications(list, append=false)` | Replaces list; `unreadCount` recalculated |
-| `setNotifications(list, append=true)`  | Appends to existing list                  |
-| `addNotification` (unread)             | `unreadCount` incremented                 |
-| `addNotification` (read)               | `unreadCount` unchanged                   |
-| `markAllRead()`                        | All `isRead: true`, `unreadCount === 0`   |
+**The list never defines the count.** It used to: `setNotifications` recounted
+the unread ones on every fresh first page, which made the page size the badge's
+ceiling — 35 unread notifications rendered as 20. Paging could not rescue it
+either, because recounting across an appended page wiped every realtime
+`incrementUnread`, and the socket payload is too thin to become a
+`Notification` and be counted back.
+
+`GET /notifications/unread-count` answers the question directly, so the
+derivation is gone and `setUnreadCount` is authoritative. Restoring the link in
+either branch of `setNotifications` brings back one bug or the other, depending
+on the branch — which is why two tests assert the *absence* of the derivation
+rather than its result.
+
+| Scenario                               | Assert                                        |
+| -------------------------------------- | --------------------------------------------- |
+| `setNotifications(list, append=false)` | Replaces list; `unreadCount` **untouched**    |
+| `setNotifications(list, append=true)`  | Appends to existing list; count untouched     |
+| Fresh first page over a server count   | Count survives — no re-derivation             |
+| Append after a realtime increment      | The increment survives                        |
+| `setUnreadCount(n)`                    | Taken verbatim, list need not agree           |
+| `setUnreadCount(0)`                    | Accepted                                      |
+| `setUnreadCount` then `incrementUnread`| The server count is the base the socket adds to |
+| `addNotification` (unread)             | `unreadCount` incremented                     |
+| `addNotification` (read)               | `unreadCount` unchanged                       |
+| `markAllRead()`                        | All `isRead: true`, `unreadCount === 0`       |
 
 #### `toast.store`
 
@@ -616,13 +634,47 @@ expect(useNotificationStore.getState().notifications).toHaveLength(21);
 
 | Scenario                          | Assert                                                    |
 | --------------------------------- | --------------------------------------------------------- |
-| `fetch()` — success               | Store populated; `isLoading=false`; `unreadCount` correct |
+| `fetch()` — success               | Store populated; `isLoading=false`; `unreadCount` untouched |
 | `fetch()` — API error             | `error` truthy; store empty                               |
 | Server returns < 20 items         | `hasMore=false`                                           |
 | `loadMore()` when `hasMore=false` | Store unchanged; `isLoadingMore=false`                    |
 | `loadMore()` when `hasMore=true`  | Page 2 fetched and appended; `hasMore` updated            |
 | `loadMore()` fails, then retried  | Pages requested are `[1, 2, 2]` — page 2 is not skipped   |
 | `loadMore()` fails                | Loaded notifications kept; `hasMore` still true           |
+
+#### `useInitialUnreadCount` (`src/features/notifications/hooks/useInitialUnreadCount.test.ts`)
+
+10 tests. **Requires the `vi.hoisted` localStorage stub.**
+
+The name used to be a lie: it fetched the first page and counted the unread
+ones in it, so the badge could never read higher than the page size. It now
+makes **two requests** — the list from `/notifications`, the count from
+`/notifications/unread-count` — issued together and settled **independently**,
+so a failed count does not cost the list and a failed list does not cost the
+count. Both stay silent; nothing here is worth a toast on a cold start.
+
+Called at boot and after an ambiguous mark-all-read failure, never on a timer:
+the realtime socket delivers increments, and a poll would only race it.
+
+Two tests exist for the defect itself and pin it from both sides: a 20-item
+first page with a server count of 35 must render 35, and an all-read first page
+must not drag a server count of 7 down to zero.
+
+The logout branch now resets the count **explicitly**. That used to fall out of
+`setNotifications([])` recounting an empty list; with the derivation gone, the
+previous account's badge would otherwise survive the sign-out.
+
+| Scenario                          | Assert                                                |
+| --------------------------------- | ----------------------------------------------------- |
+| Authenticated                     | List and count both populated                         |
+| 20-item page, server says 35      | Badge reads **35**, list holds 20                     |
+| All-read page, server says 7      | Badge reads 7                                         |
+| Authenticated                     | Both endpoints hit in the same pass                   |
+| Not authenticated                 | Neither endpoint called; store stays empty            |
+| `isAuthenticated` → false         | List cleared **and** count reset to 0                 |
+| Both requests fail                | Nothing thrown; store untouched                       |
+| Only the count fails              | The list still lands                                  |
+| Only the list fails               | The count still lands                                 |
 
 #### `useNotificationSocket` (`src/features/notifications/hooks/useNotificationSocket.test.ts`)
 

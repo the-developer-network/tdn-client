@@ -47,7 +47,12 @@ beforeEach(() => {
 });
 
 describe("useNotifications", () => {
+    // This hook owns the list and nothing else. The badge is fetched from
+    // `/notifications/unread-count` at boot, so a page of notifications must
+    // not redefine it — a first page of 20 cannot describe 35 unread.
     it("fetch() loads notifications into the store and clears isLoading", async () => {
+        useNotificationStore.setState({ unreadCount: 35 });
+
         const { result } = renderHook(() => useNotifications());
 
         await act(async () => {
@@ -56,7 +61,7 @@ describe("useNotifications", () => {
 
         expect(result.current.isLoading).toBe(false);
         expect(useNotificationStore.getState().notifications).toHaveLength(1);
-        expect(useNotificationStore.getState().unreadCount).toBe(1);
+        expect(useNotificationStore.getState().unreadCount).toBe(35);
     });
 
     it("fetch() sets an error message when the API fails", async () => {

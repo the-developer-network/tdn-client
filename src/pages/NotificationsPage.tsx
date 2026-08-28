@@ -22,6 +22,7 @@ export default function NotificationsPage() {
         notifications,
         unreadCount,
         markAllRead: markAllReadInStore,
+        setUnreadCount,
     } = useNotificationStore();
     const { fetch, isLoading, isLoadingMore, error, hasMore, loadMore } =
         useNotifications();
@@ -46,6 +47,18 @@ export default function NotificationsPage() {
             // The message was already being built here and then thrown away
             // in the console, leaving a button that looked broken.
             addToast({ type: "error", message: getErrorMessage(err) });
+
+            // The store is only touched on success, so there is nothing to
+            // roll back — but a failure is not proof the write did not land.
+            // A timeout on a request the server did complete leaves the badge
+            // showing a count that is already zero, and only the server can
+            // settle which it was.
+            notificationApi
+                .getUnreadCount()
+                .then(setUnreadCount)
+                .catch(() => {
+                    // Already reporting one failure; a second is noise.
+                });
         }
     }
 

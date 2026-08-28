@@ -360,6 +360,10 @@ export const handlers = [
         }),
     ),
 
+    http.get(`${BASE}/notifications/unread-count`, () =>
+        HttpResponse.json({ data: { count: 1 } }),
+    ),
+
     http.patch(
         `${BASE}/notifications/read-all`,
         () => new HttpResponse(null, { status: 204 }),
