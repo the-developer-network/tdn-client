@@ -1,9 +1,16 @@
+/**
+ * Mirrors the API's enum exactly. `COMMENT_REPLY` was missing here for long
+ * enough to ship a crash: `MESSAGE_KEYS` is a `Record<NotificationType, ...>`,
+ * so a value absent from this union is also absent from that map without
+ * TypeScript noticing, and the card then called `t(undefined)`.
+ */
 export type NotificationType =
     | "FOLLOW"
     | "NEW_POST"
     | "LIKE"
     | "COMMENT"
-    | "COMMENT_LIKE";
+    | "COMMENT_LIKE"
+    | "COMMENT_REPLY";
 
 export interface Notification {
     recipientId: string;
