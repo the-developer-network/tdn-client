@@ -58,7 +58,10 @@ vi.mock("../features/notifications/store/notification.store", () => ({
     useNotificationStore: vi.fn(),
 }));
 vi.mock("../features/notifications/api/notification.api", () => ({
-    notificationApi: { markAllRead: vi.fn().mockResolvedValue(undefined) },
+    notificationApi: {
+        markAllRead: vi.fn().mockResolvedValue(undefined),
+        getUnreadCount: vi.fn().mockResolvedValue(0),
+    },
 }));
 vi.mock("../core/auth/auth.store", () => ({ useAuthStore: vi.fn() }));
 vi.mock("../features/auth/store/auth-modal.store", () => ({
@@ -82,6 +85,7 @@ function makeNotificationStore(
         addNotification: vi.fn(),
         incrementUnread: vi.fn(),
         markAllRead: vi.fn(),
+        setUnreadCount: vi.fn(),
         ...overrides,
     };
 }
@@ -117,6 +121,8 @@ beforeEach(() => {
     mockNavigate.mockClear();
     vi.mocked(notificationApi.markAllRead).mockReset();
     vi.mocked(notificationApi.markAllRead).mockResolvedValue(undefined);
+    vi.mocked(notificationApi.getUnreadCount).mockReset();
+    vi.mocked(notificationApi.getUnreadCount).mockResolvedValue(0);
     useToastStore.setState({ toasts: [] });
     vi.mocked(useAuthStore).mockReturnValue(makeAuth(true));
     vi.mocked(useAuthModalStore).mockReturnValue({
@@ -210,5 +216,55 @@ describe("NotificationsPage", () => {
             "Too many requests, please try again later.",
         );
         expect(markAllRead).not.toHaveBeenCalled();
+    });
+
+    // A rejection is not proof the write did not land: a timeout on a request
+    // the server completed leaves the badge showing a count that is already
+    // zero. Only the server can settle which happened.
+    it("resyncs the badge from the server when marking all read fails", async () => {
+        const user = userEvent.setup();
+        vi.mocked(notificationApi.markAllRead).mockRejectedValueOnce({
+            status: 504,
+            title: "GatewayTimeout",
+            detail: "The request timed out.",
+        });
+        vi.mocked(notificationApi.getUnreadCount).mockResolvedValue(0);
+        const setUnreadCount = vi.fn();
+        vi.mocked(useNotificationStore).mockReturnValue(
+            makeNotificationStore({ unreadCount: 3, setUnreadCount }),
+        );
+
+        render(<NotificationsPage />);
+        await user.click(screen.getByTitle("Mark all read"));
+
+        await waitFor(() =>
+            expect(notificationApi.getUnreadCount).toHaveBeenCalled(),
+        );
+        await waitFor(() => expect(setUnreadCount).toHaveBeenCalledWith(0));
+    });
+
+    // The resync is best-effort. Failing it must not raise a second toast on
+    // top of the one already reporting the mark-all-read failure.
+    it("stays quiet when the resync itself fails", async () => {
+        const user = userEvent.setup();
+        vi.mocked(notificationApi.markAllRead).mockRejectedValueOnce({
+            status: 504,
+            title: "GatewayTimeout",
+            detail: "The request timed out.",
+        });
+        vi.mocked(notificationApi.getUnreadCount).mockRejectedValue(
+            new Error("also down"),
+        );
+        vi.mocked(useNotificationStore).mockReturnValue(
+            makeNotificationStore({ unreadCount: 3 }),
+        );
+
+        render(<NotificationsPage />);
+        await user.click(screen.getByTitle("Mark all read"));
+
+        await waitFor(() =>
+            expect(notificationApi.getUnreadCount).toHaveBeenCalled(),
+        );
+        expect(useToastStore.getState().toasts).toHaveLength(1);
     });
 });

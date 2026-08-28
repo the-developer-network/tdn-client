@@ -5,32 +5,38 @@ export interface NotificationState {
     notifications: Notification[];
     unreadCount: number;
     setNotifications: (list: Notification[], append?: boolean) => void;
+    setUnreadCount: (count: number) => void;
     addNotification: (notification: Notification) => void;
     incrementUnread: () => void;
     markAllRead: () => void;
 }
 
+/**
+ * The list and the badge are separate facts, and this store deliberately keeps
+ * them that way.
+ *
+ * The count used to be derived from the list on every fresh first page, which
+ * capped the badge at the page size — 35 unread notifications rendered as 20.
+ * Paging could not fix that either: recounting across an appended page wiped
+ * every realtime `incrementUnread`, because the socket payload is too thin to
+ * become a `Notification` and so cannot be counted back.
+ *
+ * `GET /notifications/unread-count` answers the question directly, so the
+ * derivation is gone entirely. **The list never defines the count.** Restoring
+ * that link in either branch of `setNotifications` brings back one bug or the
+ * other, depending on the branch.
+ */
 export const useNotificationStore = create<NotificationState>((set) => ({
     notifications: [],
     unreadCount: 0,
 
     setNotifications: (list, append = false) =>
-        set((state) => {
-            // Appending a page is a view operation, so it must not redefine the
-            // badge. Recounting here wiped every `incrementUnread` — and those
-            // increments cannot be rebuilt from the list, because the realtime
-            // payload carries only { type, issuerId, postId } and cannot be
-            // turned into a Notification.
-            if (append) {
-                return { notifications: [...state.notifications, ...list] };
-            }
+        set((state) => ({
+            notifications: append ? [...state.notifications, ...list] : list,
+        })),
 
-            // A fresh first page is a resync, so the count is derived again.
-            return {
-                notifications: list,
-                unreadCount: list.filter((n) => !n.isRead).length,
-            };
-        }),
+    /** Authoritative: what the server last said the count was. */
+    setUnreadCount: (count) => set({ unreadCount: count }),
 
     addNotification: (notification) =>
         set((state) => ({
