@@ -28,6 +28,8 @@ import { useFollowList } from "./useFollowList";
 
 const BASE = "http://localhost:8080/api/v1";
 
+type ListType = "followers" | "following";
+
 /**
  * Serves a follower list of `total` users, honouring `limit`/`offset` the way
  * the API does — which is the only way the truncation becomes visible.
@@ -109,10 +111,13 @@ describe("useFollowList", () => {
             ),
         );
 
+        // `as ListType`, not `as const`: the const assertion pins the hook's
+        // props generic to `"followers"` and the rerender below — the whole
+        // point of this test — stops typechecking.
         const { result, rerender } = renderHook(
-            ({ type }: { type: "followers" | "following" }) =>
+            ({ type }: { type: ListType }) =>
                 useFollowList("alice", type, true),
-            { initialProps: { type: "followers" as const } },
+            { initialProps: { type: "followers" as ListType } },
         );
 
         await waitFor(() => expect(result.current.users).toHaveLength(20));

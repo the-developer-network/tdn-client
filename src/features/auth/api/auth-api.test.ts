@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock,
+} from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../../../tests/msw-server";
 
@@ -50,11 +58,13 @@ function countRequests() {
     return counts;
 }
 
-let sessionExpired: ReturnType<typeof vi.fn>;
+// Typed to the handler's own signature. A bare `vi.fn()` is callable *and*
+// constructable, which matches nothing `registerSessionExpiredHandler` accepts.
+let sessionExpired: Mock<() => void>;
 
 beforeEach(() => {
     localStorage.clear();
-    sessionExpired = vi.fn();
+    sessionExpired = vi.fn<() => void>();
     registerSessionExpiredHandler(sessionExpired);
 });
 

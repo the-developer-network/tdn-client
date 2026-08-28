@@ -369,6 +369,8 @@ export const handlers = [
         HttpResponse.json({ data: [] }),
     ),
 
+    http.get(`${BASE}/profiles/bots`, () => HttpResponse.json({ data: [] })),
+
     http.get(`${BASE}/profiles/search`, () => HttpResponse.json({ data: [] })),
 
     http.get(`${BASE}/profiles/me`, () =>

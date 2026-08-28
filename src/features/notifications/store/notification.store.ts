@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Notification } from "../api/notification.types";
 
-interface NotificationState {
+export interface NotificationState {
     notifications: Notification[];
     unreadCount: number;
     setNotifications: (list: Notification[], append?: boolean) => void;

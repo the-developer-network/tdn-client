@@ -54,11 +54,17 @@ const mockComment: Comment = {
 
 beforeEach(() => {
     mockNavigate.mockClear();
+    // The whole shape, not just the parts these tests read: the page pulls
+    // `hasMore`/`loadMore` off this hook to render its "load more" button, and
+    // a mock missing them hands the page an `undefined` click handler.
     vi.mocked(useCommentReplies).mockReturnValue({
         replies: [],
         isLoading: false,
+        isLoadingMore: false,
+        hasMore: false,
         error: null,
         fetchReplies: vi.fn(),
+        loadMore: vi.fn(),
         addReply: vi.fn(),
         removeReply: vi.fn(),
     });

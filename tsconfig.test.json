@@ -1,10 +1,18 @@
 {
     "extends": "./tsconfig.app.json",
     "compilerOptions": {
+        /* Its own, or it shares `tsconfig.app.tsbuildinfo` with the project it
+           extends and the two builds overwrite each other's state. */
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
         "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
         "noUnusedLocals": false,
         "noUnusedParameters": false
     },
+    /* Load-bearing. `tsconfig.app.json` excludes every spec file so they stay
+       out of the app build, and `exclude` is inherited — without this reset it
+       cancels the `include` below and the project typechecks nothing at all,
+       silently, which is how six type errors sat in the suite unnoticed. */
+    "exclude": ["node_modules"],
     "include": [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",

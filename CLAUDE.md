@@ -48,6 +48,8 @@ e2e/            Playwright specs + fixtures.ts
 
 Four TypeScript project references build together (`tsconfig.json`): `app` (src, excludes tests), `node`, `test` (relaxes `noUnusedLocals`), `worker`. A change that typechecks in tests may still fail `tsc -b` under the stricter app config.
 
+`tsconfig.test.json` extends `tsconfig.app.json`, and two lines in it are load-bearing. It **resets `exclude`**, because the inherited one lists every spec pattern and would otherwise cancel its own `include`, leaving the project silently checking zero files. And it sets its **own `tsBuildInfoFile`**, or the two projects overwrite each other's build state.
+
 **No path aliases.** `tsconfig.app.json` defines no `paths`, so all imports are relative (`../../../core/api/client`). `vite-tsconfig-paths` is only wired into the Vitest config.
 
 ### API client (`src/core/api/client.ts`)

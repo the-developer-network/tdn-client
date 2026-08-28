@@ -70,6 +70,30 @@ describe("useOnboardingStore", () => {
         expect(useOnboardingStore.getState().interests).toEqual(["BACKEND"]);
     });
 
+    // The API has nowhere to put a user's fields: a profile carries none, and
+    // `/profiles/bots` only takes them as a query parameter. This store is the
+    // whole record.
+    it("stores the picked fields on their own", () => {
+        useOnboardingStore.getState().setInterests(["AI", "GAME"]);
+
+        expect(useOnboardingStore.getState().interests).toEqual(["AI", "GAME"]);
+        expect(useOnboardingStore.getState().completedUserIds).toEqual([]);
+    });
+
+    it("replaces the fields rather than adding to them", () => {
+        useOnboardingStore.getState().setInterests(["AI"]);
+        useOnboardingStore.getState().setInterests(["BACKEND"]);
+
+        expect(useOnboardingStore.getState().interests).toEqual(["BACKEND"]);
+    });
+
+    it("persists the fields so a reload comes back to them", () => {
+        useOnboardingStore.getState().setInterests(["FRONTEND"]);
+
+        const raw = localStorage.getItem("tdn-onboarding");
+        expect(JSON.parse(raw as string).state.interests).toEqual(["FRONTEND"]);
+    });
+
     it("persists under tdn-onboarding", () => {
         useOnboardingStore.getState().complete("user-1", ["MOBILE"]);
 

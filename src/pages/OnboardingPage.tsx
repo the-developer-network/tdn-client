@@ -22,8 +22,14 @@ export default function OnboardingPage() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const complete = useOnboardingStore((state) => state.complete);
 
+    // Seeded from the store so a reload on step two comes back to the fields
+    // already picked. The API has nowhere to keep these, so this is the only
+    // record of them.
+    const storedInterests = useOnboardingStore((state) => state.interests);
+    const setInterests = useOnboardingStore((state) => state.setInterests);
+
     const [step, setStep] = useState<Step>("fields");
-    const [selected, setSelected] = useState<PostCategory[]>([]);
+    const [selected, setSelected] = useState<PostCategory[]>(storedInterests);
 
     if (!isAuthenticated) return <Navigate to="/" replace />;
 
@@ -39,7 +45,10 @@ export default function OnboardingPage() {
                 {step === "fields" ? (
                     <FieldsStep
                         selected={selected}
-                        onChange={setSelected}
+                        onChange={(next) => {
+                            setSelected(next);
+                            setInterests(next);
+                        }}
                         onContinue={() => setStep("accounts")}
                     />
                 ) : (
@@ -108,23 +117,51 @@ interface AccountsStepProps {
 
 function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
     const { t } = useI18n();
-    const { accounts, isLoading, error, retry } =
-        useOnboardingSuggestions(categories);
-    const { followedIds, followedCount, isPending, toggle } =
-        useOnboardingFollows();
+    const {
+        accounts,
+        isLoading,
+        isLoadingMore,
+        error,
+        hasMore,
+        loadMore,
+        retry,
+    } = useOnboardingSuggestions(categories);
+    const {
+        followedIds,
+        serverFollowedIds,
+        netFollowChange,
+        isPending,
+        toggle,
+    } = useOnboardingFollows(accounts);
     const { count: alreadyFollowing } = useFollowingCount();
 
     // The gate opens at MIN_FOLLOWS in total, so follows already on the books
     // count — asking someone who follows four people for five more would be a
     // different requirement than the one that sent them here.
     const stillNeeded = Math.max(0, MIN_FOLLOWS - alreadyFollowing);
-    // A young deployment may not hold that many accounts at all, and the flow
-    // cannot demand more than exists — the requirement drops to whatever the
-    // list can supply.
-    const required = Math.min(stillNeeded, accounts.length);
-    // The one agreed escape: if suggestions never arrived there is nothing to
-    // follow, so the gate must not hold the account hostage to a failing API.
-    const canFinish = followedCount >= required;
+
+    // Bots that arrived already followed are part of `alreadyFollowing`, so
+    // they cannot also be part of the answer — only the rest are follows this
+    // step can still ask for.
+    const followable = accounts.filter(
+        (account) => !serverFollowedIds.has(account.userId),
+    ).length;
+
+    // The requirement drops to what the list can supply, but only once the
+    // list is final: an empty answer, or an endpoint that never answered, must
+    // not trap the account behind something nothing on screen can satisfy.
+    // While a page is in flight the full requirement stands, so the finish
+    // button is never briefly open over a list that has not arrived.
+    const listIsFinal = !isLoading && (!!error || !hasMore);
+    const required = listIsFinal
+        ? Math.min(stillNeeded, followable)
+        : stillNeeded;
+
+    // Counted as a net change, not as the size of the followed set: unfollowing
+    // a bot from an earlier visit has to move the number back down, and the
+    // bots seeded from `isFollowing` are already counted in `alreadyFollowing`.
+    const progress = Math.max(0, netFollowChange);
+    const canFinish = netFollowChange >= required;
 
     return (
         <>
@@ -169,17 +206,40 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
                 )}
 
                 {!isLoading && accounts.length > 0 && (
-                    <div className="-mx-4 border-t border-white/10">
-                        {accounts.map((account) => (
-                            <AccountCard
-                                key={account.userId}
-                                account={account}
-                                isFollowing={followedIds.has(account.userId)}
-                                isPending={isPending(account.userId)}
-                                onToggle={toggle}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="-mx-4 border-t border-white/10">
+                            {accounts.map((account) => (
+                                <AccountCard
+                                    key={account.userId}
+                                    account={account}
+                                    isFollowing={followedIds.has(
+                                        account.userId,
+                                    )}
+                                    isPending={isPending(account.userId)}
+                                    onToggle={toggle}
+                                />
+                            ))}
+                        </div>
+
+                        {/* A button rather than infinite scroll: one page of
+                            fifty already covers the requirement several times
+                            over, and a list that grows as you reach the bottom
+                            of it hides the finish button you are heading for. */}
+                        {hasMore && (
+                            <div className="flex justify-center py-6">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={isLoadingMore}
+                                    onClick={loadMore}
+                                >
+                                    {isLoadingMore
+                                        ? t("onboarding.loadingMore")
+                                        : t("onboarding.loadMore")}
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -193,7 +253,7 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
                 </button>
                 <span className="flex-1 text-sm text-white/40">
                     {t("onboarding.progress", {
-                        n: followedCount,
+                        n: progress,
                         total: required,
                     })}
                 </span>

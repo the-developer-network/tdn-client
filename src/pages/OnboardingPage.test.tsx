@@ -50,14 +50,20 @@ import { useFollowingCount } from "../features/onboarding/hooks/useFollowingCoun
 import { useOnboardingStore } from "../features/onboarding/store/onboarding.store";
 import { useAuthStore } from "../core/auth/auth.store";
 import OnboardingPage from "./OnboardingPage";
+import type { OnboardingAccount } from "../features/onboarding/onboarding.types";
 
-const account = (id: string) => ({
+const account = (id: string): OnboardingAccount => ({
     userId: id,
     username: id,
     fullName: `${id} name`,
     avatarUrl: "",
-    contentCount: 1,
+    bio: "",
+    followersCount: 1,
+    categories: ["BACKEND"],
+    isFollowing: false,
 });
+
+const loadMore = vi.fn();
 
 function mockSuggestions(
     overrides: Partial<ReturnType<typeof useOnboardingSuggestions>> = {},
@@ -65,16 +71,36 @@ function mockSuggestions(
     vi.mocked(useOnboardingSuggestions).mockReturnValue({
         accounts: [],
         isLoading: false,
+        isLoadingMore: false,
         error: null,
+        hasMore: false,
+        loadMore,
         retry: vi.fn(),
         ...overrides,
     });
 }
 
-function mockFollows(followed: string[] = []) {
+/**
+ * @param followed everyone the cards should render as followed
+ * @param server the subset that arrived already followed — those are already
+ *   inside the profile's `followingCount`, so they are not progress
+ */
+function mockFollows(followed: string[] = [], server: string[] = []) {
+    const serverFollowedIds = new Set(server);
+    const followedIds = new Set(followed);
+
+    let netFollowChange = 0;
+    followedIds.forEach((id) => {
+        if (!serverFollowedIds.has(id)) netFollowChange += 1;
+    });
+    serverFollowedIds.forEach((id) => {
+        if (!followedIds.has(id)) netFollowChange -= 1;
+    });
+
     vi.mocked(useOnboardingFollows).mockReturnValue({
-        followedIds: new Set(followed),
-        followedCount: followed.length,
+        followedIds,
+        serverFollowedIds,
+        netFollowChange,
         isPending: () => false,
         toggle: vi.fn(),
     });
@@ -96,6 +122,7 @@ async function goToAccounts() {
 
 beforeEach(() => {
     mockNavigate.mockClear();
+    loadMore.mockClear();
     localStorage.clear();
     useOnboardingStore.getState().reset();
     useAuthStore.setState({
@@ -226,6 +253,77 @@ describe("OnboardingPage", () => {
         expect(
             screen.getByRole("button", { name: "Go to my feed" }),
         ).toBeEnabled();
+    });
+
+    // The profile's `followingCount` already counts the bots a returning user
+    // followed on an earlier visit. Counting the seeded cards as progress too
+    // would let them out having followed nobody this time.
+    it("does not count the bots that arrived already followed", async () => {
+        vi.mocked(useFollowingCount).mockReturnValue({
+            count: 3,
+            isLoading: false,
+        });
+        mockSuggestions({
+            accounts: ["a", "b", "c", "d", "e", "f"].map(account),
+        });
+        mockFollows(["a", "b", "c"], ["a", "b", "c"]);
+
+        renderPage();
+        await goToAccounts();
+
+        expect(screen.getByText("0 of 2 followed")).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: "Go to my feed" }),
+        ).toBeDisabled();
+    });
+
+    // An empty list is what opens the escape hatch, and a list that has not
+    // arrived yet looks exactly like one.
+    it("keeps the finish button shut while the list is still loading", async () => {
+        mockSuggestions({ isLoading: true });
+
+        renderPage();
+        await goToAccounts();
+
+        expect(
+            screen.getByRole("button", { name: "Go to my feed" }),
+        ).toBeDisabled();
+    });
+
+    it("asks for another page on demand", async () => {
+        mockSuggestions({
+            accounts: ["a", "b"].map(account),
+            hasMore: true,
+        });
+
+        renderPage();
+        await goToAccounts();
+        await userEvent.click(
+            screen.getByRole("button", { name: "Show more" }),
+        );
+
+        expect(loadMore).toHaveBeenCalled();
+    });
+
+    it("offers no further page when the list is complete", async () => {
+        mockSuggestions({ accounts: ["a", "b"].map(account) });
+
+        renderPage();
+        await goToAccounts();
+
+        expect(
+            screen.queryByRole("button", { name: "Show more" }),
+        ).not.toBeInTheDocument();
+    });
+
+    // The API has nowhere to keep these, so the store is the only record — and
+    // it has to be written as they are picked, not at the end, or a reload on
+    // step two comes back to an empty picker.
+    it("stores the picked fields before the flow is finished", async () => {
+        renderPage();
+        await goToAccounts();
+
+        expect(useOnboardingStore.getState().interests).toEqual(["BACKEND"]);
     });
 
     it("goes back to the field picker", async () => {

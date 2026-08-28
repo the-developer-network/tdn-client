@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -41,7 +42,13 @@ const baseProps = {
     onLoadMore: vi.fn(),
 };
 
-const renderList = (props: Partial<typeof baseProps> & object = {}) =>
+/**
+ * Typed against the component, not against `baseProps`. `baseProps` only
+ * carries the required props, so a `Partial<typeof baseProps>` cannot express
+ * `onRetry`, `loadMoreError` or `onRetryLoadMore` — the optional ones three of
+ * these tests are entirely about.
+ */
+const renderList = (props: Partial<ComponentProps<typeof ArticleList>> = {}) =>
     render(
         <MemoryRouter>
             <ArticleList {...baseProps} {...props} />
