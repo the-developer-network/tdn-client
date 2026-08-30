@@ -132,6 +132,7 @@ src/
   pages/
     ArticleDetailPage.test.tsx
     ArticleEditorPage.test.tsx
+    ExplorePage.test.tsx
     FeedPage.test.tsx
     PostDetailPage.test.tsx
     CommentDetailPage.test.tsx
@@ -151,6 +152,7 @@ e2e/
   article-editor.spec.ts
   articles.spec.ts
   auth.spec.ts
+  explore-tags.spec.ts
   feed.spec.ts
   feed-restore.spec.ts
   mobile-zoom.spec.ts
@@ -1299,6 +1301,25 @@ There is no per-author articles endpoint — the tab reuses `GET /articles?autho
 | Back to Posts            | The post list returns                                                                 |
 | Profile itself failing   | Neither tab renders                                                                   |
 
+**`ExplorePage` tag view** (`src/pages/ExplorePage.test.tsx`)
+
+A tag is not a post-only idea. `GET /articles?tag=` narrows articles the same way `GET /posts?tag=` narrows posts, so `/explore?tag=nodejs` carries the same Posts / Articles strip the profile does — an author who tags an article `nodejs` expects it under #nodejs.
+
+Which tab is open lives in the **query string** beside the tag, so `/explore?tag=nodejs&tab=articles` is a link someone can send. `posts` is the default and is left out of the URL, so the plain `/explore?tag=nodejs` already shared around still opens on posts. Switching **replaces** the entry: Back here is for leaving the tag, not for walking back through which of its two lists was looked at last.
+
+The tests mock both hooks and stub both lists down to a marker — which list is mounted, and what the hooks were asked for, is the whole question. The URL is asserted through a `useLocation` probe and the replace through `useNavigationType`, rather than by reaching into history.
+
+| Scenario                   | Assert                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `?tag=nodejs`              | `fetchPosts({ tag })`; post list mounted; **no** articles request yet           |
+| Articles tab clicked       | `fetchArticles({ tag })`; the lists swap; `fetchPosts` **not** called again     |
+| Articles tab clicked       | `tab=articles` written to the URL, alongside the tag                            |
+| `?tag=nodejs&tab=articles` | Opens on articles with no post request at all                                   |
+| `?tab=nonsense`            | Falls back to Posts rather than an empty page                                   |
+| Tab switched               | Navigation type is `REPLACE`; returning to Posts drops `tab` from the URL again |
+| Either tab                 | The subtitle says which of the two it is counting                               |
+| No tag                     | Trending view only — no strip, and neither list fetches                         |
+
 **`NotificationsPage`** (`src/pages/NotificationsPage.test.tsx`)
 
 6 tests. Every collaborator is `vi.mock`ed, so `useNotifications` and the store are handed fixed return values rather than driven through MSW — which is what makes the error-with-a-list case expressible at all.
@@ -1464,6 +1485,9 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `feed-restore.spec`   | The Home link is a PUSH, so it fetches a current, unfiltered feed              |
 | `feed-restore.spec`   | Back returns to the offset the post was clicked from, not to the top           |
 | `feed-restore.spec`   | A like made on the post page shows on the feed the reader comes back to        |
+| `explore-tags.spec`   | The Articles tab under a tag requests `/articles?tag=` and lists what it returns |
+| `explore-tags.spec`   | `?tab=articles` opens on articles without fetching posts at all                |
+| `explore-tags.spec`   | Switching tabs replaces the entry, so Back leaves the tag                      |
 | `profile.spec`        | Visit `/profile/:username` → full name heading visible                         |
 | `profile.spec`        | `isMe: true` response → "Edit Profile" button visible                          |
 | `profile.spec`        | Following-list follow button is ≥44px tall at 390px wide, and unfollows rather than opening the profile |

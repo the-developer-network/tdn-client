@@ -1,28 +1,69 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Search, Hash, TrendingUp } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
 import { useFeed } from "../features/feed/components/useFeed";
+import { ArticleList } from "../features/article/components/ArticleList";
+import { useArticles } from "../features/article/hooks/useArticles";
 import { useTrends } from "../features/trends/hooks/useTrends";
 import { useTagSearch } from "../features/trends/hooks/useTagSearch";
 import { useI18n } from "../shared/hooks/useI18n";
 
+/**
+ * A tag is not a post-only idea: `GET /articles?tag=` narrows articles the same
+ * way `GET /posts?tag=` narrows posts, and an author who tags an article
+ * `nodejs` expects it to turn up under #nodejs. The two are separate resources
+ * behind separate endpoints, so the tag view carries the same Posts / Articles
+ * strip the profile does.
+ *
+ * Which one is open lives in the query string beside the tag, so
+ * `/explore?tag=nodejs&tab=articles` is a link someone can send and a Back
+ * returns to the list it left. `posts` is the default and is left out of the
+ * URL, so the plain `/explore?tag=nodejs` already shared around still opens
+ * on posts.
+ */
+type ExploreTab = "posts" | "articles";
+
+const TAB_PARAM = "tab";
+
 export default function ExplorePage() {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const { t } = useI18n();
     const tag = searchParams.get("tag");
+    // Anything but the one known alternative opens posts, rather than an
+    // empty page for a slug nobody serves.
+    const tab: ExploreTab =
+        searchParams.get(TAB_PARAM) === "articles" ? "articles" : "posts";
+    const isArticles = tab === "articles";
 
     const {
         posts,
         isLoading: postsLoading,
+        isLoadingMore: postsLoadingMore,
         error: postsError,
+        loadMoreError: postsLoadMoreError,
+        hasMore: hasMorePosts,
         fetchPosts,
+        loadMore: loadMorePosts,
         removePost,
         retry: retryPosts,
+        retryLoadMore: retryLoadMorePosts,
     } = useFeed();
+    const {
+        articles,
+        isLoading: articlesLoading,
+        isLoadingMore: articlesLoadingMore,
+        error: articlesError,
+        loadMoreError: articlesLoadMoreError,
+        hasMore: hasMoreArticles,
+        fetchArticles,
+        loadMore: loadMoreArticles,
+        retry: retryArticles,
+        retryLoadMore: retryLoadMoreArticles,
+    } = useArticles();
     const { trends, isLoading: trendsLoading } = useTrends();
     const {
         query,
@@ -57,11 +98,32 @@ export default function ExplorePage() {
         navigate(`/explore?tag=${encodeURIComponent(name)}`);
     }
 
+    /**
+     * Replaces rather than pushes. Back here is for leaving the tag, not for
+     * walking back through which of its two lists was looked at last.
+     */
+    const handleTabChange = useCallback(
+        (next: ExploreTab) => {
+            const params = new URLSearchParams(searchParams);
+            if (next === "posts") params.delete(TAB_PARAM);
+            else params.set(TAB_PARAM, next);
+            setSearchParams(params, { replace: true });
+        },
+        [searchParams, setSearchParams],
+    );
+
+    // The two lists come from different endpoints, so each effect stands down
+    // while the other tab is showing — otherwise opening Articles would still
+    // refetch the posts behind it.
     useEffect(() => {
-        if (tag) {
-            fetchPosts({ tag });
-        }
-    }, [tag, fetchPosts]);
+        if (!tag || isArticles) return;
+        fetchPosts({ tag });
+    }, [tag, isArticles, fetchPosts]);
+
+    useEffect(() => {
+        if (!tag || !isArticles) return;
+        fetchArticles({ tag });
+    }, [tag, isArticles, fetchArticles]);
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
@@ -81,22 +143,66 @@ export default function ExplorePage() {
                                     #{tag}
                                 </h1>
                                 <p className="text-xs text-white/40 mt-0.5">
-                                    {t("explore.postsTaggedSubtitle", { tag })}
+                                    {t(
+                                        isArticles
+                                            ? "explore.articlesTaggedSubtitle"
+                                            : "explore.postsTaggedSubtitle",
+                                        { tag },
+                                    )}
                                 </p>
                             </div>
                         </div>
+
+                        <div className="flex w-full border-t border-white/10">
+                            {(["posts", "articles"] as const).map((value) => (
+                                <button
+                                    key={value}
+                                    onClick={() => handleTabChange(value)}
+                                    className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
+                                        tab === value
+                                            ? "text-white"
+                                            : "text-white/40 hover:text-white/70"
+                                    }`}
+                                >
+                                    {t(
+                                        value === "posts"
+                                            ? "profile.tabPosts"
+                                            : "profile.tabArticles",
+                                    )}
+                                    {tab === value && (
+                                        <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-white" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <PostList
-                        posts={posts}
-                        isLoading={postsLoading}
-                        isLoadingMore={false}
-                        hasMore={false}
-                        error={postsError}
-                        onPostDeleted={removePost}
-                        onLoadMore={() => {}}
-                        onRetry={retryPosts}
-                    />
+                    {isArticles ? (
+                        <ArticleList
+                            articles={articles}
+                            isLoading={articlesLoading}
+                            isLoadingMore={articlesLoadingMore}
+                            hasMore={hasMoreArticles}
+                            error={articlesError}
+                            loadMoreError={articlesLoadMoreError}
+                            onLoadMore={loadMoreArticles}
+                            onRetry={retryArticles}
+                            onRetryLoadMore={retryLoadMoreArticles}
+                        />
+                    ) : (
+                        <PostList
+                            posts={posts}
+                            isLoading={postsLoading}
+                            isLoadingMore={postsLoadingMore}
+                            hasMore={hasMorePosts}
+                            error={postsError}
+                            loadMoreError={postsLoadMoreError}
+                            onPostDeleted={removePost}
+                            onLoadMore={loadMorePosts}
+                            onRetry={retryPosts}
+                            onRetryLoadMore={retryLoadMorePosts}
+                        />
+                    )}
                 </>
             ) : (
                 // --- Trending grid view ---

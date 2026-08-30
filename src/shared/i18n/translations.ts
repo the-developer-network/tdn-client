@@ -233,6 +233,7 @@ const en = {
     "explore.lastDays": "last 7 days",
     "explore.postsTagged": "Posts tagged with #{{tag}}",
     "explore.postsTaggedSubtitle": "Posts tagged with #{{tag}}",
+    "explore.articlesTaggedSubtitle": "Articles tagged with #{{tag}}",
 
     "trending.title": "Trending Topics",
     "trending.subtitle": "Popular on TDN right now",
@@ -802,6 +803,7 @@ const tr: Record<TranslationKey, string> = {
     "explore.lastDays": "son 7 gün",
     "explore.postsTagged": "#{{tag}} etiketiyle gönderiler",
     "explore.postsTaggedSubtitle": "#{{tag}} etiketiyle gönderiler",
+    "explore.articlesTaggedSubtitle": "#{{tag}} etiketiyle makaleler",
 
     "trending.title": "Trend Konular",
     "trending.subtitle": "TDN'de şu an popüler",
