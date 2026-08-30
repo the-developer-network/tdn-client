@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { feedApi } from "../api/feed.api";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { assertList } from "../../../shared/utils/assert-list";
 import type {
     GetPostsParams,
     Post,
@@ -103,6 +104,12 @@ export function useFeed(
             try {
                 const data = await feedApi.getPosts(buildParams(arg, 1));
                 if (requestId !== requestIdRef.current) return;
+                // Checked before anything is committed. Reading `.length`
+                // straight after `setPosts` looks equivalent, but the throw
+                // lands after the state is already holding the bad value: the
+                // reader sees the error while `posts` is a `null` that takes
+                // the page down the next time anything touches it.
+                assertList(data);
                 setPosts(data);
                 setHasMore(data.length === PAGE_LIMIT);
             } catch {
@@ -127,6 +134,7 @@ export function useFeed(
             // A tab switch during the request makes this page belong to a feed
             // the user has already left; appending it would mix the two.
             if (requestId !== requestIdRef.current) return;
+            assertList(data);
             setPosts((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;

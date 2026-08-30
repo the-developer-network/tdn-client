@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { articleApi } from "../api/article.api";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { assertList } from "../../../shared/utils/assert-list";
 import type { ArticleSummary, GetArticlesParams } from "../api/article.types";
 
 const PAGE_LIMIT = 20;
@@ -54,6 +55,9 @@ export function useArticles(restore?: ArticleRestore) {
                     limit: PAGE_LIMIT,
                 });
                 if (requestId !== requestIdRef.current) return;
+                // Before the first `set`, so a mis-shaped body fails as this
+                // request rather than as a crash somewhere later.
+                assertList(data);
                 setArticles(data);
                 // The client unwraps `ApiResponse.data`, so `meta.totalPages` never
                 // reaches here. A full page is the only signal another one exists.
@@ -86,6 +90,7 @@ export function useArticles(restore?: ArticleRestore) {
             // A filter change during the request makes this page belong to a
             // list the reader has already left; appending would mix the two.
             if (requestId !== requestIdRef.current) return;
+            assertList(data);
             setArticles((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;
