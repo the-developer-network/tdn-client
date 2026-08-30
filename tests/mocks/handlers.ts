@@ -21,6 +21,7 @@ const mockPost = {
     createdAt: new Date().toISOString(),
     likeCount: 0,
     commentCount: 0,
+    quoteCount: 0,
     isLiked: false,
     isBookmarked: false,
     author: {
@@ -30,6 +31,7 @@ const mockPost = {
         avatarUrl: "https://example.com/avatar.png",
     },
     tags: [],
+    quotedPost: null,
 };
 
 const mockComment = {
@@ -202,6 +204,10 @@ export const handlers = [
                 articles: [mockArticleSummary],
             },
         }),
+    ),
+
+    http.get(`${BASE}/posts/:postId/quotes`, () =>
+        HttpResponse.json({ data: [] }),
     ),
 
     http.get(`${BASE}/posts/:postId`, () =>

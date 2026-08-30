@@ -1,5 +1,31 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// PostCard now reaches `useAuthStore` (to gate the quote composer), which uses
+// Zustand `persist` and captures localStorage at module-evaluation time. The
+// Map-backed stub has to exist before any import runs.
+vi.hoisted(() => {
+    const _map = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+        getItem: (key: string) => _map.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+            _map.set(key, String(value));
+        },
+        removeItem: (key: string) => {
+            _map.delete(key);
+        },
+        clear: () => {
+            _map.clear();
+        },
+        get length() {
+            return _map.size;
+        },
+        key: (i: number) => [..._map.keys()][i] ?? null,
+    });
+});
+
+import { useAuthStore } from "../../../core/auth/auth.store";
+import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import type { Post } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
@@ -36,6 +62,8 @@ const makeActions = (
         isBookmarkLoading: false,
         handleBookmark: vi.fn(),
         handleShare: vi.fn(),
+        quoteCount: 0,
+        registerQuote: vi.fn(),
         isDeleteLoading: false,
         handleDelete: vi.fn().mockResolvedValue(false),
         ...overrides,
@@ -60,6 +88,8 @@ afterEach(() => {
 
 beforeEach(() => {
     mockNavigate.mockClear();
+    useAuthStore.setState(useAuthStore.getInitialState());
+    useAuthModalStore.setState(useAuthModalStore.getInitialState());
     vi.mocked(usePostActions).mockReturnValue(makeActions());
     vi.mocked(useTranslation).mockImplementation((content) =>
         makeTranslation(content),
@@ -76,6 +106,8 @@ const mockPost: Post = {
     commentCount: 2,
     isLiked: false,
     isBookmarked: false,
+    quoteCount: 0,
+    quotedPost: null,
     author: {
         id: "u1",
         username: "alice",
@@ -184,5 +216,103 @@ describe("PostCard", () => {
         await waitFor(() =>
             expect(screen.queryByText("Delete post?")).not.toBeInTheDocument(),
         );
+    });
+
+    describe("quotes", () => {
+        const quotedPost = {
+            id: "quoted-1",
+            content: "the original take",
+            mediaUrls: [],
+            createdAt: "2026-08-29T10:00:00.000Z",
+            author: {
+                id: "u2",
+                username: "veli",
+                fullName: "Veli K.",
+                avatarUrl: "https://cdn.example.com/avatars/veli.png",
+            },
+        };
+
+        it("renders the embedded card when the post quotes another", () => {
+            render(<PostCard {...mockPost} quotedPost={quotedPost} />);
+            expect(screen.getByText("the original take")).toBeInTheDocument();
+            expect(screen.getByText("@veli")).toBeInTheDocument();
+        });
+
+        it("renders no embedded card on an ordinary post", () => {
+            render(<PostCard {...mockPost} />);
+            expect(screen.queryByText("@veli")).not.toBeInTheDocument();
+        });
+
+        it("hides the quote badge when nothing has quoted the post", () => {
+            render(<PostCard {...mockPost} />);
+            expect(
+                screen.queryByRole("button", { name: /view quotes/i }),
+            ).not.toBeInTheDocument();
+        });
+
+        it("navigates to the quotes list when the badge is clicked", () => {
+            vi.mocked(usePostActions).mockReturnValue(
+                makeActions({ quoteCount: 4 }),
+            );
+            render(<PostCard {...mockPost} quoteCount={4} />);
+
+            const badge = screen.getByRole("button", { name: /view quotes/i });
+            expect(badge).toHaveTextContent("4");
+
+            fireEvent.click(badge);
+            expect(mockNavigate).toHaveBeenCalledWith("/posts/post-1/quotes");
+        });
+
+        it("draws an empty-content quote as a repost rather than a blank body", () => {
+            render(
+                <PostCard {...mockPost} content="" quotedPost={quotedPost} />,
+            );
+
+            expect(screen.getByText("reposted")).toBeInTheDocument();
+            expect(screen.getByText("the original take")).toBeInTheDocument();
+        });
+
+        it("keeps the repost marker off a quote that has its own text", () => {
+            render(<PostCard {...mockPost} quotedPost={quotedPost} />);
+            expect(screen.queryByText("reposted")).not.toBeInTheDocument();
+            expect(screen.getByText("Hello world")).toBeInTheDocument();
+        });
+
+        it("opens the composer for a signed-in reader", () => {
+            useAuthStore.setState({
+                user: null,
+                token: null,
+                isAuthenticated: true,
+            });
+            render(<PostCard {...mockPost} />);
+
+            fireEvent.click(
+                screen.getByRole("button", { name: /quote post/i }),
+            );
+
+            expect(
+                screen.getByPlaceholderText(/add a comment/i),
+            ).toBeInTheDocument();
+        });
+
+        it("sends a signed-out reader to the auth modal instead of the composer", () => {
+            useAuthStore.setState({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+            });
+            const openModal = vi.fn();
+            useAuthModalStore.setState({ openModal });
+
+            render(<PostCard {...mockPost} />);
+            fireEvent.click(
+                screen.getByRole("button", { name: /quote post/i }),
+            );
+
+            expect(openModal).toHaveBeenCalled();
+            expect(
+                screen.queryByPlaceholderText(/add a comment/i),
+            ).not.toBeInTheDocument();
+        });
     });
 });

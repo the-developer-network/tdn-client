@@ -79,10 +79,13 @@ src/
       hooks/
         usePostActions.test.ts
         useBookmarks.test.ts
+        useQuotes.test.ts
       components/
         useFeed.test.ts
         PostCard.test.tsx
         PostList.test.tsx
+        QuotedPostCard.test.tsx
+        QuoteComposerModal.test.tsx
       store/
         feed-snapshot.store.test.ts
     comment/
@@ -158,6 +161,7 @@ e2e/
   mobile-zoom.spec.ts
   onboarding.spec.ts
   profile.spec.ts
+  quotes.spec.ts
   worker/
     worker.spec.ts
     api-stub.ts        # stand-in API, started as a Playwright webServer
@@ -500,7 +504,7 @@ Uses fake timers (`shouldAdvanceTime: true`) to jump the 2 s autosave debounce.
 
 #### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
 
-17 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`, `handleShare`, and the write-back into the feed snapshot.
+18 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`, `handleShare`, `registerQuote`, and the write-back into the feed snapshot.
 
 **Requires `vi.hoisted` localStorage stub** (transitively imports `useAuthStore`). Also reset `useFeedSnapshotStore` in `beforeEach` — leaked state between tests is the usual failure here.
 
@@ -528,6 +532,7 @@ expect(result.current.likeCount).toBe(5); // rolled back
 | `handleDelete` — unauthenticated | Returns `false`; auth modal opened                                 |
 | `handleShare` — copy succeeds    | `writeText` called with `/post/:id`; info toast                    |
 | `handleShare` — copy rejected    | Error toast — the button must not fail silently                    |
+| `registerQuote`                  | `quoteCount` +1 locally **and** in the feed snapshot                |
 | `handleShare` — sheet dismissed  | No toast at all (`AbortError` is a cancel, not a failure)          |
 | Like with a snapshot holding it  | `isLiked`/`likeCount` written into the stored feed as well          |
 | That like fails                  | Taken back out of the stored feed too                              |
@@ -1018,6 +1023,54 @@ it("renders empty state", () => {
 });
 ```
 
+`PostList` takes an optional `emptyMessage`. The feed's "Category Empty" is
+wrong for a list that is not the feed — the quotes page passes its own — and
+`onPostQuoted`, which it forwards to each card, is how a freshly created quote
+reaches the list that should show it.
+
+#### Quotes (`QuotedPostCard`, `QuoteComposerModal`, `useQuotes`)
+
+A quote is not a separate entity — it is a post whose `quotedPostId` is set —
+so the coverage here is deliberately narrow: the embedded card, the composer,
+and the list endpoint. Everything else (liking, bookmarking, commenting on,
+deleting a quote) is already covered by the post specs and needs no quote-
+specific case, which is the point of the API's design.
+
+Three payload facts drive the assertions:
+
+- The embedded card carries **no counters and no `isLiked`/`isBookmarked`**, so
+  `QuotedPostCard` renders no action row at all — one test asserts it has no
+  buttons, so an action added there fails loudly rather than rendering a
+  control with nothing behind it.
+- It carries **no `quotedPost` of its own**. The card can never nest, and the
+  composer therefore always quotes the *outer* post.
+- `content` may be `""` when `quotedPostId` is set. That is a plain repost, and
+  both the card spec and `e2e/quotes.spec.ts` pin the repost rendering.
+
+`useQuotes` (10 tests) pages the way every list in the app pages — a short page
+is the last page — because `apiClient` unwraps `ApiResponse.data` and the
+endpoint's `meta.totalPages` never reaches a caller. Its 404 test matters: a
+deleted original cascades to the posts that quoted it, so this endpoint can 404
+on a post the reader was just looking at. That surfaces as a list error with a
+retry, never as a "this post was removed" tombstone.
+
+| Scenario                              | Assert                                                    |
+| ------------------------------------- | --------------------------------------------------------- |
+| First page                            | Quotes populated, `isLoading` false, no error             |
+| Request shape                         | `GET /posts/<id>/quotes?page=1&limit=20`                  |
+| Short page                            | `hasMore` false                                           |
+| Full page then a short one            | Appended; `hasMore` flips false                           |
+| 404 (original deleted)                | `error` set, list stays empty, nothing throws             |
+| `data: null`                          | `assertList` rejects it before it becomes state           |
+| `loadMore` fails                      | Page counter does not advance — page 2 is retried, not 3  |
+| `addQuote` / `removeQuote`            | Prepend / filter                                          |
+| No post id                            | No request fired                                          |
+
+`QuoteComposerModal` (6 tests) covers the preview, the body it posts
+(`content` + `quotedPostId`), the empty body that makes a repost, the created
+post handed back to the caller, the 300-character guard, and a 429 surfacing
+the API's own rate-limit message rather than a generic one.
+
 #### `MarkdownBody` (`src/features/article/components/MarkdownBody.test.tsx`)
 
 The API stores and returns article bodies as **raw, unsanitised markdown** — sanitisation is entirely the client's job. `MarkdownBody` does it by omission: `skipHtml` on `react-markdown`, and no `rehype-raw`. Three tests exist purely to keep it that way, because on a site where anyone can publish, rendering embedded HTML is stored XSS:
@@ -1040,7 +1093,7 @@ Tags must match `^[a-z0-9-]{1,30}$`, and a tag that fails comes back as a bare 4
 
 #### `PostCard` / `CommentCard`
 
-8 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
+16 and 5 tests. Both cards navigate on a click anywhere in the `<article>`, so much of their coverage is about the clicks that must **not** navigate. Both mock `useNavigate`, `usePostActions`/`useCommentActions` and `useTranslation`, so the card's own routing and rendering is all that is under test.
 
 | Scenario                         | Assert                        |
 | -------------------------------- | ----------------------------- |
@@ -1051,6 +1104,22 @@ Tags must match `^[a-z0-9-]{1,30}$`, and a tag that fails comes back as a bare 4
 | Click with an empty selection    | Still navigates               |
 | Delete button (own post/comment) | Confirmation modal opens      |
 | `handleDelete` resolves true     | Modal closes                  |
+
+`PostCard` carries eight more for quotes. Note that it now reaches
+`useAuthStore` — to gate the composer behind a session — so its spec needs the
+`vi.hoisted` localStorage stub like every other file whose module graph touches
+`persist`.
+
+| Scenario                              | Assert                                                    |
+| ------------------------------------- | --------------------------------------------------------- |
+| `quotedPost` present                  | Embedded card renders the quoted author and text          |
+| `quotedPost` null                     | No embedded card                                          |
+| `quoteCount` 0                        | No quote badge                                            |
+| Quote badge clicked                   | `navigate("/posts/<id>/quotes")`                          |
+| Empty `content` + `quotedPost`        | "reposted" marker, no empty text bubble                   |
+| Non-empty `content` + `quotedPost`    | The post's own text, no repost marker                     |
+| Quote button, signed in               | Composer opens                                            |
+| Quote button, signed out              | Auth modal opens; composer does not                       |
 
 > **The author fields here need no client-side guards, and adding them is a mistake worth naming.** `username` reads as optional in `PostAuthorSchema` / `CommentAuthorSchema`, but `User.username` is `NOT NULL`, the `author` relation on `Post` and `Comment` is required with `onDelete: Cascade`, and every repository query selects it. `avatarUrl` is `NOT NULL` with a database default, is absent from `UpdateProfileBodySchema` (which sets `additionalProperties: false`, so no client can write it), and `toFeedResponse` substitutes a CDN default and CDN-prefixes anything not starting with `http`. So neither a `?? fallback` nor a `getSafeImageSrc` call can ever do anything on these two cards. The slack is in the TypeBox schemas, not the data — tracked in tdn-api#182. Fixtures use a realistic CDN url rather than `""` so they match what the API actually sends.
 >
@@ -1084,6 +1153,9 @@ will arrive the same way this one did.
 | `COMMENT` type click       | `navigate("/comments/<referenceId>")` called  |
 | `COMMENT_REPLY` render     | Its own message, not a crash                  |
 | `COMMENT_REPLY` click      | `navigate("/comments/<referenceId>")` called  |
+| `QUOTE` render             | "@user quoted your post", not a crash         |
+| `QUOTE` click              | `navigate("/post/<referenceId>")` — the *quote*, not the original |
+| `QUOTE`, no reference      | Falls back to `/profile/<username>`           |
 | An unknown type            | Renders a generic message; does not throw     |
 | An unknown type, clicked   | Falls back to `/profile/<username>`           |
 | `isRead: false`            | Element has `border-l-blue-500` class         |
@@ -1439,6 +1511,8 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 The route handler matches `/profiles/bots` **before** the generic `/profiles/` arm — that one matches the bot URL too, and would answer the list with a profile object.
 
 Five tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; a returning account whose bots come back `isFollowing: true` (three cards read "Following", the counter still says "0 of 2", and the finish button stays shut until two *new* follows land — the double-count bug, end to end); an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
+
+**`quotes.spec.ts`** — five tests over the quote flow end to end: the embedded card in the feed, a textless quote drawn as a repost, the badge routing to `/posts/:id/quotes`, that page's own empty state, and composing a quote. The last one is the one worth keeping: it asserts both the request body (`content` + `quotedPostId`) and that the new row appears **without a refetch**. The feed is cached for 60 s server-side, so a quote that only showed up after reloading would look, to the person who wrote it, exactly like one that failed to post.
 
 **The follow control in the follower/following list is measured, not asserted by class.** It sits inside a row that navigates to the profile, so every pixel the thumb misses opens the profile instead — which is indistinguishable, to the person holding the phone, from a button that does nothing. `profile.spec` sets a 390px viewport and reads `boundingBox().height`, because the number is the whole point: the pill shipped at 26px against a 44px minimum, and only a measurement catches it going back.
 

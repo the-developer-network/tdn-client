@@ -13,6 +13,8 @@ function makePost(id: string, type: PostType): Post {
         commentCount: 0,
         isLiked: false,
         isBookmarked: false,
+        quoteCount: 0,
+        quotedPost: null,
         author: {
             id: "user-2",
             username: "bob",
@@ -180,12 +182,11 @@ test.describe("Returning to the feed", () => {
         await page.locator("article").first().click();
         await expect(page).toHaveURL(/\/post\//);
 
-        // Second action button in the card; the count sits in its span.
+        // By name, not by index — the action row grows.
         const likeButton = page
             .locator("article")
             .first()
-            .locator("button")
-            .nth(1);
+            .getByRole("button", { name: "Like post" });
         await likeButton.click();
         await expect(likeButton.locator("span")).toHaveText("1");
 
@@ -195,8 +196,7 @@ test.describe("Returning to the feed", () => {
             page
                 .locator("article")
                 .first()
-                .locator("button")
-                .nth(1)
+                .getByRole("button", { name: "Like post" })
                 .locator("span"),
         ).toHaveText("1");
     });

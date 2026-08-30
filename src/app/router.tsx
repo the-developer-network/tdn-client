@@ -3,6 +3,7 @@ import FeedPage from "../pages/FeedPage";
 import OAuthSuccessPage from "../pages/OAuthSuccessPage";
 import BookmarksPage from "../pages/BookmarksPage";
 import PostDetailPage from "../pages/PostDetailPage";
+import QuotesPage from "../pages/QuotesPage";
 import CommentDetailPage from "../pages/CommentDetailPage";
 import ExplorePage from "../pages/ExplorePage";
 import ArticleDetailPage from "../pages/ArticleDetailPage";
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
             {
                 path: "/post/:id",
                 element: <PostDetailPage />,
+            },
+            {
+                path: "/posts/:id/quotes",
+                element: <QuotesPage />,
             },
             // Declared before the slug route for readability; the router ranks the
             // static segment above the dynamic one either way. The cost is that an

@@ -433,6 +433,10 @@ export default function FeedPage() {
                     error={error}
                     loadMoreError={loadMoreError}
                     onPostDeleted={removePost}
+                    // The feed is cached for 60 s, so a quote just created
+                    // would not come back from a refetch. The create response
+                    // is the post itself — prepend it and the reader sees it.
+                    onPostQuoted={addPost}
                     onLoadMore={loadMore}
                     onRetry={retry}
                     onRetryLoadMore={retryLoadMore}

@@ -14,6 +14,7 @@ const MESSAGE_KEYS: Record<NotificationType, TranslationKey> = {
     COMMENT: "notif.comment",
     COMMENT_LIKE: "notif.commentLike",
     COMMENT_REPLY: "notif.commentReply",
+    QUOTE: "notif.quote",
 };
 
 type Translate = ReturnType<typeof useI18n>["t"];
@@ -50,8 +51,12 @@ export function NotificationCard({ notification }: NotificationCardProps) {
             case "FOLLOW":
                 navigate(`/profile/${notification.username}`);
                 break;
+            // A QUOTE's `referenceId` is the quote itself, not the post that
+            // was quoted, so this lands on what was said about the post
+            // rather than on the post the recipient already wrote.
             case "NEW_POST":
             case "LIKE":
+            case "QUOTE":
                 if (notification.referenceId) {
                     navigate(`/post/${notification.referenceId}`);
                 } else {

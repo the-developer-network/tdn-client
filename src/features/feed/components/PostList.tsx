@@ -15,6 +15,12 @@ interface PostListProps {
     error: string | null;
     loadMoreError?: string | null;
     onPostDeleted?: (postId: string) => void;
+    onPostQuoted?: (post: Post) => void;
+    /**
+     * Overrides the feed's own "Category Empty". A list that is not the feed
+     * — the quotes of one post, say — has its own way of being empty.
+     */
+    emptyMessage?: string;
     onLoadMore: () => void;
     onRetry?: () => void;
     onRetryLoadMore?: () => void;
@@ -28,6 +34,8 @@ export function PostList({
     error,
     loadMoreError,
     onPostDeleted,
+    onPostQuoted,
+    emptyMessage,
     onLoadMore,
     onRetry,
     onRetryLoadMore,
@@ -75,7 +83,7 @@ export function PostList({
     if (posts.length === 0) {
         return (
             <div className="p-10 text-center text-white/30 italic text-sm">
-                {t("postList.empty")}
+                {emptyMessage ?? t("postList.empty")}
             </div>
         );
     }
@@ -86,7 +94,11 @@ export function PostList({
         <div className="flex flex-col">
             {posts.map((post, index) => (
                 <Fragment key={post.id}>
-                    <PostCard {...post} onDeleted={onPostDeleted} />
+                    <PostCard
+                        {...post}
+                        onDeleted={onPostDeleted}
+                        onQuoted={onPostQuoted}
+                    />
                     {showAds && (index + 1) % AD_INTERVAL === 0 && (
                         <AdPlaceholderCard />
                     )}

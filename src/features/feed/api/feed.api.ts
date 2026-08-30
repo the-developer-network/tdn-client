@@ -22,11 +22,24 @@ export const feedApi = {
             isPublic: !params.followedOnly,
         });
     },
+    /**
+     * `quotedPostId` turns this into a quote. It is omitted rather than sent
+     * as `undefined` so an ordinary post posts exactly the body it used to,
+     * and the server's "empty content is only allowed on a quote" rule is
+     * never tripped by a key that is present but empty.
+     */
     createPost: (
         content: string,
         type: PostType,
         mediaUrls: string[] = [],
-    ): Promise<Post> => api.post<Post>("/posts", { content, type, mediaUrls }),
+        quotedPostId?: string,
+    ): Promise<Post> =>
+        api.post<Post>("/posts", {
+            content,
+            type,
+            mediaUrls,
+            ...(quotedPostId ? { quotedPostId } : {}),
+        }),
     uploadMedia: (files: File[]): Promise<{ mediaUrls: string[] }> => {
         const formData = new FormData();
         files.forEach((file) => formData.append("files", file));
@@ -57,6 +70,26 @@ export const feedApi = {
         return api.get<BookmarksResponse>(
             `/posts/bookmarks?${query.toString()}`,
         );
+    },
+
+    /**
+     * The posts that quote `postId`, newest first. Every row is a full post
+     * carrying its own `quotedPost` card, so `PostList` renders it unchanged.
+     *
+     * `isPublic` because the endpoint's auth is optional: a signed-out reader
+     * gets the list with `isLiked`/`isBookmarked` false rather than a 401.
+     */
+    getQuotes: (
+        postId: string,
+        params: { page?: number; limit?: number } = {},
+    ): Promise<Post[]> => {
+        const query = new URLSearchParams();
+        query.set("page", String(params.page ?? 1));
+        query.set("limit", String(params.limit ?? 20));
+
+        return api.get<Post[]>(`/posts/${postId}/quotes?${query.toString()}`, {
+            isPublic: true,
+        });
     },
 
     getPostById: (postId: string): Promise<Post> =>

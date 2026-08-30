@@ -15,11 +15,18 @@ export function usePostActions(
     postId: string,
     postTitle?: string,
     onDeleteSuccess?: () => void,
+    /**
+     * Appended rather than slotted next to the other counters so the existing
+     * positional callers keep working.
+     */
+    initialQuoteCount: number = 0,
 ) {
     const { t } = useI18n();
     const [isLiked, setIsLiked] = useState(initialLiked);
     const [likeCount, setLikeCount] = useState(initialLikeCount);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+    const [quoteCount, setQuoteCount] = useState(initialQuoteCount);
 
     const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
@@ -91,6 +98,20 @@ export function usePostActions(
         }
     };
 
+    /**
+     * Called once a quote of this post has actually been created, so the
+     * badge moves on the server's answer rather than optimistically. The
+     * server maintains `quoteCount` at write time, so the two converge.
+     */
+    const registerQuote = () => {
+        // Read straight off state rather than through the updater form: an
+        // updater must stay pure, and StrictMode invokes it twice — which
+        // would send `patchPost` to the snapshot store twice per quote.
+        const next = quoteCount + 1;
+        setQuoteCount(next);
+        patchPost(postId, { quoteCount: next });
+    };
+
     const handleShare = async (e: React.MouseEvent) => {
         e.stopPropagation();
 
@@ -140,6 +161,8 @@ export function usePostActions(
         isBookmarkLoading,
         handleBookmark,
         handleShare,
+        quoteCount,
+        registerQuote,
         isDeleteLoading,
         handleDelete,
     };
