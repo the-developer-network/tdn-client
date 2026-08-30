@@ -8,6 +8,8 @@ const SITE_NAME = "TDN - The Developer Network";
 const DEFAULT_DESCRIPTION =
     "TDN is the social network for developers. Share code, tech news, articles and connect with the dev community.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-default.png`;
+/** The largest page size `/posts` and `/articles` accept; 51 is a 400. */
+const PAGE_LIMIT = 50;
 
 interface Env {
     ASSETS: Fetcher;
@@ -74,6 +76,22 @@ function escapeHtml(str: string): string {
         .replace(/"/g, "&quot;");
 }
 
+/**
+ * A `<title>` for the same subject the OG tags describe.
+ *
+ * The post and profile titles are built already carrying the brand ("… on
+ * TDN", "… (@handle) - TDN"); an article title is the author's own words and
+ * carries nothing. Rather than brand it at one call site and not the others,
+ * the suffix is added here for whatever arrives without it — so no page ever
+ * says "TDN" twice, and none is left unbranded.
+ *
+ * Short on purpose: search results cut the title around 60 characters, and
+ * `SITE_NAME` in full would spend 27 of them on every page.
+ */
+function documentTitle(title: string): string {
+    return /\bTDN\b/.test(title) ? title : `${title} · TDN`;
+}
+
 function buildMetaTags(
     title: string,
     description: string,
@@ -86,6 +104,8 @@ function buildMetaTags(
     const u = escapeHtml(url);
 
     return `
+    <title>${escapeHtml(documentTitle(title))}</title>
+    <link rel="canonical" href="${u}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="${SITE_NAME}" />
     <meta property="og:title" content="${t}" />
@@ -106,6 +126,12 @@ function injectIntoHead(html: string, tags: string): string {
         /<meta\s+(property="og:|name="twitter:|name="description")[^>]*>\s*/g,
         "",
     );
+    // The shell ships a `<title>` of its own, and a second one does not
+    // override it — the first in the document is the one search engines read,
+    // so appending without removing this would leave every page titled
+    // "TDN - The Developer Network" no matter what was injected below.
+    html = html.replace(/<title>[\s\S]*?<\/title>\s*/, "");
+    html = html.replace(/<link\s+rel="canonical"[^>]*>\s*/g, "");
     return html.replace("</head>", `${tags}\n  </head>`);
 }
 
@@ -345,16 +371,22 @@ async function fetchArticlePage(
 
 async function handleSitemap(env: Env): Promise<Response> {
     const apiBase = resolveApiBase(env);
-    // The articles endpoint caps `limit` at 50, unlike posts.
+    // Both endpoints cap `limit` at 50. Asking for 100 is not truncated to
+    // the cap — it is a 400, which `fetchPostPage` swallows into an empty
+    // page, and the sitemap quietly shipped with no posts and therefore no
+    // profiles at all. Six pages of 50 keep the previous reach of 300.
     const [pages, articlePages] = await Promise.all([
         Promise.all([
-            fetchPostPage(apiBase, 1, 100),
-            fetchPostPage(apiBase, 2, 100),
-            fetchPostPage(apiBase, 3, 100),
+            fetchPostPage(apiBase, 1, PAGE_LIMIT),
+            fetchPostPage(apiBase, 2, PAGE_LIMIT),
+            fetchPostPage(apiBase, 3, PAGE_LIMIT),
+            fetchPostPage(apiBase, 4, PAGE_LIMIT),
+            fetchPostPage(apiBase, 5, PAGE_LIMIT),
+            fetchPostPage(apiBase, 6, PAGE_LIMIT),
         ]),
         Promise.all([
-            fetchArticlePage(apiBase, 1, 50),
-            fetchArticlePage(apiBase, 2, 50),
+            fetchArticlePage(apiBase, 1, PAGE_LIMIT),
+            fetchArticlePage(apiBase, 2, PAGE_LIMIT),
         ]),
     ]);
 
