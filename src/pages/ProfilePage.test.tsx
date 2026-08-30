@@ -133,6 +133,7 @@ beforeEach(() => {
         loadMore: vi.fn(),
         retry: vi.fn(),
         retryLoadMore: vi.fn(),
+        page: 1,
     });
 
     fetchArticles.mockClear();
