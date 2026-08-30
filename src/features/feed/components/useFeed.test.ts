@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { server } from "../../../../tests/msw-server";
@@ -123,19 +123,61 @@ describe("useFeed", () => {
         expect(result.current.hasMore).toBe(false);
     });
 
-    it("changeCategory() updates activeCategory and triggers a new fetch", async () => {
+    // The hook no longer tracks which tab is open — FeedPage reads that from
+    // the URL and hands it in — so switching tabs is just another fetch, and
+    // what matters is that the second one replaces the first rather than
+    // appending to it.
+    it("a fetch for another type replaces the list rather than appending", async () => {
         const { result } = renderHook(() => useFeed());
 
-        // changeCategory calls fetchPosts fire-and-forget — use waitFor to settle
-        act(() => {
-            result.current.changeCategory("TECH_NEWS");
-        });
-
-        await waitFor(() => {
-            expect(result.current.activeCategory).toBe("TECH_NEWS");
-            expect(result.current.isLoading).toBe(false);
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
         });
         expect(result.current.posts).toHaveLength(1);
+
+        await act(async () => {
+            await result.current.fetchPosts("TECH_NEWS");
+        });
+
+        expect(result.current.posts).toHaveLength(1);
+        expect(result.current.isLoading).toBe(false);
+    });
+
+    it("starts from a restored list and pages on from where it left off", async () => {
+        let page2Params = new URLSearchParams();
+        server.use(
+            http.get(`${BASE}/posts`, ({ request }) => {
+                page2Params = new URL(request.url).searchParams;
+                return HttpResponse.json({ data: [mockPost] });
+            }),
+        );
+
+        const restored = [
+            { ...mockPost, id: "restored-1" },
+            { ...mockPost, id: "restored-2" },
+        ];
+        const { result } = renderHook(() =>
+            useFeed(false, [], {
+                posts: restored,
+                page: 2,
+                hasMore: true,
+                type: "TECH_NEWS",
+            }),
+        );
+
+        // Present on the very first render: a restored feed has to be in the
+        // first commit, or the reader watches an empty column flash past.
+        expect(result.current.posts).toHaveLength(2);
+        expect(result.current.page).toBe(2);
+
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        // Page 3, still narrowed to the tab the snapshot was taken from —
+        // without the seeded type this would ask for an unfiltered page 2.
+        expect(page2Params.get("page")).toBe("3");
+        expect(page2Params.get("type")).toBe("TECH_NEWS");
     });
 
     it("addPost() prepends a post and removePost() removes it without any API call", async () => {

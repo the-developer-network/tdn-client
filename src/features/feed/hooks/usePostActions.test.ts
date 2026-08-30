@@ -30,6 +30,8 @@ vi.hoisted(() => {
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { useToastStore } from "../../../shared/store/toast.store";
+import { useFeedSnapshotStore } from "../store/feed-snapshot.store";
+import type { Post } from "../api/feed.types";
 import { usePostActions } from "./usePostActions";
 
 const BASE = "http://localhost:8080/api/v1";
@@ -44,6 +46,7 @@ beforeEach(() => {
     useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
     useAuthModalStore.getState().reset();
     useToastStore.setState({ toasts: [] });
+    useFeedSnapshotStore.setState({ key: null, snapshot: null });
 });
 
 afterEach(() => {
@@ -318,6 +321,125 @@ describe("usePostActions", () => {
             });
 
             expect(useToastStore.getState().toasts).toHaveLength(0);
+        });
+    });
+
+    describe("the feed snapshot", () => {
+        const snapshotPost: Post = {
+            id: "post-1",
+            content: "hello",
+            type: "COMMUNITY",
+            mediaUrls: [],
+            createdAt: "2026-08-30T00:00:00.000Z",
+            likeCount: 5,
+            commentCount: 0,
+            isLiked: false,
+            isBookmarked: false,
+            author: {
+                id: "user-2",
+                username: "bob",
+                avatarUrl: "",
+            },
+        };
+
+        function seedSnapshot(posts: Post[]) {
+            useFeedSnapshotStore.getState().save("entry-1", {
+                posts,
+                postPage: 1,
+                postsHaveMore: true,
+                articles: [],
+                articlePage: 1,
+                articlesHaveMore: false,
+                scrollY: 0,
+            });
+        }
+
+        function storedPost() {
+            return useFeedSnapshotStore.getState().snapshot?.posts[0];
+        }
+
+        beforeEach(() => {
+            useAuthStore.setState({
+                user: mockUser,
+                token: "tok",
+                isAuthenticated: true,
+            });
+        });
+
+        it("writes a like made on the post page back into the feed left behind", async () => {
+            seedSnapshot([snapshotPost]);
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 5, false, "post-1"),
+            );
+            await act(async () => {
+                await result.current.handleLike(mockEvent);
+            });
+
+            // Coming back no longer refetches, so the stored list is the only
+            // thing standing between the reader and a stale like button.
+            expect(storedPost()?.isLiked).toBe(true);
+            expect(storedPost()?.likeCount).toBe(6);
+        });
+
+        it("takes the like back out again when the request fails", async () => {
+            seedSnapshot([snapshotPost]);
+            server.use(
+                http.post(`${BASE}/posts/post-1/like`, () =>
+                    HttpResponse.error(),
+                ),
+            );
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 5, false, "post-1"),
+            );
+            await act(async () => {
+                await result.current.handleLike(mockEvent);
+            });
+
+            expect(storedPost()?.isLiked).toBe(false);
+            expect(storedPost()?.likeCount).toBe(5);
+        });
+
+        it("writes a bookmark back too", async () => {
+            seedSnapshot([snapshotPost]);
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 5, false, "post-1"),
+            );
+            await act(async () => {
+                await result.current.handleBookmark(mockEvent);
+            });
+
+            expect(storedPost()?.isBookmarked).toBe(true);
+        });
+
+        it("leaves a snapshot that does not hold the post untouched", async () => {
+            const other = { ...snapshotPost, id: "post-9" };
+            seedSnapshot([other]);
+
+            const { result } = renderHook(() =>
+                usePostActions(false, 5, false, "post-1"),
+            );
+            await act(async () => {
+                await result.current.handleLike(mockEvent);
+            });
+
+            // Same object, not a rebuilt copy: a like on a post the feed never
+            // showed must not churn the stored list.
+            expect(storedPost()).toBe(other);
+        });
+
+        it("does nothing when there is no snapshot to write into", async () => {
+            const { result } = renderHook(() =>
+                usePostActions(false, 5, false, "post-1"),
+            );
+            await act(async () => {
+                await result.current.handleLike(mockEvent);
+            });
+
+            expect(useFeedSnapshotStore.getState().snapshot).toBeNull();
+            expect(result.current.isLiked).toBe(true);
         });
     });
 });

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { feedApi } from "../api/feed.api";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
+import { useFeedSnapshotStore } from "../store/feed-snapshot.store";
 import { shareContent } from "../../../shared/utils/share";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { useToastStore } from "../../../shared/store/toast.store";
@@ -27,6 +28,12 @@ export function usePostActions(
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const { openModal } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
+    /**
+     * The feed the reader will come back to no longer refetches, so a like made
+     * on the post's own page has to be written into the list it left behind as
+     * well as into this component. A no-op for a post no snapshot holds.
+     */
+    const patchPost = useFeedSnapshotStore((state) => state.patchPost);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -38,8 +45,11 @@ export function usePostActions(
 
         const prevLiked = isLiked;
         const prevCount = likeCount;
-        setIsLiked(!isLiked);
-        setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
+        const nextLiked = !prevLiked;
+        const nextCount = prevLiked ? prevCount - 1 : prevCount + 1;
+        setIsLiked(nextLiked);
+        setLikeCount(nextCount);
+        patchPost(postId, { isLiked: nextLiked, likeCount: nextCount });
         setIsLikeLoading(true);
 
         try {
@@ -48,6 +58,7 @@ export function usePostActions(
         } catch (err) {
             setIsLiked(prevLiked);
             setLikeCount(prevCount);
+            patchPost(postId, { isLiked: prevLiked, likeCount: prevCount });
             addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsLikeLoading(false);
@@ -64,7 +75,8 @@ export function usePostActions(
         if (isBookmarkLoading) return;
 
         const prevBookmarked = isBookmarked;
-        setIsBookmarked(!isBookmarked);
+        setIsBookmarked(!prevBookmarked);
+        patchPost(postId, { isBookmarked: !prevBookmarked });
         setIsBookmarkLoading(true);
 
         try {
@@ -72,6 +84,7 @@ export function usePostActions(
             else await feedApi.savePost(postId);
         } catch (err) {
             setIsBookmarked(prevBookmarked);
+            patchPost(postId, { isBookmarked: prevBookmarked });
             addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsBookmarkLoading(false);

@@ -5,16 +5,32 @@ import type { ArticleSummary, GetArticlesParams } from "../api/article.types";
 
 const PAGE_LIMIT = 20;
 
-export function useArticles() {
-    const [articles, setArticles] = useState<ArticleSummary[]>([]);
+/**
+ * A list the caller already has, handed back after a browser Back. Read only
+ * by the state initialisers, so it is a mount-time decision.
+ */
+export interface ArticleRestore {
+    articles: ArticleSummary[];
+    page: number;
+    hasMore: boolean;
+    /** What page 1 was narrowed by, so `loadMore` can repeat it. */
+    params: GetArticlesParams;
+}
+
+export function useArticles(restore?: ArticleRestore) {
+    const [articles, setArticles] = useState<ArticleSummary[]>(
+        restore?.articles ?? [],
+    );
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
-    const [hasMore, setHasMore] = useState(true);
+    const [hasMore, setHasMore] = useState(restore ? restore.hasMore : true);
 
-    const pageRef = useRef(1);
-    const lastParamsRef = useRef<GetArticlesParams>({});
+    const pageRef = useRef(restore?.page ?? 1);
+    // Mirrors the ref for the caller's benefit only; see `useFeed`.
+    const [page, setPage] = useState(restore?.page ?? 1);
+    const lastParamsRef = useRef<GetArticlesParams>(restore?.params ?? {});
     // Changing a filter leaves the previous request in flight. Only the newest
     // may write state, otherwise a slow earlier response lands last and shows
     // articles for a filter the reader has already changed.
@@ -26,6 +42,7 @@ export function useArticles() {
             setError(null);
             setLoadMoreError(null);
             pageRef.current = 1;
+            setPage(1);
             lastParamsRef.current = params;
 
             const requestId = ++requestIdRef.current;
@@ -72,6 +89,7 @@ export function useArticles() {
             setArticles((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;
+            setPage(nextPage);
         } catch (err) {
             if (requestId !== requestIdRef.current) return;
             setLoadMoreError(getErrorMessage(err));
@@ -100,5 +118,7 @@ export function useArticles() {
         loadMore,
         retry,
         retryLoadMore,
+        // Not rendered from — it exists so the list can be snapshotted.
+        page,
     };
 }

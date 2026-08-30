@@ -83,6 +83,8 @@ src/
         useFeed.test.ts
         PostCard.test.tsx
         PostList.test.tsx
+      store/
+        feed-snapshot.store.test.ts
     comment/
       hooks/
         useCommentActions.test.ts
@@ -149,6 +151,7 @@ e2e/
   articles.spec.ts
   auth.spec.ts
   feed.spec.ts
+  feed-restore.spec.ts
   mobile-zoom.spec.ts
   onboarding.spec.ts
   profile.spec.ts
@@ -483,9 +486,9 @@ Uses fake timers (`shouldAdvanceTime: true`) to jump the 2 s autosave debounce.
 
 #### `usePostActions` (`src/features/feed/hooks/usePostActions.test.ts`)
 
-12 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`, `handleShare`.
+17 tests. Covers `handleLike`, `handleBookmark`, `handleDelete`, `handleShare`, and the write-back into the feed snapshot.
 
-**Requires `vi.hoisted` localStorage stub** (transitively imports `useAuthStore`).
+**Requires `vi.hoisted` localStorage stub** (transitively imports `useAuthStore`). Also reset `useFeedSnapshotStore` in `beforeEach` — leaked state between tests is the usual failure here.
 
 ```ts
 // Per-test server.use() override for the optimistic-rollback scenario
@@ -512,6 +515,11 @@ expect(result.current.likeCount).toBe(5); // rolled back
 | `handleShare` — copy succeeds    | `writeText` called with `/post/:id`; info toast                    |
 | `handleShare` — copy rejected    | Error toast — the button must not fail silently                    |
 | `handleShare` — sheet dismissed  | No toast at all (`AbortError` is a cancel, not a failure)          |
+| Like with a snapshot holding it  | `isLiked`/`likeCount` written into the stored feed as well          |
+| That like fails                  | Taken back out of the stored feed too                              |
+| Bookmark with a snapshot         | `isBookmarked` written into the stored feed                         |
+| Snapshot without the post        | Stored list untouched **by identity** — a miss must not rebuild it |
+| No snapshot at all               | No-op; the local optimistic update still applies                   |
 
 > **Note:** `openModal()` defaults `step` to `"initial"`, overwriting a preceding `setStep("login")` call. Assert `isOpen: true` only — do not assert the step value.
 
@@ -838,17 +846,18 @@ afterEach(() => {
 
 #### `useFeed` (`src/features/feed/components/useFeed.test.ts`)
 
-6 tests. `fetchPosts` is called explicitly (no auto-fetch on mount). `changeCategory` calls `fetchPosts` fire-and-forget — use `waitFor` to wait for async settlement.
+11 tests. `fetchPosts` is called explicitly (no auto-fetch on mount) and is fire-and-forget — use `waitFor` to wait for async settlement, never `await act`.
+
+The hook holds no notion of which tab is open: the type is passed into `fetchPosts` and remembered only so `loadMore` can repeat it. `FeedPage` reads the tab from the URL instead (see its section below), which is what survives a Back.
 
 **Requires `vi.hoisted` localStorage stub** (`apiClient` reads `localStorage` at runtime).
 
 ```ts
-// changeCategory fires fetchPosts without awaiting it — waitFor is required
+// fetchPosts does not await — waitFor is required
 act(() => {
-    result.current.changeCategory("TECH_NEWS");
+    result.current.fetchPosts("TECH_NEWS");
 });
 await waitFor(() => {
-    expect(result.current.activeCategory).toBe("TECH_NEWS");
     expect(result.current.isLoading).toBe(false);
 });
 expect(result.current.posts).toHaveLength(1);
@@ -875,7 +884,10 @@ server.use(
 | `fetchPosts()` — API error          | `error` set to message; `posts=[]`; `isLoading=false` |
 | Server returns < 20 items           | `hasMore=false`                                       |
 | `loadMore()` when `hasMore=true`    | Page 2 fetched; posts appended; `hasMore` updated     |
-| `changeCategory("TECH_NEWS")`       | `activeCategory` updated; new fetch triggered         |
+| A fetch for another type            | Replaces the list rather than appending it            |
+| Mounted with a `restore`            | Starts from the given list and pages on from its page rather than page 1 |
+| A superseded slow response          | Never overwrites the list a newer fetch produced      |
+| `loadMore()` after a filtered page 1 | Repeats the original params instead of rebuilding them |
 | `addPost()` then `removePost()`     | List mutated immediately; no API call                 |
 
 #### `useDeleteAccount` (`src/features/settings/hooks/useDeleteAccount.test.ts`)
@@ -1220,7 +1232,9 @@ The illustrated empty state belongs to the page and covers all three collections
 
 The tab strip is **Community, News, Updates, Articles**. Articles replaced Job postings in that fourth slot; `JOB_POSTING` is deliberately still in the `PostType` union so existing job posts keep rendering wherever they are linked, and `FeedPage.test.tsx` asserts the four tabs render **and** that no "Jobs" button exists — reinstating the tab has to be a deliberate edit, not a silent regression.
 
-Articles are a separate resource, not a `PostType`, so the tab cannot live in `useFeed`'s `activeCategory`. The page owns a wider `activeTab` instead and branches on it. That makes two pieces of state that must agree, which is what these tests hold down — and it is why they drive the strip by **clicking**, never by mocking `useFeed`'s `activeCategory`.
+Articles are a separate resource, not a `PostType`, so the tab cannot live inside `useFeed`. It lives in the **query string** instead — `?tab=news&following=1&categories=AI,BACKEND` — and `useFeed` no longer carries an `activeCategory`/`changeCategory` pair at all. That is what makes Back correct by construction: opening a post unmounts the page, and the URL is the one piece of it the browser already restores. It also makes a filtered feed a link someone can send. The slugs (`community`, `news`, `updates`, `articles`) are their own vocabulary rather than the `PostType` values, so renaming a post type in the API cannot break a shared link.
+
+The tests therefore drive the strip by **clicking** and assert on the resulting URL, never by mocking hook internals. Filter and tab writes use `replace: true`: pushing would turn Back into an undo stack for chip taps — three taps, three presses to leave the feed — when Back's job here is to leave.
 
 | Scenario                             | Assert                                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------------------------ |
@@ -1232,6 +1246,29 @@ Articles are a separate resource, not a `PostType`, so the tab cannot live in `u
 | Articles → Community                 | Post list returns and refetches                                                            |
 | "Following" toggle — unauthenticated | Auth modal opened                                                                          |
 | "Following" toggle — authenticated   | `followedOnly=true` appended to request                                                    |
+| Tab clicked                          | `?tab=news` written to the URL, replacing the history entry                               |
+| Mounted at `?tab=updates`            | Updates opens; an unknown slug falls back to Community rather than an empty page           |
+| Chips and "Following" toggled        | Both land in the URL, and are read back out of it on the next mount                        |
+| Three chip taps                      | One history entry, not three                                                               |
+
+**Coming back (`describe("surviving a Back")`)**
+
+The URL restores the tab; it cannot restore the list. That is `useFeedSnapshotStore` (`src/features/feed/store/feed-snapshot.store.ts`), holding one entry — posts, articles, the page each had reached, and the scroll offset — filed under the router's `location.key`.
+
+Three rules the tests hold down:
+
+- **Only a POP restores.** A key that does not match is a different visit — a reload resets it, a fresh navigation gets its own — and a fresh visit must fetch. Asking for the feed again (the Home link, a notification) is a PUSH and gets a current feed.
+- **The snapshot is read once, in a state initialiser.** One arriving mid-render would swap the list out from under the reader.
+- **Scroll is captured on every scroll event, not at unmount.** Leaving swaps in a shorter page and the browser clamps `window.scrollY` before any cleanup runs, so by then the number is already gone.
+
+| Scenario                             | Assert                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Back onto a matching entry           | The stored list renders; `fetchPosts` **not** called again                                 |
+| Back onto a matching entry           | `window.scrollTo` called with the offset the reader left from                              |
+| Left before the first page arrived   | Nothing saved — restoring an empty feed would strand the reader on a list that never refetches |
+| Tab changed after a restore          | Fetches again; the restore is spent, not sticky                                            |
+
+Restoring means **not** refetching, so a like or bookmark made on the post's own page has to be written back by hand. `usePostActions` calls `patchPost` alongside its own optimistic update and again on rollback; `feed-snapshot.store.test.ts` pins the misses down by **identity** — no snapshot, or a post the snapshot does not hold, must not rebuild the stored list, because every like anywhere in the app comes through that call.
 
 **Articles without a cover are the normal case.** The API leaves `coverImageUrl` null on most articles and there is no generated stand-in — the same choice Medium makes. Both the card and the reading view are tested for it, because the failure mode is subtle: a reserved-but-empty image slot reads as a picture that failed to load rather than as an article that has none.
 
@@ -1419,6 +1456,11 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `feed.spec`           | Mocked posts render as `<article>` elements                                    |
 | `feed.spec`           | Clicking "News" tab sends `type=TECH_NEWS` query param                         |
 | `feed.spec`           | Clicking like triggers optimistic count increment                              |
+| `feed-restore.spec`   | Back from a post keeps the News tab instead of resetting to Community          |
+| `feed-restore.spec`   | Back does not refetch the feed it already had (request count unchanged)        |
+| `feed-restore.spec`   | The Home link is a PUSH, so it fetches a current, unfiltered feed              |
+| `feed-restore.spec`   | Back returns to the offset the post was clicked from, not to the top           |
+| `feed-restore.spec`   | A like made on the post page shows on the feed the reader comes back to        |
 | `profile.spec`        | Visit `/profile/:username` → full name heading visible                         |
 | `profile.spec`        | `isMe: true` response → "Edit Profile" button visible                          |
 | `profile.spec`        | Following-list follow button is ≥44px tall at 390px wide, and unfollows rather than opening the profile |

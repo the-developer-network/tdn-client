@@ -10,23 +10,45 @@ import type {
 
 const PAGE_LIMIT = 20;
 
+/**
+ * A feed the caller already has, handed back after a browser Back. Read only
+ * by the state initialisers, so it is a mount-time decision: a snapshot that
+ * arrived later would replace the list the reader is looking at.
+ */
+export interface FeedRestore {
+    posts: Post[];
+    page: number;
+    hasMore: boolean;
+    /**
+     * The type page 1 was fetched with. Seeds `lastFetchParamsRef`, or the
+     * first `loadMore` after a restore would ask for page 2 of an unfiltered
+     * feed and append posts from another tab.
+     */
+    type: PostType;
+}
+
 export function useFeed(
     followedOnly: boolean = false,
     categories: PostCategory[] = [],
+    restore?: FeedRestore,
 ) {
     const { t } = useI18n();
-    const [posts, setPosts] = useState<Post[]>([]);
+    const [posts, setPosts] = useState<Post[]>(restore?.posts ?? []);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
-    const [activeCategory, setActiveCategory] = useState<PostType>("COMMUNITY");
-    const [hasMore, setHasMore] = useState(true);
-    const pageRef = useRef(1);
+    const [hasMore, setHasMore] = useState(restore ? restore.hasMore : true);
+    const pageRef = useRef(restore?.page ?? 1);
+    // The ref stays the source of truth for the async paths, which read and
+    // advance it inside a single tick. This mirror exists only to hand the
+    // page out: reading a ref during render is not allowed, and rendering
+    // from one would be wrong anyway.
+    const [page, setPage] = useState(restore?.page ?? 1);
     const followedOnlyRef = useRef(followedOnly);
     const categoriesRef = useRef(categories);
     const lastFetchParamsRef = useRef<PostType | GetPostsParams | undefined>(
-        undefined,
+        restore?.type,
     );
     const requestIdRef = useRef(0);
 
@@ -39,7 +61,7 @@ export function useFeed(
     }, [categories]);
 
     // Page 2 has to repeat whatever narrowed page 1, so both go through here.
-    // Rebuilding `loadMore` from `activeCategory` alone dropped a `tag` filter
+    // Rebuilding `loadMore` from the post type alone dropped a `tag` filter
     // and appended unrelated posts.
     const buildParams = useCallback(
         (
@@ -70,6 +92,7 @@ export function useFeed(
             setError(null);
             setLoadMoreError(null);
             pageRef.current = 1;
+            setPage(1);
             lastFetchParamsRef.current = arg;
 
             // Switching tabs quickly leaves several requests in flight. Only
@@ -107,6 +130,7 @@ export function useFeed(
             setPosts((prev) => [...prev, ...data]);
             setHasMore(data.length === PAGE_LIMIT);
             pageRef.current = nextPage;
+            setPage(nextPage);
         } catch {
             if (requestId !== requestIdRef.current) return;
             setLoadMoreError(t("postList.loadMoreError"));
@@ -114,15 +138,6 @@ export function useFeed(
             setIsLoadingMore(false);
         }
     }, [isLoadingMore, hasMore, t, buildParams]);
-
-    const changeCategory = useCallback(
-        (type: PostType) => {
-            setActiveCategory(type);
-            setHasMore(true);
-            fetchPosts(type);
-        },
-        [fetchPosts],
-    );
 
     const addPost = useCallback((post: Post) => {
         setPosts((prev) => [post, ...prev]);
@@ -149,12 +164,13 @@ export function useFeed(
         loadMoreError,
         fetchPosts,
         retry,
-        activeCategory,
-        changeCategory,
         addPost,
         removePost,
         hasMore,
         loadMore,
         retryLoadMore,
+        // Nothing renders from this — it exists so the page the reader had
+        // reached can be snapshotted and paged on from after a Back.
+        page,
     };
 }
