@@ -417,7 +417,7 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 ### Layer 3a — Cloudflare Worker (`worker/index.ts`)
 
-14 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
+27 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
 
 `vitest.config.ts` includes `worker/**` for exactly this reason. The Worker's `fetch` is called directly with a request and a stub `env`; there is no Miniflare in the loop.
 
@@ -433,6 +433,13 @@ The `ASSETS` stub **records the paths it was asked for**. Every routing bug in t
 | `/sitemap.xml`                               | Generated XML; asset store never consulted                   |
 | `env.API_BASE` set                           | Profile, post and sitemap all read from it, not production   |
 | `env.API_BASE` unset                         | Production API used — deployment needs no setting            |
+| Any injected page                            | Exactly one `<title>` and one `<link rel="canonical">`       |
+| An article title                             | Branded `… · TDN`; a title already carrying "TDN" is left alone |
+| `/sitemap.xml` against a 50-capped `/posts`  | Posts and profiles still advertised                          |
+
+> **The shell's own `<title>` must be removed, not appended past.** A second `<title>` does not override the first, and the first is the one search engines read. Injecting without stripping left every article, post and profile on the site titled "TDN - The Developer Network" — invisible when sharing a link, because the OG tags were correct all along, and fatal when searching for one. The e2e `worker` project asserts this against the **real built shell**, where the tag is indented inside `<head>`; the unit fixture cannot prove that on its own.
+
+> **Both list endpoints cap `limit` at 50 — 100 is a 400, not a truncation.** `fetchPostPage` swallows a failed page into `[]`, so asking for 100 cost the live sitemap every post *and* every profile (profiles are derived from post authors) while still returning 200 and looking healthy. The handler in the regression test enforces the cap the real API enforces; the old one ignored the query string entirely, which is why nothing caught it.
 
 > The `API_BASE` tests register a handler for **both** origins and assert the recorded request URLs, rather than only asserting the tags. `tests/setup.ts` runs MSW with `onUnhandledRequest: "warn"`, so a request to the wrong origin with no handler escapes to the real network and the spec passes against the bug it exists to catch. Requests are collected with `server.events.on("request:start", …)` and released with `server.events.removeAllListeners()` in `afterEach`.
 

@@ -116,6 +116,36 @@ test.describe("meta injection", () => {
         expect(html.match(/property="og:title"/g)).toHaveLength(1);
         expect(html.match(/name="description"/g)).toHaveLength(1);
     });
+
+    /**
+     * Against the real built shell, not a fixture. The shell ships its own
+     * `<title>`, indented inside `<head>`, and a second one appended below it
+     * does not win — the first in the document is the one search engines read.
+     * Every page on the site was titled "TDN - The Developer Network" because
+     * of it, which is invisible when sharing a link (the OG tags were right)
+     * and fatal when searching for one.
+     */
+    test("the shell's own title is replaced, not appended to", async ({
+        request,
+    }) => {
+        const html = await (await request.get(`/post/${STUB_POST_ID}`)).text();
+
+        const titles = [...html.matchAll(/<title>([\s\S]*?)<\/title>/g)].map(
+            (m) => m[1],
+        );
+        expect(titles).toHaveLength(1);
+        expect(titles[0]).toContain("on TDN");
+    });
+
+    test("a canonical points at the page it was served for", async ({
+        request,
+    }) => {
+        const html = await (await request.get(`/post/${STUB_POST_ID}`)).text();
+
+        const canonicals = html.match(/<link\s+rel="canonical"[^>]*>/g) ?? [];
+        expect(canonicals).toHaveLength(1);
+        expect(canonicals[0]).toContain(`/post/${STUB_POST_ID}`);
+    });
 });
 
 test.describe("/sitemap.xml", () => {

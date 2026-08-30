@@ -466,4 +466,157 @@ describe("worker routing", () => {
             expect(outgoing).toEqual([`${API}/profiles/alice`]);
         });
     });
+
+    /**
+     * The crawler-visible `<title>`, which is what a search result is titled
+     * with. It used to be left at the shell's "TDN", so every article, post
+     * and profile on the site shared one title and none could be found by its
+     * own name — the OG tags were right the whole time, which is why sharing
+     * a link looked fine and searching did not.
+     */
+    describe("the document title", () => {
+        const article = {
+            slug: "clean-architecture",
+            title: "Clean Architecture",
+            excerpt: "Keeping transport concerns out of the domain layer.",
+            coverImageUrl: null,
+            author: { username: "bob", fullName: "Bob", avatarUrl: "" },
+        };
+
+        function titlesOf(html: string): string[] {
+            return [...html.matchAll(/<title>([\s\S]*?)<\/title>/g)].map(
+                (m) => m[1],
+            );
+        }
+
+        it("carries the article's own name, once", async () => {
+            server.use(
+                http.get(`${API}/articles/:slug`, () =>
+                    HttpResponse.json({ data: article }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/articles/clean-architecture"), env)
+            ).text();
+
+            // Exactly one: a second `<title>` does not override the first, so
+            // leaving the shell's in place would undo the whole injection.
+            expect(titlesOf(html)).toEqual(["Clean Architecture · TDN"]);
+        });
+
+        it("does not brand a title that is branded already", async () => {
+            server.use(
+                http.get(`${API}/posts/:id`, () =>
+                    HttpResponse.json({
+                        data: {
+                            id: "p1",
+                            content: "Hello",
+                            mediaUrls: [],
+                            author: {
+                                username: "bob",
+                                fullName: "Bob Builder",
+                                avatarUrl: "",
+                            },
+                        },
+                    }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/post/p1"), env)
+            ).text();
+
+            expect(titlesOf(html)).toEqual(["Bob Builder on TDN"]);
+        });
+
+        it("gives the shell's own routes the site name", async () => {
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/explore"), env)
+            ).text();
+
+            expect(titlesOf(html)).toEqual(["TDN - The Developer Network"]);
+        });
+
+        it("points a canonical at the page, and only one", async () => {
+            server.use(
+                http.get(`${API}/articles/:slug`, () =>
+                    HttpResponse.json({ data: article }),
+                ),
+            );
+            const { env } = makeEnv();
+
+            const html = await (
+                await worker.fetch(get("/articles/clean-architecture"), env)
+            ).text();
+
+            const canonicals = [
+                ...html.matchAll(/<link\s+rel="canonical"[^>]*>/g),
+            ];
+            expect(canonicals).toHaveLength(1);
+            expect(canonicals[0][0]).toContain(
+                'href="https://developernetwork.net/articles/clean-architecture"',
+            );
+        });
+    });
+
+    /**
+     * Regression. The sitemap asked `/posts` for `limit=100`; both list
+     * endpoints cap it at 50 and answer **400**, which `fetchPostPage`
+     * swallows into an empty page. Live, that meant a sitemap with no posts
+     * and — since profiles are derived from post authors — no profiles
+     * either, while still returning 200 and looking healthy.
+     *
+     * The old handler ignored the query string, so nothing caught it. This one
+     * enforces the cap the real API enforces.
+     */
+    describe("the page size the sitemap asks for", () => {
+        function capAt50() {
+            server.use(
+                http.get(`${API}/posts`, ({ request }) => {
+                    const limit = Number(
+                        new URL(request.url).searchParams.get("limit") ?? "0",
+                    );
+                    if (limit > 50) {
+                        return HttpResponse.json(
+                            { title: "Validation Error" },
+                            { status: 400 },
+                        );
+                    }
+                    return HttpResponse.json({
+                        data: [
+                            {
+                                id: "p1",
+                                createdAt: "2026-01-02T03:04:05.000Z",
+                                author: { username: "alice" },
+                            },
+                        ],
+                    });
+                }),
+                http.get(`${API}/articles`, () =>
+                    HttpResponse.json({ data: [] }),
+                ),
+            );
+        }
+
+        it("stays within the cap, so posts and profiles survive", async () => {
+            capAt50();
+            const { env } = makeEnv();
+
+            const xml = await (
+                await worker.fetch(get("/sitemap.xml"), env)
+            ).text();
+
+            expect(xml).toContain(
+                "<loc>https://developernetwork.net/post/p1</loc>",
+            );
+            expect(xml).toContain(
+                "<loc>https://developernetwork.net/profile/alice</loc>",
+            );
+        });
+    });
 });
