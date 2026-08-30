@@ -127,6 +127,7 @@ src/
       useNetworkStatus.test.ts
       useTranslation.test.ts
     utils/
+      assert-list.test.ts
       error-handler.test.ts
   pages/
     ArticleDetailPage.test.tsx
@@ -443,6 +444,7 @@ Use `renderHook` + `act` from `@testing-library/react`. Override MSW handlers pe
 
 **Key patterns:**
 
+- **A list payload is checked before it is committed** (`assertList`, `src/shared/utils/assert-list.ts`). The tempting shape — `setPosts(data)` and then `data.length` — does throw, and the caller's `catch` does show the error, but the state is by then holding a `null` the rest of the app believes is an array. That crash resurfaced at **unmount**, inside the feed snapshot, where it took the whole route down and cancelled a redirect the app was in the middle of. `e2e/onboarding.spec.ts` was the only thing that caught it, and only indirectly; the hook tests now pin it down directly.
 - Hooks that import `useAuthStore` — add `vi.hoisted` localStorage stub. jsdom 29 `Storage.clear()` is broken; a Map-backed stub is required so that Zustand `persist` captures a working storage at module-evaluation time.
 - Hooks that auto-fetch inside `useEffect` — use `waitFor` instead of `await act` to wait for the async update to settle.
 - Hooks that expose notifications / other shared state via a Zustand store — assert against `useXxxStore.getState()`, not hook return values.
@@ -453,7 +455,7 @@ Three hooks, each cloned from an existing model rather than invented:
 
 | Hook                | Modelled on      | What its tests pin down                                                                                                                                                                       |
 | ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useArticles`       | `useFeed`        | `hasMore` inferred from a full page; page 2 repeats page 1's filters; a failed page 2 keeps page 1 on screen; a stale response from an abandoned filter never overwrites the current list     |
+| `useArticles`       | `useFeed`        | `hasMore` inferred from a full page; page 2 repeats page 1's filters; a failed page 2 keeps page 1 on screen; a stale response from an abandoned filter never overwrites the current list; a body that is not a list fails as this request rather than becoming state |
 | `useArticle`        | `useProfile`     | Loading is derived from the slug, so the previous article never shows while the next loads; `retry` returns to loading rather than leaving the stale error; a 404 reads as ordinary not-found |
 | `useArticleActions` | `usePostActions` | Optimistic like/bookmark with rollback plus an error toast; guest interactions open the auth modal; share uses the article's own URL                                                          |
 
@@ -885,6 +887,7 @@ server.use(
 | Server returns < 20 items           | `hasMore=false`                                       |
 | `loadMore()` when `hasMore=true`    | Page 2 fetched; posts appended; `hasMore` updated     |
 | A fetch for another type            | Replaces the list rather than appending it            |
+| A body that is not a list           | `posts` stays `[]` and the error shows; page 2 likewise keeps page 1 on screen |
 | Mounted with a `restore`            | Starts from the given list and pages on from its page rather than page 1 |
 | A superseded slow response          | Never overwrites the list a newer fetch produced      |
 | `loadMore()` after a filtered page 1 | Repeats the original params instead of rebuilding them |

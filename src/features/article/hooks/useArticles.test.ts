@@ -262,4 +262,47 @@ describe("useArticles", () => {
 
         expect(result.current.articles[0].id).toBe("fresh");
     });
+
+    // The same shape as the post feed, and the same reason: a body that is not
+    // a list must fail as this request, never as a `null` sitting in state
+    // waiting to crash something later.
+    it("keeps the list an array when the body is not one", async () => {
+        server.use(
+            http.get(`${BASE}/articles`, () =>
+                HttpResponse.json({ data: null }),
+            ),
+        );
+
+        const { result } = renderHook(() => useArticles());
+
+        await act(async () => {
+            await result.current.fetchArticles();
+        });
+
+        expect(result.current.articles).toEqual([]);
+        expect(result.current.error).not.toBeNull();
+    });
+
+    it("keeps page 1 on screen when page 2 comes back mis-shaped", async () => {
+        server.use(
+            http.get(`${BASE}/articles`, ({ request }) => {
+                const p = Number(
+                    new URL(request.url).searchParams.get("page") ?? "1",
+                );
+                if (p === 1) return HttpResponse.json({ data: page(20) });
+                return HttpResponse.json({ data: null });
+            }),
+        );
+
+        const { result } = renderHook(() => useArticles());
+        await act(async () => {
+            await result.current.fetchArticles();
+        });
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(result.current.articles).toHaveLength(20);
+        expect(result.current.loadMoreError).not.toBeNull();
+    });
 });

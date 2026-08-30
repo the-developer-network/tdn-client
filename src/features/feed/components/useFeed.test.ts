@@ -311,4 +311,53 @@ describe("useFeed", () => {
 
         expect(page2Tag).toBe("react");
     });
+
+    /**
+     * Regression. The body used to be committed and only then read for
+     * `.length`, so the throw left `posts` holding a `null` while the reader
+     * saw an ordinary error. Nothing surfaced it until the page unmounted and
+     * the feed snapshot read `posts.length` — which took the whole route down,
+     * and with it the redirect the app was in the middle of.
+     */
+    it("keeps the list an array when the body is not one", async () => {
+        server.use(
+            http.get(`${BASE}/posts`, () => HttpResponse.json({ data: null })),
+        );
+
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+
+        expect(result.current.posts).toEqual([]);
+        expect(result.current.error).toBe("Posts could not be loaded.");
+    });
+
+    it("keeps page 1 on screen when page 2 comes back mis-shaped", async () => {
+        const page1 = Array.from({ length: 20 }, (_, i) => ({
+            ...mockPost,
+            id: `post-${i + 1}`,
+        }));
+        server.use(
+            http.get(`${BASE}/posts`, ({ request }) => {
+                const page = Number(
+                    new URL(request.url).searchParams.get("page") ?? "1",
+                );
+                if (page === 1) return HttpResponse.json({ data: page1 });
+                return HttpResponse.json({ data: null });
+            }),
+        );
+
+        const { result } = renderHook(() => useFeed());
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+        await act(async () => {
+            await result.current.loadMore();
+        });
+
+        expect(result.current.posts).toHaveLength(20);
+        expect(result.current.loadMoreError).not.toBeNull();
+    });
 });
