@@ -38,6 +38,10 @@ const en = {
     "postList.tryAgain": "Try Again",
     "postList.loadMoreError": "Failed to load more posts.",
 
+    "quoteList.empty": "No quotes yet",
+    "quoteList.error": "Quotes could not be loaded.",
+    "quoteList.loadMoreError": "Failed to load more quotes.",
+
     "articleList.empty": "No articles yet",
     "articleList.noMore": "No more articles",
     "articleList.error": "Articles could not be loaded.",
@@ -119,6 +123,20 @@ const en = {
     "post.deleteBody":
         "This action cannot be undone. The post will be permanently removed.",
     "post.shareText": "You should check out this post!",
+    "post.comments": "Comments",
+    "post.like": "Like post",
+    "post.bookmark": "Bookmark post",
+    "post.share": "Share post",
+    "post.quote": "Quote post",
+    "post.reposted": "reposted",
+    "post.viewQuotes": "View quotes",
+
+    "quote.title": "Quote post",
+    "quote.placeholder": "Add a comment (optional)",
+    "quote.submit": "Quote",
+    "quote.posting": "Posting...",
+    "quote.success": "Your quote has been shared.",
+    "quote.tooLong": "A quote can be at most {{n}} characters.",
 
     "commentBox.placeholder": "Write a comment...",
     "commentBox.reply": "Reply",
@@ -152,6 +170,7 @@ const en = {
     "notif.comment": "@{{username}} commented on your post",
     "notif.commentLike": "@{{username}} liked your comment",
     "notif.commentReply": "@{{username}} replied to your comment",
+    "notif.quote": "@{{username}} quoted your post",
     "notif.generic": "@{{username}} sent you a notification",
 
     "notif.justNow": "just now",
@@ -365,6 +384,7 @@ const en = {
 
     "page.post": "Post",
     "page.postNotFound": "Post not found.",
+    "page.quotes": "Quotes",
     "page.article": "Article",
     "page.articleNotFound": "Article not found.",
     "page.comment": "Comment",
@@ -608,6 +628,10 @@ const tr: Record<TranslationKey, string> = {
     "postList.tryAgain": "Tekrar Dene",
     "postList.loadMoreError": "Daha fazla gönderi yüklenemedi.",
 
+    "quoteList.empty": "Henüz alıntı yok",
+    "quoteList.error": "Alıntılar yüklenemedi.",
+    "quoteList.loadMoreError": "Daha fazla alıntı yüklenemedi.",
+
     "articleList.empty": "Henüz makale yok",
     "articleList.noMore": "Başka makale yok",
     "articleList.error": "Makaleler yüklenemedi.",
@@ -688,6 +712,20 @@ const tr: Record<TranslationKey, string> = {
     "post.deleteBody":
         "Bu işlem geri alınamaz. Gönderi kalıcı olarak kaldırılacak.",
     "post.shareText": "Bu gönderiye bir göz atmalısın!",
+    "post.comments": "Yorumlar",
+    "post.like": "Gönderiyi beğen",
+    "post.bookmark": "Gönderiyi kaydet",
+    "post.share": "Gönderiyi paylaş",
+    "post.quote": "Gönderiyi alıntıla",
+    "post.reposted": "yeniden paylaştı",
+    "post.viewQuotes": "Alıntıları gör",
+
+    "quote.title": "Gönderiyi alıntıla",
+    "quote.placeholder": "Bir yorum ekle (opsiyonel)",
+    "quote.submit": "Alıntıla",
+    "quote.posting": "Paylaşılıyor...",
+    "quote.success": "Alıntın paylaşıldı.",
+    "quote.tooLong": "Bir alıntı en fazla {{n}} karakter olabilir.",
 
     "commentBox.placeholder": "Yorum yaz...",
     "commentBox.reply": "Yanıtla",
@@ -721,6 +759,7 @@ const tr: Record<TranslationKey, string> = {
     "notif.comment": "@{{username}} gönderinize yorum yaptı",
     "notif.commentLike": "@{{username}} yorumunuzu beğendi",
     "notif.commentReply": "@{{username}} yorumunuza cevap verdi",
+    "notif.quote": "@{{username}} gönderini alıntıladı",
     "notif.generic": "@{{username}} size bir bildirim gönderdi",
 
     "notif.justNow": "az önce",
@@ -936,6 +975,7 @@ const tr: Record<TranslationKey, string> = {
 
     "page.post": "Gönderi",
     "page.postNotFound": "Gönderi bulunamadı.",
+    "page.quotes": "Alıntılar",
     "page.article": "Makale",
     "page.articleNotFound": "Makale bulunamadı.",
     "page.comment": "Yorum",

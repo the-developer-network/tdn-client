@@ -335,6 +335,8 @@ describe("usePostActions", () => {
             commentCount: 0,
             isLiked: false,
             isBookmarked: false,
+            quoteCount: 0,
+            quotedPost: null,
             author: {
                 id: "user-2",
                 username: "bob",
@@ -399,6 +401,27 @@ describe("usePostActions", () => {
 
             expect(storedPost()?.isLiked).toBe(false);
             expect(storedPost()?.likeCount).toBe(5);
+        });
+
+        it("moves the quote badge and writes it back after a quote is created", () => {
+            seedSnapshot([{ ...snapshotPost, quoteCount: 2 }]);
+
+            const { result } = renderHook(() =>
+                usePostActions(
+                    false,
+                    5,
+                    false,
+                    "post-1",
+                    undefined,
+                    undefined,
+                    2,
+                ),
+            );
+
+            act(() => result.current.registerQuote());
+
+            expect(result.current.quoteCount).toBe(3);
+            expect(storedPost()?.quoteCount).toBe(3);
         });
 
         it("writes a bookmark back too", async () => {

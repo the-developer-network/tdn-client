@@ -12,6 +12,8 @@ function makePost(id: string, overrides: Partial<Post> = {}): Post {
         commentCount: 2,
         isLiked: false,
         isBookmarked: false,
+        quoteCount: 0,
+        quotedPost: null,
         author: {
             id: "user-2",
             username: "bob",
@@ -92,8 +94,13 @@ test.describe("Feed page", () => {
         await page.goto("/");
         await page.locator("article").first().waitFor();
 
-        // Like button is the second action button in the article (index 1)
-        const likeButton = page.locator("article").first().locator("button").nth(1);
+        // By name, not by index: the action row has grown before (the quote
+        // controls landed between the comment and like buttons) and an
+        // index-based locator silently starts clicking the wrong control.
+        const likeButton = page
+            .locator("article")
+            .first()
+            .getByRole("button", { name: "Like post" });
         await likeButton.click();
 
         // Optimistic update: 5 → 6

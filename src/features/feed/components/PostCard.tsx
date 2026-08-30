@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Post, PostType } from "../api/feed.types";
+import { Repeat2 } from "lucide-react";
+import type { Post, PostType, QuotedPost } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
+import { QuotedPostCard } from "./QuotedPostCard";
+import { QuoteComposerModal } from "./QuoteComposerModal";
+import { useAuthStore } from "../../../core/auth/auth.store";
+import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
@@ -17,6 +22,12 @@ const BADGE_STYLES: Record<PostType, string> = {
 
 interface PostCardProps extends Post {
     onDeleted?: (postId: string) => void;
+    /**
+     * Handed the quote the moment the server returns it, so the list this
+     * card sits in can show it without waiting out the feed's 60 s cache.
+     * Optional: a page with no list to prepend to simply omits it.
+     */
+    onQuoted?: (post: Post) => void;
 }
 
 export function PostCard({
@@ -30,13 +41,26 @@ export function PostCard({
     commentCount,
     isLiked,
     isBookmarked = false,
+    quoteCount = 0,
+    quotedPost = null,
     onDeleted,
+    onQuoted,
 }: PostCardProps) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
     const isVideo = (url: string) => /\.(mp4|webm|ogg|mov)$/i.test(url);
     const navigate = useNavigate();
     const { t, locale } = useI18n();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const { openModal } = useAuthModalStore();
+
+    /**
+     * A quote with nothing written on it is a plain repost. Rendering the
+     * usual text block for it would leave an empty speech bubble above the
+     * card, so the row says who reshared it and shows the card alone.
+     */
+    const isRepost = quotedPost !== null && content.trim() === "";
 
     const goToProfile = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -62,6 +86,8 @@ export function PostCard({
         isBookmarkLoading,
         handleBookmark,
         handleShare,
+        quoteCount: quotes,
+        registerQuote,
         isDeleteLoading,
         handleDelete,
     } = usePostActions(
@@ -71,11 +97,44 @@ export function PostCard({
         id,
         `${author.username} post`,
         () => onDeleted?.(id),
+        quoteCount,
     );
 
     const handleCardClick = () => {
         if (hasTextSelection()) return;
         navigate(`/post/${id}`);
+    };
+
+    const handleOpenQuoteModal = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!isAuthenticated) {
+            openModal();
+            return;
+        }
+        setIsQuoteModalOpen(true);
+    };
+
+    /**
+     * This post, in the trimmed shape the embedded card renders. The API
+     * sends that shape on a quote it returns; the composer needs it before
+     * one exists, so it is projected from the fields already in hand.
+     */
+    const quotedForComposer: QuotedPost = {
+        id,
+        content,
+        mediaUrls,
+        createdAt,
+        author,
+    };
+
+    const handleQuoted = (post: Post) => {
+        registerQuote();
+        onQuoted?.(post);
+    };
+
+    const handleViewQuotes = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/posts/${id}/quotes`);
     };
 
     const handleOpenDeleteModal = (e: React.MouseEvent) => {
@@ -144,64 +203,76 @@ export function PostCard({
                             </span>
                         </div>
 
-                        <RichText
-                            text={displayContent}
-                            className="mt-2 text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap"
-                        />
-                        {(showTranslate || isTranslated || translateError) && (
-                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                {!isTranslated && !translateError && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            void handleTranslate();
-                                        }}
-                                        disabled={isTranslatingContent}
-                                        className="text-xs text-blue-400 hover:underline disabled:opacity-50"
-                                    >
-                                        {isTranslatingContent
-                                            ? t("post.translating")
-                                            : t("post.translate")}
-                                    </button>
-                                )}
-                                {isTranslated && (
-                                    <>
-                                        <span className="text-xs text-white/30">
-                                            {t("post.translated")}
-                                        </span>
-                                        <span className="text-white/20">·</span>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRevert();
-                                            }}
-                                            className="text-xs text-white/40 hover:underline"
-                                        >
-                                            {t("post.showOriginal")}
-                                        </button>
-                                    </>
-                                )}
-                                {translateError && (
-                                    <>
-                                        <span className="text-xs text-red-400">
-                                            {translateError}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRevert();
-                                            }}
-                                            className="text-xs text-white/40 hover:underline"
-                                        >
-                                            {t("post.dismiss")}
-                                        </button>
-                                    </>
-                                )}
+                        {isRepost ? (
+                            <div className="mt-1 flex items-center gap-1.5 text-xs text-white/40">
+                                <Repeat2 className="h-4 w-4" />
+                                <span>{t("post.reposted")}</span>
                             </div>
+                        ) : (
+                            <RichText
+                                text={displayContent}
+                                className="mt-2 text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap"
+                            />
                         )}
+                        {!isRepost &&
+                            (showTranslate ||
+                                isTranslated ||
+                                translateError) && (
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                    {!isTranslated && !translateError && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                void handleTranslate();
+                                            }}
+                                            disabled={isTranslatingContent}
+                                            className="text-xs text-blue-400 hover:underline disabled:opacity-50"
+                                        >
+                                            {isTranslatingContent
+                                                ? t("post.translating")
+                                                : t("post.translate")}
+                                        </button>
+                                    )}
+                                    {isTranslated && (
+                                        <>
+                                            <span className="text-xs text-white/30">
+                                                {t("post.translated")}
+                                            </span>
+                                            <span className="text-white/20">
+                                                ·
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRevert();
+                                                }}
+                                                className="text-xs text-white/40 hover:underline"
+                                            >
+                                                {t("post.showOriginal")}
+                                            </button>
+                                        </>
+                                    )}
+                                    {translateError && (
+                                        <>
+                                            <span className="text-xs text-red-400">
+                                                {translateError}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRevert();
+                                                }}
+                                                className="text-xs text-white/40 hover:underline"
+                                            >
+                                                {t("post.dismiss")}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
 
                         {mediaUrls.length > 0 && (
                             <div
@@ -240,8 +311,13 @@ export function PostCard({
                             </div>
                         )}
 
+                        {quotedPost && <QuotedPostCard post={quotedPost} />}
+
                         <div className="mt-4 flex items-center gap-6 text-white/30">
-                            <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors">
+                            <button
+                                aria-label={t("post.comments")}
+                                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                            >
                                 <svg
                                     className="w-4 h-4"
                                     fill="none"
@@ -258,9 +334,39 @@ export function PostCard({
                                 <span className="text-xs">{commentCount}</span>
                             </button>
 
+                            {/* Two controls, not one: the icon opens the
+                                composer, the count opens the list of everyone
+                                who already quoted this post. */}
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={handleOpenQuoteModal}
+                                    aria-label={t("post.quote")}
+                                    title={t("post.quote")}
+                                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                                >
+                                    <Repeat2 className="w-4 h-4" />
+                                </button>
+                                {quotes > 0 && (
+                                    <button
+                                        onClick={handleViewQuotes}
+                                        aria-label={t("post.viewQuotes")}
+                                        title={t("post.viewQuotes")}
+                                        className="px-1 py-1.5 rounded-full text-xs hover:text-white/60 hover:underline transition-colors"
+                                    >
+                                        {quotes}
+                                    </button>
+                                )}
+                            </div>
+
                             <button
                                 onClick={handleLike}
                                 disabled={isLikeLoading}
+                                // A label that flipped to "Unlike" would keep
+                                // the state in the *name*, which changes what
+                                // the control is called mid-interaction.
+                                // `aria-pressed` is where toggle state goes.
+                                aria-label={t("post.like")}
+                                aria-pressed={liked}
                                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
                                     liked
                                         ? "text-pink-500"
@@ -286,6 +392,8 @@ export function PostCard({
                             <button
                                 onClick={handleBookmark}
                                 disabled={isBookmarkLoading}
+                                aria-label={t("post.bookmark")}
+                                aria-pressed={bookmarked}
                                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
                                     bookmarked
                                         ? "text-blue-400"
@@ -309,6 +417,7 @@ export function PostCard({
 
                             <button
                                 onClick={handleShare}
+                                aria-label={t("post.share")}
                                 className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
                             >
                                 <svg
@@ -354,6 +463,18 @@ export function PostCard({
                     </div>
                 </div>
             </article>
+
+            {/* Rendered only while open so the textarea is not kept alive,
+                and its own `quoted` shape is built from this post rather than
+                from `quotedPost` — quoting a quote quotes the outer post. */}
+            {isQuoteModalOpen && (
+                <QuoteComposerModal
+                    isOpen={isQuoteModalOpen}
+                    onClose={() => setIsQuoteModalOpen(false)}
+                    quoted={quotedForComposer}
+                    onQuoted={handleQuoted}
+                />
+            )}
 
             <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal}>
                 <div className="px-6 pb-6 pt-14">

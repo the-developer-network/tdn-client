@@ -10,7 +10,8 @@ export type NotificationType =
     | "LIKE"
     | "COMMENT"
     | "COMMENT_LIKE"
-    | "COMMENT_REPLY";
+    | "COMMENT_REPLY"
+    | "QUOTE";
 
 export interface Notification {
     recipientId: string;
@@ -26,7 +27,12 @@ export interface Notification {
 export interface RealtimeNotificationPayload {
     type: NotificationType;
     issuerId: string;
+    /**
+     * On a `QUOTE` this is the quote, not the post that was quoted — the
+     * recipient wrote the original and wants to see what was said about it.
+     */
     postId?: string;
+    referenceId?: string;
 }
 
 export interface NotificationMeta {

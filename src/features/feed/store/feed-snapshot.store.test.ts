@@ -17,6 +17,8 @@ function makePost(id: string): Post {
         commentCount: 0,
         isLiked: false,
         isBookmarked: false,
+        quoteCount: 0,
+        quotedPost: null,
         author: { id: "user-2", username: "bob", avatarUrl: "" },
     };
 }

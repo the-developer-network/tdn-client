@@ -51,6 +51,8 @@ const mockPost: Post = {
     commentCount: 0,
     isLiked: false,
     isBookmarked: false,
+    quoteCount: 0,
+    quotedPost: null,
     author: { id: "u1", username: "alice", fullName: "Alice", avatarUrl: "" },
     tags: [],
 };

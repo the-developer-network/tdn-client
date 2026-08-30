@@ -162,4 +162,47 @@ describe("NotificationCard", () => {
             /border-l-blue-500/,
         );
     });
+
+    it("QUOTE: renders the quote message", () => {
+        render(
+            <NotificationCard
+                notification={{
+                    ...base,
+                    type: "QUOTE",
+                    referenceId: "quote-1",
+                }}
+            />,
+        );
+        expect(
+            screen.getByText(/@alice quoted your post/i),
+        ).toBeInTheDocument();
+    });
+
+    it("QUOTE: navigates to the quote itself, not the post that was quoted", () => {
+        render(
+            <NotificationCard
+                notification={{
+                    ...base,
+                    type: "QUOTE",
+                    referenceId: "quote-1",
+                }}
+            />,
+        );
+
+        fireEvent.click(screen.getByText(/@alice quoted your post/i));
+
+        expect(mockNavigate).toHaveBeenCalledWith("/post/quote-1");
+    });
+
+    it("QUOTE: falls back to the issuer's profile with no referenceId", () => {
+        render(
+            <NotificationCard
+                notification={{ ...base, type: "QUOTE", referenceId: null }}
+            />,
+        );
+
+        fireEvent.click(screen.getByText(/@alice quoted your post/i));
+
+        expect(mockNavigate).toHaveBeenCalledWith("/profile/alice");
+    });
 });
