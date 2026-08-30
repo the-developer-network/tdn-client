@@ -6,6 +6,24 @@
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <!--
+            Search Console ownership. The equivalent of the googleXXXX.html file
+            Google offers first, and preferred here because it lives with the
+            shell rather than as a loose file in `public/` whose purpose is not
+            obvious from its name.
+
+            Verification is re-checked periodically, not once: removing this
+            un-verifies the property and silently drops the sitemap reporting
+            with it. It survives the Worker's meta rewrite because that only
+            strips `og:`, `twitter:` and `description` — see the test in
+            `worker/index.test.ts` holding that down.
+        -->
+        <meta
+            name="google-site-verification"
+            content="UZeGKB2iQEwOfEpmzsT7nPypL0QRHD7S5uD-dUKU0CQ"
+        />
+
         <title>TDN - The Developer Network</title>
 
         <!-- Default SEO meta (overridden per-page by react-helmet-async + CF edge function) -->

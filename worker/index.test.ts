@@ -10,6 +10,7 @@ const STUB_API = "https://stub.internal.test/api/v1";
 const SHELL = `<!doctype html><html><head><title>TDN</title>
 <meta name="description" content="placeholder" />
 <meta property="og:title" content="placeholder" />
+<meta name="google-site-verification" content="test-token" />
 </head><body><div id="root"></div></body></html>`;
 
 /**
@@ -118,6 +119,26 @@ describe("worker routing", () => {
             expect(html.match(/property="og:title"/g)).toHaveLength(1);
             expect(html.match(/name="description"/g)).toHaveLength(1);
         });
+
+        /**
+         * Search Console proves ownership by re-fetching this tag, not by
+         * checking once. Widening the strip in `injectIntoHead` to "every
+         * `<meta name=…>`" would look like tidying and would quietly
+         * un-verify the property — taking the sitemap reporting with it, on
+         * every route, with nothing else visibly different.
+         */
+        it.each(["/", "/explore", "/post/p1", "/articles/anything"])(
+            "leaves the site-verification tag alone on %s",
+            async (path) => {
+                const { env } = makeEnv();
+
+                const html = await (await worker.fetch(get(path), env)).text();
+
+                expect(
+                    html.match(/name="google-site-verification"/g),
+                ).toHaveLength(1);
+            },
+        );
 
         it("escapes markup coming from post content", async () => {
             server.use(

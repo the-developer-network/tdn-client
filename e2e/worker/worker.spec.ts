@@ -137,6 +137,19 @@ test.describe("meta injection", () => {
         expect(titles[0]).toContain("on TDN");
     });
 
+    /**
+     * The real build, not a fixture: this is what Search Console actually
+     * fetches to keep the property verified. It has to survive both the build
+     * and the Worker's rewrite of the head.
+     */
+    test("the site-verification tag reaches the served page", async ({
+        request,
+    }) => {
+        const html = await (await request.get("/")).text();
+
+        expect(html.match(/name="google-site-verification"/g)).toHaveLength(1);
+    });
+
     test("a canonical points at the page it was served for", async ({
         request,
     }) => {

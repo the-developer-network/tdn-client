@@ -417,7 +417,7 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 ### Layer 3a — Cloudflare Worker (`worker/index.ts`)
 
-27 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
+31 tests in `worker/index.test.ts`. Covers the Worker's logic in isolation, with a stubbed `env` and no Miniflare; the `worker` Playwright project (Layer 7) covers it wired to the real asset layer.
 
 `vitest.config.ts` includes `worker/**` for exactly this reason. The Worker's `fetch` is called directly with a request and a stub `env`; there is no Miniflare in the loop.
 
@@ -436,6 +436,9 @@ The `ASSETS` stub **records the paths it was asked for**. Every routing bug in t
 | Any injected page                            | Exactly one `<title>` and one `<link rel="canonical">`       |
 | An article title                             | Branded `… · TDN`; a title already carrying "TDN" is left alone |
 | `/sitemap.xml` against a 50-capped `/posts`  | Posts and profiles still advertised                          |
+| Every route                                  | The `google-site-verification` tag survives the head rewrite  |
+
+> **`index.html` carries the Search Console ownership tag, and the Worker must not strip it.** Verification is re-checked periodically rather than once, so losing the tag un-verifies the property and drops the sitemap reporting with it — silently, on every route, with nothing else visibly different. `injectIntoHead` only removes `og:`, `twitter:` and `description`; widening that to "every `<meta name=…>`" would look like tidying and would break this. Held down at both layers: parameterised over four routes in the unit tests, and against the real built shell in the `worker` e2e project.
 
 > **The shell's own `<title>` must be removed, not appended past.** A second `<title>` does not override the first, and the first is the one search engines read. Injecting without stripping left every article, post and profile on the site titled "TDN - The Developer Network" — invisible when sharing a link, because the OG tags were correct all along, and fatal when searching for one. The e2e `worker` project asserts this against the **real built shell**, where the tag is indented inside `<head>`; the unit fixture cannot prove that on its own.
 
