@@ -313,10 +313,18 @@ export function PostCard({
 
                         {quotedPost && <QuotedPostCard post={quotedPost} />}
 
-                        <div className="mt-4 flex items-center gap-6 text-white/30">
+                        {/*
+                            `gap-6` between six controls needs 120px of gutter
+                            before a single icon is drawn, which is more than a
+                            390px phone has left after the avatar column — the
+                            share button hung 20px off the right edge of every
+                            card. Below `sm` the row spreads what it has
+                            instead of adding up to a fixed width.
+                        */}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-1 gap-y-2 text-white/30 sm:flex-nowrap sm:justify-start sm:gap-6">
                             <button
                                 aria-label={t("post.comments")}
-                                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                                className="flex items-center gap-1 px-1.5 py-1.5 rounded-full sm:gap-1.5 sm:px-2 hover:bg-white/5 hover:text-white/60 transition-colors"
                             >
                                 <svg
                                     className="w-4 h-4"
@@ -342,7 +350,7 @@ export function PostCard({
                                     onClick={handleOpenQuoteModal}
                                     aria-label={t("post.quote")}
                                     title={t("post.quote")}
-                                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                                    className="flex items-center gap-1 px-1.5 py-1.5 rounded-full sm:gap-1.5 sm:px-2 hover:bg-white/5 hover:text-white/60 transition-colors"
                                 >
                                     <Repeat2 className="w-4 h-4" />
                                 </button>
@@ -367,7 +375,7 @@ export function PostCard({
                                 // `aria-pressed` is where toggle state goes.
                                 aria-label={t("post.like")}
                                 aria-pressed={liked}
-                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
+                                className={`flex items-center gap-1 px-1.5 py-1.5 rounded-full sm:gap-1.5 sm:px-2 transition-colors disabled:opacity-50 ${
                                     liked
                                         ? "text-pink-500"
                                         : "hover:bg-white/5 hover:text-white/60"
@@ -394,7 +402,7 @@ export function PostCard({
                                 disabled={isBookmarkLoading}
                                 aria-label={t("post.bookmark")}
                                 aria-pressed={bookmarked}
-                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
+                                className={`flex items-center gap-1 px-1.5 py-1.5 rounded-full sm:gap-1.5 sm:px-2 transition-colors disabled:opacity-50 ${
                                     bookmarked
                                         ? "text-blue-400"
                                         : "text-white/40 hover:bg-white/5 hover:text-white/60"
@@ -418,7 +426,7 @@ export function PostCard({
                             <button
                                 onClick={handleShare}
                                 aria-label={t("post.share")}
-                                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full hover:bg-white/5 hover:text-white/60 transition-colors"
+                                className="flex items-center gap-1 px-1.5 py-1.5 rounded-full sm:gap-1.5 sm:px-2 hover:bg-white/5 hover:text-white/60 transition-colors"
                             >
                                 <svg
                                     className="w-4 h-4"
@@ -440,7 +448,7 @@ export function PostCard({
                                     type="button"
                                     onClick={handleOpenDeleteModal}
                                     disabled={isDeleteLoading}
-                                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex items-center gap-1 px-1.5 py-1.5 rounded-full sm:gap-1.5 sm:px-2 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-label={t("post.deleteTitle")}
                                     title={t("post.deleteTitle")}
                                 >

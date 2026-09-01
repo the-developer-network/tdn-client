@@ -162,6 +162,7 @@ e2e/
   onboarding.spec.ts
   profile.spec.ts
   quotes.spec.ts
+  responsive.spec.ts
   worker/
     worker.spec.ts
     api-stub.ts        # stand-in API, started as a Playwright webServer
@@ -1522,7 +1523,17 @@ iOS Safari zooms the page in when it focuses a field rendering text under 16px, 
 
 The spec reads `getComputedStyle(el).fontSize` on every visible field, not the class list: what matters is the pixel value the browser resolved, whatever produced it. `expectNoFieldZooms` asserts a minimum field count first, so a page that rendered no fields cannot pass the loop vacuously. Removing the CSS rule fails all three tests, naming the offending placeholders.
 
-Two mobile-only facts are baked into how it drives the app, and both bit on the first run: the sidebar is `hidden sm:block`, so the way into the auth modal is BottomNav's profile **button** (not a link); and comments live at `/posts/:id/comments`, so a route mock matching `/posts/` before `/comments` answers the comment list with a single post object.
+Two mobile-only facts are baked into how it drives the app, and both bit on the first run: the sidebar is hidden below `md`, so the way into the auth modal is BottomNav's profile **button** (not a link); and comments live at `/posts/:id/comments`, so a route mock matching `/posts/` before `/comments` answers the comment list with a single post object.
+
+**`responsive.spec.ts`** — the other spec that sets its own viewport, and the only one that sets four: 390 and 320 for phones, 768 and 1024 for a tablet upright and turned sideways. It exists because the layout ladder is not something a unit test can see. jsdom reports every element as 0×0, so a column that runs 172px off the right edge of a tablet measures the same as one that fits; only a browser resolving widths against a real viewport can tell them apart.
+
+Twelve of its fifteen tests are one assertion — `documentElement.scrollWidth - clientWidth <= 1` — over three pages at each width. That number caught, in order: the post card's action row (six controls with `gap-6` need 120px of gutter before an icon is drawn, which a 390px phone does not have after the avatar column, so the share button hung 20px past the edge of every card); and the reading column, which kept its 720px cap at every width and so ran off the screen on every tablet and every narrow desktop window.
+
+**It waits for an `article`, not for `main`.** The card is what overflows. Waiting on the column measures an empty page and passes on a broken one — which it did, silently, until the wait was moved: with `main` the phone feed passed while overflowing by 20px, and only the profile page caught it.
+
+The remaining three cover the changeover. The sidebar and `BottomNav` have to move together, and they did not: the sidebar arrived at `sm` (640px) where it claimed 220 of the 640 and left the feed 420 — narrower than the same feed gets on a phone, which at least has the whole screen. The third asserts Settings is reachable from the tablet sidebar, because it had been reachable nowhere: the desktop sidebar hides it behind a **hover** popup, a tablet has no hover, and the profile page's gear was `sm:hidden`. The rail carries it as an ordinary link now, and the gear moved to `md:hidden` to match.
+
+> The rail also gave every sidebar link an `aria-label`. Below `xl` the labels are `display: none`, and hidden text is left out of the accessible name — so the rail was six links a screen reader could only call "link". That is also what lets this spec find Settings by name.
 
 > `wrangler dev` needs `pnpm build` first: `@cloudflare/vite-plugin` writes `.wrangler/deploy/config.json` during the build, which is where `assets.directory` comes from. Without it Wrangler refuses to start. `.wrangler/` is gitignored, so a clean checkout must build before it can preview.
 
@@ -1607,8 +1618,8 @@ await page.route("**/api/v1/**", async (route, request) => {
 See `.github/workflows/ci.yml`. The pipeline runs three jobs:
 
 1. **`lint-and-typecheck`** — ESLint + `tsc -b`
-2. **`unit-tests`** — `pnpm test` (Vitest, 123 tests)
-3. **`e2e`** — `pnpm test:e2e` (Playwright, 8 tests); installs Chromium via `playwright install --with-deps chromium`; starts `pnpm dev` automatically via `webServer` config
+2. **`unit-tests`** — `pnpm test` (Vitest, 675 tests)
+3. **`e2e`** — `pnpm test:e2e` (Playwright, 69 tests across the `chromium` and `worker` projects); installs Chromium via `playwright install --with-deps chromium`; starts `pnpm dev` automatically via `webServer` config
 
 ---
 
