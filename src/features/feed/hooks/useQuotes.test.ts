@@ -31,6 +31,8 @@ import { useQuotes } from "./useQuotes";
 const BASE = "http://localhost:8080/api/v1";
 
 const makeQuote = (id: string): Post => ({
+    isSensitive: false,
+    mediaPending: false,
     id,
     content: `quote ${id}`,
     type: "COMMUNITY",
@@ -47,6 +49,8 @@ const makeQuote = (id: string): Post => ({
         avatarUrl: "https://example.com/avatar.png",
     },
     quotedPost: {
+        isSensitive: false,
+        mediaPending: false,
         id: "post-1",
         content: "the original",
         mediaUrls: [],

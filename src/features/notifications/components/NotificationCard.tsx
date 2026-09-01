@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { ShieldAlert } from "lucide-react";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import type { TranslationKey } from "../../../shared/i18n/translations";
 import type { Notification, NotificationType } from "../api/notification.types";
@@ -15,7 +16,27 @@ const MESSAGE_KEYS: Record<NotificationType, TranslationKey> = {
     COMMENT_LIKE: "notif.commentLike",
     COMMENT_REPLY: "notif.commentReply",
     QUOTE: "notif.quote",
+    MEDIA_REJECTED: "notif.mediaRejected",
 };
+
+/**
+ * Where a `MEDIA_REJECTED` leads, or `null` when it leads nowhere.
+ *
+ * The comment wins over the post because it is the more specific of the two,
+ * and it covers a comment on an article as well as one on a post — both are
+ * read through `/comments/:commentId`. `articleId` and `articleSlug` arrive
+ * alongside but are deliberately unread: the media was taken off the comment,
+ * not off the top of the article.
+ *
+ * `null` is a real case, not a defensive one. Someone can upload a video and
+ * never send the post, and the file is still checked — so the notice arrives
+ * attached to nothing.
+ */
+function mediaRejectedTarget(notification: Notification): string | null {
+    if (notification.commentId) return `/comments/${notification.commentId}`;
+    if (notification.postId) return `/post/${notification.postId}`;
+    return null;
+}
 
 type Translate = ReturnType<typeof useI18n>["t"];
 
@@ -39,6 +60,18 @@ export function NotificationCard({ notification }: NotificationCardProps) {
     const navigate = useNavigate();
     const { t, locale } = useI18n();
 
+    /*
+     * The platform has no account, so the API fills `issuerId` with the
+     * recipient's own id and `username`/`avatarUrl` with their own details.
+     * Rendered like every other row that would tell the reader they did this
+     * to themselves, over their own photo. This type drops all three.
+     */
+    const isPlatformNotice = notification.type === "MEDIA_REJECTED";
+    const platformTarget = isPlatformNotice
+        ? mediaRejectedTarget(notification)
+        : null;
+    const isClickable = !isPlatformNotice || platformTarget !== null;
+
     // `notification.type` is what the server sent, not what this union says it
     // can be. A value added to the API's enum after this build shipped lands
     // here as a `MESSAGE_KEYS` miss, and `t(undefined)` throws inside its
@@ -47,6 +80,11 @@ export function NotificationCard({ notification }: NotificationCardProps) {
         MESSAGE_KEYS[notification.type] ?? "notif.generic";
 
     function handleClick() {
+        if (isPlatformNotice) {
+            if (platformTarget) navigate(platformTarget);
+            return;
+        }
+
         switch (notification.type) {
             case "FOLLOW":
                 navigate(`/profile/${notification.username}`);
@@ -80,14 +118,18 @@ export function NotificationCard({ notification }: NotificationCardProps) {
 
     return (
         <div
-            onClick={handleClick}
-            className={`flex items-start gap-3 px-4 py-4 border-b border-ink/10 hover:bg-ink/5 cursor-pointer transition-colors ${
-                !notification.isRead ? "border-l-2 border-l-blue-500" : ""
-            }`}
+            onClick={isClickable ? handleClick : undefined}
+            className={`flex items-start gap-3 px-4 py-4 border-b border-ink/10 transition-colors ${
+                isClickable ? "hover:bg-ink/5 cursor-pointer" : ""
+            } ${!notification.isRead ? "border-l-2 border-l-blue-500" : ""}`}
         >
-            {/* Avatar */}
+            {/* Avatar, or the platform's own mark */}
             <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden bg-surface-2">
-                {notification.avatarUrl ? (
+                {isPlatformNotice ? (
+                    <div className="w-full h-full flex items-center justify-center text-ink/50">
+                        <ShieldAlert size={18} aria-hidden="true" />
+                    </div>
+                ) : notification.avatarUrl ? (
                     <img
                         src={notification.avatarUrl}
                         alt={notification.username}
@@ -103,7 +145,9 @@ export function NotificationCard({ notification }: NotificationCardProps) {
             {/* Content */}
             <div className="flex-1 min-w-0">
                 <p className="text-ink/90 text-[15px] leading-snug">
-                    {t(messageKey, { username: notification.username })}
+                    {isPlatformNotice
+                        ? t(messageKey)
+                        : t(messageKey, { username: notification.username })}
                 </p>
                 <p className="text-ink/40 text-xs mt-1">
                     {getRelativeTime(notification.createdAt, t, locale)}

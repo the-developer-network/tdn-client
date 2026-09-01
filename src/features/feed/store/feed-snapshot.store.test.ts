@@ -8,6 +8,8 @@ import type { Post } from "../api/feed.types";
 
 function makePost(id: string): Post {
     return {
+        isSensitive: false,
+        mediaPending: false,
         id,
         content: `post ${id}`,
         type: "COMMUNITY",

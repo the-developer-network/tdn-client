@@ -20,6 +20,7 @@ import { Button } from "../shared/components/ui/Button";
 import { SEO } from "../shared/components/ui/SEO";
 import { getSafeImageSrc } from "../shared/utils/image-src";
 import { useI18n } from "../shared/hooks/useI18n";
+import { SensitiveMedia } from "../shared/components/ui/SensitiveMedia";
 import type { Article } from "../features/article/api/article.types";
 
 export default function ArticleDetailPage() {
@@ -141,11 +142,13 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                         thousand tall and the reader opens the article to a
                         wall of image with the title below the fold. Capping
                         the height and cropping keeps it a banner. */}
-                    <img
-                        src={cover}
-                        alt={article.coverImageAlt ?? ""}
-                        className="max-h-[60vh] w-full object-cover"
-                    />
+                    <SensitiveMedia isSensitive={article.isSensitive}>
+                        <img
+                            src={cover}
+                            alt={article.coverImageAlt ?? ""}
+                            className="max-h-[60vh] w-full object-cover"
+                        />
+                    </SensitiveMedia>
                     {article.coverImageAlt && (
                         <figcaption className="px-4 py-2 text-center text-xs text-ink/35">
                             {article.coverImageAlt}

@@ -98,6 +98,7 @@ export default function PostDetailPage() {
                         onDeleted={() => {
                             navigate("/", { replace: true });
                         }}
+                        onUpdated={setPost}
                     />
                     <CommentBox
                         target={{ type: "post", id: post.id }}

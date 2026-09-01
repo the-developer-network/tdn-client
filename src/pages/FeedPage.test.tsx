@@ -55,6 +55,8 @@ function setScrollY(value: number) {
 
 function makePost(id = "post-1"): Post {
     return {
+        isSensitive: false,
+        mediaPending: false,
         id,
         content: "Hello",
         type: "COMMUNITY",
@@ -81,6 +83,7 @@ function makeUseFeed(posts: Post[] = []): ReturnType<typeof useFeed> {
         fetchPosts: mockFetchPosts,
         retry: vi.fn(),
         addPost: vi.fn(),
+        replacePost: vi.fn(),
         removePost: vi.fn(),
         hasMore: false,
         loadMore: vi.fn(),

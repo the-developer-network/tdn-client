@@ -80,6 +80,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    // Belt and braces: a test that fails partway through never reaches its own
+    // cleanup, and fake timers left running make the *next* test time out —
+    // which reads as a failure in code that is fine.
+    vi.useRealTimers();
     Reflect.deleteProperty(URL, "createObjectURL");
     Reflect.deleteProperty(URL, "revokeObjectURL");
     vi.restoreAllMocks();
@@ -222,6 +226,95 @@ describe("CommentBox", () => {
                 container.querySelector('img[src^="blob:"]'),
             ).not.toBeInTheDocument();
         });
+
+        /*
+         * The two halves of the moderation contract, and the pair most likely
+         * to be collapsed into one branch by a later edit. A verdict and an
+         * outage arrive as the same shape of failure from the same call, and
+         * they call for opposite things: throw the files away, or hold on to
+         * them. Getting it backwards during an outage takes four picked files
+         * from someone who did nothing wrong.
+         */
+        it("throws the attachments away when moderation rejects them", async () => {
+            signIn();
+            server.use(
+                http.post(`${BASE}/media`, () =>
+                    HttpResponse.json(
+                        {
+                            type: "about:blank",
+                            title: "MediaRejectedError",
+                            status: 422,
+                            detail: "This file was rejected.",
+                            instance: "/api/v1/media",
+                        },
+                        { status: 422 },
+                    ),
+                ),
+            );
+            const user = userEvent.setup();
+            const { container, fileInput } = setup();
+
+            await user.upload(fileInput, [imageFile(), imageFile()]);
+            expect(
+                container.querySelectorAll('img[src^="blob:"]'),
+            ).toHaveLength(2);
+
+            await user.click(screen.getByRole("button", { name: "Reply" }));
+
+            // Both previews go, not just one: the endpoint processes files in
+            // order and returns no URLs at all once one is rejected, and never
+            // says which it was.
+            await waitFor(() =>
+                expect(
+                    container.querySelectorAll('img[src^="blob:"]'),
+                ).toHaveLength(0),
+            );
+            expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+            expect(toasts()[0].message).toContain("breaks the community rules");
+        });
+
+        it("keeps the attachments when moderation is unreachable", async () => {
+            signIn();
+            let calls = 0;
+            server.use(
+                http.post(`${BASE}/media`, () => {
+                    calls += 1;
+                    return HttpResponse.json(
+                        {
+                            type: "about:blank",
+                            title: "ModerationUnavailableError",
+                            status: 503,
+                            detail: "Upstream unavailable.",
+                            instance: "/api/v1/media",
+                        },
+                        { status: 503 },
+                    );
+                }),
+            );
+            const user = userEvent.setup();
+            const { container, fileInput } = setup();
+
+            await user.upload(fileInput, [imageFile(), imageFile()]);
+            await user.click(screen.getByRole("button", { name: "Reply" }));
+
+            // Real timers, and so a real three-second wait for the one
+            // automatic retry. Faking them here deadlocks: `waitFor` drives
+            // its polling off the same clock, and MSW answers on the same
+            // loop. The retry's timing is pinned in `media-errors.test.ts`,
+            // where there is no DOM to fight; this test is about the files.
+            await waitFor(
+                () =>
+                    expect(toasts()[0]?.message).toContain(
+                        "unavailable right now",
+                    ),
+                { timeout: 8000 },
+            );
+            expect(calls).toBe(2);
+            expect(
+                container.querySelectorAll('img[src^="blob:"]'),
+            ).toHaveLength(2);
+            expect(revokeObjectURL).not.toHaveBeenCalled();
+        }, 15_000);
 
         it("stops accepting attachments past the fourth", async () => {
             signIn();

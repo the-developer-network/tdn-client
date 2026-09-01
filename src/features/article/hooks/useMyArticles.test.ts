@@ -29,6 +29,7 @@ import type { ArticleSummary } from "../api/article.types";
 const BASE = "http://localhost:8080/api/v1";
 
 const makeArticle = (id: string): ArticleSummary => ({
+    isSensitive: false,
     id,
     slug: `slug-${id}`,
     title: `Article ${id}`,

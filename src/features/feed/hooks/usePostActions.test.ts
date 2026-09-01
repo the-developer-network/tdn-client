@@ -326,6 +326,8 @@ describe("usePostActions", () => {
 
     describe("the feed snapshot", () => {
         const snapshotPost: Post = {
+            isSensitive: false,
+            mediaPending: false,
             id: "post-1",
             content: "hello",
             type: "COMMUNITY",

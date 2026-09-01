@@ -5,6 +5,10 @@ import { feedApi } from "../api/feed.api";
 import type { Post, PostType } from "../api/feed.types";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import {
+    clearsSelection,
+    withModerationRetry,
+} from "../../../shared/utils/media-errors";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
 
@@ -83,7 +87,9 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
 
             if (files.length > 0) {
                 setIsUploading(true);
-                const res = await feedApi.uploadMedia(files);
+                const res = await withModerationRetry(() =>
+                    feedApi.uploadMedia(files),
+                );
                 mediaUrls = res.mediaUrls;
                 setIsUploading(false);
             }
@@ -102,6 +108,22 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                 textareaRef.current.style.height = "auto";
             }
         } catch (err) {
+            /*
+             * A verdict makes the selection unusable: the endpoint processes
+             * the files in order and returns no URLs at all once one is
+             * rejected, so even the files that uploaded before it have no
+             * URL to send. Nothing here knows which file it was, so all of
+             * them go and the person picks again.
+             *
+             * Everything else keeps them — a 503 was retried once already and
+             * is still worth another try by hand, and a failure from the
+             * create call that follows says nothing about the files.
+             */
+            if (clearsSelection(err)) {
+                previews.forEach((url) => URL.revokeObjectURL(url));
+                setFiles([]);
+                setPreviews([]);
+            }
             addToast({ type: "error", message: getErrorMessage(err) });
         } finally {
             setIsSubmitting(false);

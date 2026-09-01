@@ -160,6 +160,79 @@ describe("getErrorMessage", () => {
         });
     });
 
+    /*
+     * The moderation errors are the one place a `detail` is deliberately not
+     * shown. Their wording is fixed and the API says it in English only, to
+     * someone in the middle of posting — so the `title` is the contract and
+     * the sentence is ours. Everything else in this file still keeps the
+     * server's words, and the tests above hold that down.
+     */
+    describe("moderation errors, which are keyed by title", () => {
+        it.each([
+            ["MediaRejectedError", 422, "breaks the community rules"],
+            ["InvalidMediaTypeError", 415, "MP4"],
+            ["InvalidFileTypeError", 415, "AVIF"],
+            ["PayloadTooLargeError", 413, "5 MB"],
+            ["MediaNotOwnedError", 400, "already been used"],
+        ])("replaces the server's detail for %s", (title, status, fragment) => {
+            const message = getErrorMessage({
+                type: "about:blank",
+                title,
+                status,
+                detail: "English sentence the API wrote.",
+                instance: "/api/v1/media",
+            });
+
+            expect(message).toContain(fragment);
+            expect(message).not.toContain("English sentence the API wrote.");
+        });
+
+        /*
+         * The reason the lookup sits above the generic-5xx branch rather than
+         * below it. `ModerationUnavailableError` is a 503, so that branch
+         * would answer it with "the server could not complete the request" —
+         * losing the only thing worth saying, which is that trying again in a
+         * moment will work.
+         */
+        it("does not let the generic 5xx branch swallow the 503", () => {
+            const err = {
+                type: "about:blank",
+                title: "ModerationUnavailableError",
+                status: 503,
+                detail: "An unexpected error occurred.",
+                instance: "/api/v1/media",
+            };
+
+            expect(getErrorMessage(err)).toBe(
+                "Media checks are unavailable right now. Please try again in a moment.",
+            );
+
+            useLanguageStore.setState({ locale: "tr" });
+            expect(getErrorMessage(err)).toBe(
+                "Medya kontrolü şu an yapılamıyor. Birazdan tekrar deneyin.",
+            );
+        });
+
+        it("still prefers a validation message when the API sends one", () => {
+            expect(
+                getErrorMessage({
+                    status: 422,
+                    title: "MediaRejectedError",
+                    detail: "ignored",
+                    validation: [
+                        {
+                            instancePath: "/files",
+                            schemaPath: "#/files",
+                            keyword: "maxItems",
+                            params: {},
+                            message: "at most 4 files",
+                        },
+                    ],
+                }),
+            ).toBe("at most 4 files");
+        });
+    });
+
     describe("unknown / unrecognised input", () => {
         it("returns the fallback message for null", () => {
             expect(getErrorMessage(null)).toBe("An unexpected error occurred.");

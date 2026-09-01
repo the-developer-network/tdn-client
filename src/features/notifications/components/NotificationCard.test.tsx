@@ -178,6 +178,93 @@ describe("NotificationCard", () => {
         ).toBeInTheDocument();
     });
 
+    describe("MEDIA_REJECTED", () => {
+        /*
+         * The platform has no account, so the API sets `issuerId` to the
+         * recipient and fills `username`/`avatarUrl` with the recipient's own.
+         * Rendered like any other row, the notice would show the reader their
+         * own face and name over a message about breaking the rules.
+         */
+        const notice = {
+            ...base,
+            type: "MEDIA_REJECTED" as const,
+            issuerId: "user-1",
+            username: "alice",
+            avatarUrl: "https://cdn.example.com/alice.png",
+        };
+
+        it("shows neither the issuer's avatar nor their name", () => {
+            render(<NotificationCard notification={notice} />);
+
+            expect(screen.queryByRole("img")).not.toBeInTheDocument();
+            expect(screen.queryByText(/alice/i)).not.toBeInTheDocument();
+            expect(
+                screen.getByText(/removed for breaking the community rules/i),
+            ).toBeInTheDocument();
+        });
+
+        it("goes to the comment when the media hung off one", () => {
+            render(
+                <NotificationCard
+                    notification={{
+                        ...notice,
+                        postId: "post-1",
+                        commentId: "comment-1",
+                    }}
+                />,
+            );
+
+            fireEvent.click(screen.getByText(/removed for breaking/i));
+
+            // The comment is the more specific of the two, and the same route
+            // serves a comment on an article.
+            expect(mockNavigate).toHaveBeenCalledWith("/comments/comment-1");
+        });
+
+        it("goes to the article's comment, not the article", () => {
+            render(
+                <NotificationCard
+                    notification={{
+                        ...notice,
+                        commentId: "comment-9",
+                        articleId: "article-1",
+                        articleSlug: "clean-architecture",
+                    }}
+                />,
+            );
+
+            fireEvent.click(screen.getByText(/removed for breaking/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/comments/comment-9");
+        });
+
+        it("goes to the post when the media hung off the post itself", () => {
+            render(
+                <NotificationCard
+                    notification={{ ...notice, postId: "post-1" }}
+                />,
+            );
+
+            fireEvent.click(screen.getByText(/removed for breaking/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/post/post-1");
+        });
+
+        /*
+         * A real case, not a defensive one: a video uploaded on a post that
+         * was never sent is still checked, so the notice arrives attached to
+         * nothing. Without this the row would fall through to the default
+         * branch and open the reader's own profile, which explains nothing.
+         */
+        it("is inert when the media was never attached to anything", () => {
+            render(<NotificationCard notification={notice} />);
+
+            fireEvent.click(screen.getByText(/removed for breaking/i));
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+    });
+
     it("QUOTE: navigates to the quote itself, not the post that was quoted", () => {
         render(
             <NotificationCard

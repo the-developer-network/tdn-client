@@ -151,6 +151,18 @@ export function useFeed(
         setPosts((prev) => [post, ...prev]);
     }, []);
 
+    /**
+     * Swaps one row for a freshly read copy, leaving the rest of the list and
+     * the reader's scroll position where they are. Used when a post's pending
+     * video resolves: re-fetching the feed would cost every other row and,
+     * behind the 60 s server cache, would usually return the same stale copy.
+     */
+    const replacePost = useCallback((updated: Post) => {
+        setPosts((prev) =>
+            prev.map((post) => (post.id === updated.id ? updated : post)),
+        );
+    }, []);
+
     const removePost = useCallback((postId: string) => {
         setPosts((prev) => prev.filter((post) => post.id !== postId));
     }, []);
@@ -173,6 +185,7 @@ export function useFeed(
         fetchPosts,
         retry,
         addPost,
+        replacePost,
         removePost,
         hasMore,
         loadMore,

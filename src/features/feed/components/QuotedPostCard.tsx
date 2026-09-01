@@ -3,6 +3,8 @@ import type { QuotedPost } from "../api/feed.types";
 import { RichText } from "../../../shared/components/ui/RichText";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { SensitiveMedia } from "../../../shared/components/ui/SensitiveMedia";
+import { PendingMedia } from "../../../shared/components/ui/PendingMedia";
 
 interface QuotedPostCardProps {
     post: QuotedPost;
@@ -78,43 +80,47 @@ export function QuotedPostCard({
                 />
             )}
 
+            {post.mediaPending && <PendingMedia />}
+
             {post.mediaUrls.length > 0 && (
-                <div
-                    className={`mt-2 overflow-hidden rounded-xl border border-ink/10 bg-[#080808] ${
-                        post.mediaUrls.length > 1
-                            ? "grid grid-cols-2 gap-0.5"
-                            : "block"
-                    }`}
-                >
-                    {post.mediaUrls.map((url, i) => (
-                        <div
-                            key={i}
-                            className={`relative w-full overflow-hidden ${
-                                post.mediaUrls.length === 1
-                                    ? "aspect-video"
-                                    : "aspect-square"
-                            }`}
-                        >
-                            {isVideo(url) ? (
-                                // No `controls` here: the embedded card is a
-                                // link to the original, and a control strip
-                                // would put play/seek targets on top of it.
-                                <video
-                                    src={url}
-                                    muted
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <img
-                                    src={url}
-                                    alt=""
-                                    loading="lazy"
-                                    className="h-full w-full object-cover"
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
+                <SensitiveMedia isSensitive={post.isSensitive}>
+                    <div
+                        className={`mt-2 overflow-hidden rounded-xl border border-ink/10 bg-[#080808] ${
+                            post.mediaUrls.length > 1
+                                ? "grid grid-cols-2 gap-0.5"
+                                : "block"
+                        }`}
+                    >
+                        {post.mediaUrls.map((url, i) => (
+                            <div
+                                key={i}
+                                className={`relative w-full overflow-hidden ${
+                                    post.mediaUrls.length === 1
+                                        ? "aspect-video"
+                                        : "aspect-square"
+                                }`}
+                            >
+                                {isVideo(url) ? (
+                                    // No `controls` here: the embedded card is a
+                                    // link to the original, and a control strip
+                                    // would put play/seek targets on top of it.
+                                    <video
+                                        src={url}
+                                        muted
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <img
+                                        src={url}
+                                        alt=""
+                                        loading="lazy"
+                                        className="h-full w-full object-cover"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </SensitiveMedia>
             )}
         </div>
     );

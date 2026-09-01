@@ -32,6 +32,8 @@ import { useCommentReplies } from "./useCommentReplies";
 const BASE = "http://localhost:8080/api/v1";
 
 const mockReply: Comment = {
+    isSensitive: false,
+    mediaPending: false,
     id: "reply-1",
     content: "Agreed.",
     mediaUrls: [],

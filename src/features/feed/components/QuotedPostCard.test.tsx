@@ -15,6 +15,8 @@ vi.mock("react-router-dom", async () => {
 });
 
 const quoted: QuotedPost = {
+    isSensitive: false,
+    mediaPending: false,
     id: "quoted-1",
     content: "the original take",
     mediaUrls: [],
@@ -57,6 +59,38 @@ describe("QuotedPostCard", () => {
 
         expect(onOuterClick).not.toHaveBeenCalled();
         expect(mockNavigate).toHaveBeenCalledWith("/post/quoted-1");
+    });
+
+    /*
+     * The bypass this exists to close. The embedded card renders a post the
+     * reader is not otherwise looking at, so a quote of a flagged post would
+     * publish its media uncovered — quoting would be the way round the filter.
+     */
+    it("covers the quoted post's own flagged media", () => {
+        const { container } = render(
+            <QuotedPostCard
+                post={{
+                    ...quoted,
+                    isSensitive: true,
+                    mediaUrls: ["https://cdn.example.com/a.png"],
+                }}
+            />,
+        );
+
+        expect(screen.getByText("Sensitive content")).toBeInTheDocument();
+        expect(container.querySelector(".blur-2xl")).toBeInTheDocument();
+    });
+
+    it("shows the wait for a quoted video that is still being checked", () => {
+        render(
+            <QuotedPostCard
+                post={{ ...quoted, mediaPending: true, mediaUrls: [] }}
+            />,
+        );
+
+        expect(
+            screen.getByText("This video is being checked"),
+        ).toBeInTheDocument();
     });
 
     it("renders no like or bookmark control — the payload carries no state for one", () => {

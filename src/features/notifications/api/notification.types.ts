@@ -11,15 +11,39 @@ export type NotificationType =
     | "COMMENT"
     | "COMMENT_LIKE"
     | "COMMENT_REPLY"
-    | "QUOTE";
+    | "QUOTE"
+    | "MEDIA_REJECTED";
 
 export interface Notification {
     recipientId: string;
+    /**
+     * On a `MEDIA_REJECTED` this equals `recipientId`, and `username` and
+     * `avatarUrl` are the recipient's own. The notice comes from the platform,
+     * which has no account to attribute it to. Read as an issuer it says the
+     * reader did this to themselves, so that type ignores all three.
+     */
     issuerId: string;
     username: string;
     type: NotificationType;
     avatarUrl: string;
+    /** The most specific target: the comment, else the article, else the post. */
     referenceId: string | null;
+    /**
+     * Present on the types that have somewhere to go. `MEDIA_REJECTED` fills
+     * them in four combinations — a post; a post and a comment; a comment,
+     * article and slug; or none of them, when a video was uploaded and the
+     * post was never sent.
+     *
+     * `articleId` and `articleSlug` are not read here: a comment on an article
+     * is still reached through `/comments/:commentId`, and that is the right
+     * place to land — the media was taken off the comment, not off the top of
+     * the article. They arrive for consistency with the other comment
+     * notifications, and are left alone on purpose.
+     */
+    postId?: string | null;
+    commentId?: string | null;
+    articleId?: string | null;
+    articleSlug?: string | null;
     createdAt: string;
     isRead: boolean;
 }

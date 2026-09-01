@@ -42,6 +42,8 @@ import { QuoteComposerModal } from "./QuoteComposerModal";
 const BASE = "http://localhost:8080/api/v1";
 
 const quoted: QuotedPost = {
+    isSensitive: false,
+    mediaPending: false,
     id: "quoted-1",
     content: "the original take",
     mediaUrls: [],

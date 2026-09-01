@@ -99,6 +99,7 @@ beforeEach(() => {
         fetchPosts,
         loadMore: vi.fn(),
         addPost: vi.fn(),
+        replacePost: vi.fn(),
         removePost: vi.fn(),
         retry: vi.fn(),
         retryLoadMore: vi.fn(),

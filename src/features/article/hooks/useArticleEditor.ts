@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { articleApi } from "../api/article.api";
+import {
+    MEDIA_ERROR_TITLES,
+    isMediaError,
+    withModerationRetry,
+} from "../../../shared/utils/media-errors";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { ARTICLE_LIMITS } from "../api/article.types";
 import type {
@@ -157,7 +162,9 @@ export function useArticleEditor(initial: Article | null) {
             if (uploadedCoverRef.current?.file === file) {
                 return uploadedCoverRef.current.key;
             }
-            const { coverImageKey } = await articleApi.uploadCover(file);
+            const { coverImageKey } = await withModerationRetry(() =>
+                articleApi.uploadCover(file),
+            );
             uploadedCoverRef.current = { file, key: coverImageKey };
             return coverImageKey;
         }
@@ -235,6 +242,21 @@ export function useArticleEditor(initial: Article | null) {
             setSaveState("saved");
             return article;
         } catch (err) {
+            /*
+             * An upload belongs to exactly one article, and `resolveCoverKey`
+             * memoises the key so a retry does not spend a second upload on
+             * the same file. Those two are safe together only while the retry
+             * follows a save that never landed — which is the ordinary case,
+             * a 5xx.
+             *
+             * They come apart when the request times out after the server did
+             * write: the article now owns that key, the cached one is spent,
+             * and every retry from here re-sends it and is refused. Dropping
+             * the cache turns that from a locked editor into one more upload.
+             */
+            if (isMediaError(err, MEDIA_ERROR_TITLES.notOwned)) {
+                uploadedCoverRef.current = null;
+            }
             setSaveError(getErrorMessage(err));
             setSaveState("error");
             return null;

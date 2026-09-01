@@ -36,6 +36,12 @@ export interface ArticleSummary {
     excerpt: string;
     coverImageUrl: string | null;
     coverImageAlt: string | null;
+    /**
+     * The cover only. No `mediaPending` alongside it: a cover is always an
+     * image, and images are checked inside the upload request rather than
+     * after it, so a cover is never waiting.
+     */
+    isSensitive: boolean;
     readingTimeMinutes: number;
     likeCount: number;
     commentCount: number;

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Repeat2 } from "lucide-react";
 import type { Post, PostType, QuotedPost } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
+import { usePendingMedia } from "../hooks/usePendingMedia";
 import { QuotedPostCard } from "./QuotedPostCard";
 import { QuoteComposerModal } from "./QuoteComposerModal";
 import { useAuthStore } from "../../../core/auth/auth.store";
@@ -12,6 +13,8 @@ import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { SensitiveMedia } from "../../../shared/components/ui/SensitiveMedia";
+import { PendingMedia } from "../../../shared/components/ui/PendingMedia";
 
 const BADGE_STYLES: Record<PostType, string> = {
     TECH_NEWS: "border-ink/20 text-ink/60 bg-ink/5",
@@ -28,6 +31,12 @@ interface PostCardProps extends Post {
      * Optional: a page with no list to prepend to simply omits it.
      */
     onQuoted?: (post: Post) => void;
+    /**
+     * Handed a freshly read copy of this post when its pending video resolves.
+     * Without one there is nowhere to put the answer, so the placeholder shows
+     * the wait but offers no way to end it.
+     */
+    onUpdated?: (post: Post) => void;
 }
 
 export function PostCard({
@@ -43,6 +52,9 @@ export function PostCard({
     isBookmarked = false,
     quoteCount = 0,
     quotedPost = null,
+    isSensitive,
+    mediaPending,
+    onUpdated,
     onDeleted,
     onQuoted,
 }: PostCardProps) {
@@ -53,6 +65,11 @@ export function PostCard({
     const navigate = useNavigate();
     const { t, locale } = useI18n();
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const { refresh, isRefreshing } = usePendingMedia({
+        postId: id,
+        mediaPending,
+        onUpdated,
+    });
     const { openModal } = useAuthModalStore();
 
     /**
@@ -125,6 +142,10 @@ export function PostCard({
         mediaUrls,
         createdAt,
         author,
+        // Carried through so the composer's preview covers a sensitive post
+        // exactly as the feed does. Quoting is not a way to see it uncovered.
+        isSensitive,
+        mediaPending,
     };
 
     const handleQuoted = (post: Post) => {
@@ -274,41 +295,50 @@ export function PostCard({
                                 </div>
                             )}
 
+                        {mediaPending && (
+                            <PendingMedia
+                                onRefresh={onUpdated ? refresh : undefined}
+                                isRefreshing={isRefreshing}
+                            />
+                        )}
+
                         {mediaUrls.length > 0 && (
-                            <div
-                                className={`mt-3 rounded-2xl overflow-hidden border border-ink/10 bg-[#080808] ${mediaUrls.length > 1 ? "grid grid-cols-2 gap-0.5" : "block"}`}
-                            >
-                                {mediaUrls.map((url, i) => (
-                                    <div
-                                        key={i}
-                                        className={`relative w-full overflow-hidden ${mediaUrls.length === 1 ? "aspect-video" : "aspect-square"}`}
-                                    >
-                                        {isVideo(url) ? (
-                                            // Play, seek, volume and
-                                            // fullscreen are all clicks
-                                            // inside the card. Without this
-                                            // the first one navigates away
-                                            // and the video cannot be
-                                            // operated in the feed at all.
-                                            <video
-                                                src={url}
-                                                controls
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <img
-                                                src={url}
-                                                alt=""
-                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                                                loading="lazy"
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            <SensitiveMedia isSensitive={isSensitive}>
+                                <div
+                                    className={`mt-3 rounded-2xl overflow-hidden border border-ink/10 bg-[#080808] ${mediaUrls.length > 1 ? "grid grid-cols-2 gap-0.5" : "block"}`}
+                                >
+                                    {mediaUrls.map((url, i) => (
+                                        <div
+                                            key={i}
+                                            className={`relative w-full overflow-hidden ${mediaUrls.length === 1 ? "aspect-video" : "aspect-square"}`}
+                                        >
+                                            {isVideo(url) ? (
+                                                // Play, seek, volume and
+                                                // fullscreen are all clicks
+                                                // inside the card. Without this
+                                                // the first one navigates away
+                                                // and the video cannot be
+                                                // operated in the feed at all.
+                                                <video
+                                                    src={url}
+                                                    controls
+                                                    onClick={(e) =>
+                                                        e.stopPropagation()
+                                                    }
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={url}
+                                                    alt=""
+                                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                                                    loading="lazy"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </SensitiveMedia>
                         )}
 
                         {quotedPost && <QuotedPostCard post={quotedPost} />}

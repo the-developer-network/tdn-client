@@ -7,6 +7,8 @@ import { Modal } from "../../../shared/components/ui/Modal";
 import { useTranslation } from "../../../shared/hooks/useTranslation";
 import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { SensitiveMedia } from "../../../shared/components/ui/SensitiveMedia";
+import { PendingMedia } from "../../../shared/components/ui/PendingMedia";
 
 interface CommentCardProps {
     comment: Comment;
@@ -184,33 +186,37 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             </div>
                         )}
 
+                        {comment.mediaPending && <PendingMedia />}
+
                         {mediaUrls && mediaUrls.length > 0 && (
-                            <div
-                                className={`mt-3 rounded-2xl overflow-hidden border border-ink/10 bg-[#080808] ${mediaUrls.length > 1 ? "grid grid-cols-2 gap-0.5" : "block"}`}
-                            >
-                                {mediaUrls.map((url, index) => (
-                                    <div
-                                        key={index}
-                                        className={`relative w-full overflow-hidden ${mediaUrls.length === 1 ? "aspect-video" : "aspect-square"}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        {isVideo(url) ? (
-                                            <video
-                                                src={url}
-                                                controls
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <img
-                                                src={url}
-                                                alt=""
-                                                className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                                                loading="lazy"
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            <SensitiveMedia isSensitive={comment.isSensitive}>
+                                <div
+                                    className={`mt-3 rounded-2xl overflow-hidden border border-ink/10 bg-[#080808] ${mediaUrls.length > 1 ? "grid grid-cols-2 gap-0.5" : "block"}`}
+                                >
+                                    {mediaUrls.map((url, index) => (
+                                        <div
+                                            key={index}
+                                            className={`relative w-full overflow-hidden ${mediaUrls.length === 1 ? "aspect-video" : "aspect-square"}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {isVideo(url) ? (
+                                                <video
+                                                    src={url}
+                                                    controls
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={url}
+                                                    alt=""
+                                                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                                                    loading="lazy"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </SensitiveMedia>
                         )}
 
                         <div className="mt-3 flex items-center gap-6 text-ink/30">
