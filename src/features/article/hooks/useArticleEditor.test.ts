@@ -29,6 +29,7 @@ import type { Article } from "../api/article.types";
 const BASE = "http://localhost:8080/api/v1";
 
 const article = (overrides: Partial<Article> = {}): Article => ({
+    isSensitive: false,
     id: "article-1",
     slug: "my-article",
     title: "My Article",

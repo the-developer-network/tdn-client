@@ -67,6 +67,7 @@ import ArticleDetailPage from "./ArticleDetailPage";
 import type { Article } from "../features/article/api/article.types";
 
 const article: Article = {
+    isSensitive: false,
     id: "article-1",
     slug: "clean-architecture",
     title: "Clean Architecture",

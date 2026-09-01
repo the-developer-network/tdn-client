@@ -24,6 +24,8 @@ beforeAll(() => {
 });
 
 const mockPost: Post = {
+    isSensitive: false,
+    mediaPending: false,
     id: "post-1",
     content: "Hello world",
     type: "COMMUNITY",

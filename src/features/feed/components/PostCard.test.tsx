@@ -97,6 +97,8 @@ beforeEach(() => {
 });
 
 const mockPost: Post = {
+    isSensitive: false,
+    mediaPending: false,
     id: "post-1",
     content: "Hello world",
     type: "COMMUNITY",
@@ -218,8 +220,50 @@ describe("PostCard", () => {
         );
     });
 
+    describe("moderated media", () => {
+        it("covers the media of a post the server flagged", () => {
+            const { container } = render(
+                <PostCard
+                    {...mockPost}
+                    isSensitive
+                    mediaUrls={["https://cdn.example.com/a.png"]}
+                />,
+            );
+
+            expect(screen.getByText("Sensitive content")).toBeInTheDocument();
+            expect(container.querySelector(".blur-2xl")).toBeInTheDocument();
+        });
+
+        /*
+         * `mediaUrls` is `[]` while a video is being checked, which is the
+         * same thing an ordinary text post sends. `mediaPending` is the only
+         * thing telling them apart, and without the placeholder the author
+         * sees a post with no video and concludes it failed to upload.
+         */
+        it("stands in for a video that is still being checked", () => {
+            render(<PostCard {...mockPost} mediaPending mediaUrls={[]} />);
+
+            expect(
+                screen.getByText("This video is being checked"),
+            ).toBeInTheDocument();
+        });
+
+        it("says nothing about media on an ordinary post", () => {
+            render(<PostCard {...mockPost} mediaUrls={[]} />);
+
+            expect(
+                screen.queryByText("This video is being checked"),
+            ).not.toBeInTheDocument();
+            expect(
+                screen.queryByText("Sensitive content"),
+            ).not.toBeInTheDocument();
+        });
+    });
+
     describe("quotes", () => {
         const quotedPost = {
+            isSensitive: false,
+            mediaPending: false,
             id: "quoted-1",
             content: "the original take",
             mediaUrls: [],

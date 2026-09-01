@@ -10,6 +10,18 @@ export interface Comment {
     id: string;
     content: string;
     mediaUrls: string[];
+    /**
+     * Both are content-level, not per-media: if any one attachment is judged
+     * sensitive the whole item is flagged, and all of its media is blurred.
+     * There is no per-file flag to be more precise with.
+     */
+    isSensitive: boolean;
+    /**
+     * A video is stored before it is checked and hidden until it passes, so
+     * `mediaUrls` arrives as `[]` while this is true. That is not an item
+     * without media — it is media that cannot be shown yet.
+     */
+    mediaPending: boolean;
     createdAt: string;
     likeCount: number;
     replyCount: number;

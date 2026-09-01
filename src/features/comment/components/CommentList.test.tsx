@@ -9,6 +9,8 @@ vi.mock("./CommentCard", () => ({
 }));
 
 const mockComment: Comment = {
+    isSensitive: false,
+    mediaPending: false,
     id: "c1",
     content: "Test comment",
     mediaUrls: [],

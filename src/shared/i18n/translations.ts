@@ -441,6 +441,11 @@ const en = {
     "error.mediaNotOwned":
         "That upload has already been used. Please pick the file again.",
 
+    "media.sensitive": "Sensitive content",
+    "media.sensitiveReveal": "Tap to view",
+    "media.processing": "This video is being checked",
+    "media.refresh": "Refresh",
+
     "ad.promotion": "Promotion",
     "ad.label": "Ad",
     "ad.cta": "Want to reach developers?",
@@ -1046,6 +1051,11 @@ const tr: Record<TranslationKey, string> = {
     "error.payloadTooLarge": "Bu dosya 5 MB'den büyük.",
     "error.mediaNotOwned":
         "Bu yükleme zaten kullanılmış. Lütfen dosyayı yeniden seçin.",
+
+    "media.sensitive": "Hassas içerik",
+    "media.sensitiveReveal": "Görmek için dokunun",
+    "media.processing": "Bu video kontrol ediliyor",
+    "media.refresh": "Yenile",
 
     "ad.promotion": "Tanıtım",
     "ad.label": "Reklam",

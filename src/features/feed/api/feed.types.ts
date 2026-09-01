@@ -31,6 +31,18 @@ export interface QuotedPost {
     mediaUrls: string[];
     createdAt: string;
     author: PostAuthor;
+    /**
+     * Both are content-level, not per-media: if any one attachment is judged
+     * sensitive the whole item is flagged, and all of its media is blurred.
+     * There is no per-file flag to be more precise with.
+     */
+    isSensitive: boolean;
+    /**
+     * A video is stored before it is checked and hidden until it passes, so
+     * `mediaUrls` arrives as `[]` while this is true. That is not an item
+     * without media — it is media that cannot be shown yet.
+     */
+    mediaPending: boolean;
 }
 
 export interface Post {
@@ -53,6 +65,18 @@ export interface Post {
      * that already handles posts handles quotes with no special case.
      */
     quotedPost: QuotedPost | null;
+    /**
+     * Both are content-level, not per-media: if any one attachment is judged
+     * sensitive the whole item is flagged, and all of its media is blurred.
+     * There is no per-file flag to be more precise with.
+     */
+    isSensitive: boolean;
+    /**
+     * A video is stored before it is checked and hidden until it passes, so
+     * `mediaUrls` arrives as `[]` while this is true. That is not an item
+     * without media — it is media that cannot be shown yet.
+     */
+    mediaPending: boolean;
 }
 
 export interface GetPostsParams {

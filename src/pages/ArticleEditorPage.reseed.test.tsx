@@ -54,6 +54,7 @@ import ArticleEditorPage from "./ArticleEditorPage";
 import type { Article } from "../features/article/api/article.types";
 
 const article = (id: string, title: string, body: string): Article => ({
+    isSensitive: false,
     id,
     slug: `slug-${id}`,
     title,

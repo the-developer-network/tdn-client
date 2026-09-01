@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Clock } from "lucide-react";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { SensitiveMedia } from "../../../shared/components/ui/SensitiveMedia";
 import type { ArticleSummary } from "../api/article.types";
 
 type ArticleCardProps = ArticleSummary;
@@ -12,6 +13,7 @@ export function ArticleCard({
     excerpt,
     coverImageUrl,
     coverImageAlt,
+    isSensitive,
     readingTimeMinutes,
     likeCount,
     commentCount,
@@ -75,12 +77,14 @@ export function ArticleCard({
                     </p>
                 </div>
                 {cover && (
-                    <img
-                        src={cover}
-                        alt={coverImageAlt ?? ""}
-                        loading="lazy"
-                        className="h-20 w-28 shrink-0 rounded-lg border border-ink/10 object-cover sm:h-24 sm:w-36"
-                    />
+                    <SensitiveMedia isSensitive={isSensitive}>
+                        <img
+                            src={cover}
+                            alt={coverImageAlt ?? ""}
+                            loading="lazy"
+                            className="h-20 w-28 shrink-0 rounded-lg border border-ink/10 object-cover sm:h-24 sm:w-36"
+                        />
+                    </SensitiveMedia>
                 )}
             </div>
 

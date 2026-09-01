@@ -24,6 +24,8 @@ function makePost(id: string, overrides: Partial<Post> = {}): Post {
         likeCount: 5,
         commentCount: 2,
         quoteCount: 0,
+        isSensitive: false,
+        mediaPending: false,
         isLiked: false,
         isBookmarked: false,
         author: {

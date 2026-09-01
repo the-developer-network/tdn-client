@@ -55,6 +55,8 @@ function setScrollY(value: number) {
 
 function makePost(id = "post-1"): Post {
     return {
+        isSensitive: false,
+        mediaPending: false,
         id,
         content: "Hello",
         type: "COMMUNITY",

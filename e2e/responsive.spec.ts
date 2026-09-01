@@ -38,6 +38,8 @@ function makePost(id: string): Post {
         likeCount: 1250,
         commentCount: 340,
         quoteCount: 12,
+        isSensitive: false,
+        mediaPending: false,
         isLiked: false,
         isBookmarked: false,
         author,

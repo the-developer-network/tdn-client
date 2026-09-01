@@ -14,6 +14,8 @@ function makePost(id: string, type: PostType): Post {
         isLiked: false,
         isBookmarked: false,
         quoteCount: 0,
+        isSensitive: false,
+        mediaPending: false,
         quotedPost: null,
         author: {
             id: "user-2",

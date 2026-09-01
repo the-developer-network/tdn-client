@@ -37,6 +37,8 @@ const BASE = "http://localhost:8080/api/v1";
 
 // Minimal Post fixture matching the shape returned by the default MSW handler
 const mockPost: Post = {
+    isSensitive: false,
+    mediaPending: false,
     id: "post-1",
     content: "Hello world",
     type: "COMMUNITY",
@@ -59,6 +61,7 @@ const mockPost: Post = {
 
 // The endpoint returns article *summaries* — every article field but `body`.
 const mockArticle: ArticleSummary = {
+    isSensitive: false,
     id: "article-1",
     slug: "clean-architecture-with-fastify",
     title: "Clean Architecture with Fastify",
