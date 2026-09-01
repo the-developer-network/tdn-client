@@ -59,10 +59,10 @@ export function ResetPasswordView() {
 
     return (
         <div className="w-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl font-bold mb-2 text-white text-center">
+            <h2 className="text-2xl font-bold mb-2 text-ink text-center">
                 {t("auth.resetTitle")}
             </h2>
-            <p className="text-white/40 text-center mb-8 text-sm">
+            <p className="text-ink/40 text-center mb-8 text-sm">
                 {t("auth.resetSubtitle")} <b>{identifier}</b>
             </p>
 
@@ -91,7 +91,7 @@ export function ResetPasswordView() {
                     maxLength={OTP_LENGTH}
                     placeholder={t("auth.otpPlaceholder")}
                     autoComplete="one-time-code"
-                    className="w-full bg-black border border-white/20 rounded-md p-4 text-center font-mono text-xl text-white focus:border-blue-500 outline-none"
+                    className="w-full bg-ground border border-ink/20 rounded-md p-4 text-center font-mono text-xl text-ink focus:border-blue-500 outline-none"
                     autoFocus
                 />
 
@@ -104,7 +104,7 @@ export function ResetPasswordView() {
                     }}
                     placeholder={t("auth.newPasswordPlaceholder")}
                     autoComplete="new-password"
-                    className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none"
+                    className="w-full bg-ground border border-ink/20 rounded-md p-4 text-ink focus:border-blue-500 outline-none"
                 />
 
                 {/* `Button` sets no default type, so inside a form it submits

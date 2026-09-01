@@ -9,19 +9,19 @@ export function TrendingTopicsWidget() {
 
     return (
         <div className="pt-4 px-4">
-            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-white/10">
-                    <h2 className="text-lg font-bold text-white">
+            <div className="bg-surface-1/60 border border-ink/10 rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-ink/10">
+                    <h2 className="text-lg font-bold text-ink">
                         {t("trending.title")}
                     </h2>
-                    <p className="text-xs text-white/40 mt-0.5">
+                    <p className="text-xs text-ink/40 mt-0.5">
                         {t("trending.subtitle")}
                     </p>
                 </div>
 
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-ink/5">
                     {isLoading && (
-                        <p className="px-4 py-3 text-sm text-white/40">
+                        <p className="px-4 py-3 text-sm text-ink/40">
                             {t("trending.loading")}
                         </p>
                     )}
@@ -31,7 +31,7 @@ export function TrendingTopicsWidget() {
                         </p>
                     )}
                     {!isLoading && !error && trends.length === 0 && (
-                        <p className="px-4 py-3 text-sm text-white/40">
+                        <p className="px-4 py-3 text-sm text-ink/40">
                             {t("trending.empty")}
                         </p>
                     )}
@@ -41,15 +41,15 @@ export function TrendingTopicsWidget() {
                             onClick={() =>
                                 navigate(`/explore?tag=${trend.tag}`)
                             }
-                            className="px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer"
+                            className="px-4 py-3 hover:bg-ink/5 transition-colors cursor-pointer"
                         >
-                            <p className="text-xs text-white/40">
+                            <p className="text-xs text-ink/40">
                                 {trend.category}
                             </p>
-                            <p className="text-sm font-bold text-white mt-0.5">
+                            <p className="text-sm font-bold text-ink mt-0.5">
                                 #{trend.tag}
                             </p>
-                            <p className="text-xs text-white/40 mt-0.5">
+                            <p className="text-xs text-ink/40 mt-0.5">
                                 {trend.postCount.toLocaleString()}{" "}
                                 {t("trending.posts")}
                             </p>
@@ -57,7 +57,7 @@ export function TrendingTopicsWidget() {
                     ))}
                 </div>
 
-                <div className="px-4 py-3 border-t border-white/5">
+                <div className="px-4 py-3 border-t border-ink/5">
                     <span
                         onClick={() => navigate("/explore")}
                         className="text-sm text-blue-400 hover:text-blue-300 cursor-pointer transition-colors"

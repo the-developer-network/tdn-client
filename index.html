@@ -8,6 +8,43 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
         <!--
+            Stamp the theme onto <html> before the first paint.
+
+            Zustand's `persist` cannot do this: it reads localStorage when the
+            store module evaluates, which is after the bundle has downloaded and
+            React has mounted. The stylesheet's default is dark, so until then a
+            reader who chose light gets a black page — a flash on every cold
+            load, on the one setting they picked to avoid it.
+
+            The resolution is duplicated from `resolveTheme` in
+            `src/shared/store/theme.store.ts` rather than imported, because an
+            import here is a module round trip and the point is to run before
+            one. It is four lines, and it defaults to dark exactly as the store
+            does, so a broken or absent key lands where the store will too.
+        -->
+        <script>
+            (function () {
+                var theme = "dark";
+                try {
+                    var stored = localStorage.getItem("tdn-theme");
+                    var saved = stored && JSON.parse(stored).state.theme;
+                    if (saved === "light" || saved === "dark") {
+                        theme = saved;
+                    } else if (saved === "system") {
+                        theme = window.matchMedia(
+                            "(prefers-color-scheme: dark)",
+                        ).matches
+                            ? "dark"
+                            : "light";
+                    }
+                } catch (e) {
+                    /* Private mode, blocked storage, a half-written key — dark. */
+                }
+                document.documentElement.dataset.theme = theme;
+            })();
+        </script>
+
+        <!--
             Search Console ownership. The equivalent of the googleXXXX.html file
             Google offers first, and preferred here because it lives with the
             shell rather than as a loose file in `public/` whose purpose is not

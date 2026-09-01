@@ -110,7 +110,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     };
 
     return (
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-ink/10">
             <div className="flex gap-3">
                 <img
                     src={
@@ -119,7 +119,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                             ? `https://ui-avatars.com/api/?name=${user.username}`
                             : `https://ui-avatars.com/api/?name=Guest&background=random`)
                     }
-                    className="h-10 w-10 rounded-full border border-white/5 object-cover shrink-0"
+                    className="h-10 w-10 rounded-full border border-ink/5 object-cover shrink-0"
                     alt="User avatar"
                 />
                 <div className="flex-1 flex flex-col gap-3">
@@ -136,7 +136,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                                 : t("postBox.placeholderGuest")
                         }
                         rows={3}
-                        className="w-full bg-transparent text-white placeholder-white/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
+                        className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
                     />
 
                     {/* Preview */}
@@ -149,7 +149,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                                 return (
                                     <div
                                         key={i}
-                                        className="relative aspect-video bg-white/5"
+                                        className="relative aspect-video bg-ink/5"
                                     >
                                         {safeUrl && (
                                             <img
@@ -160,10 +160,10 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                                         )}
                                         <button
                                             onClick={() => removeFile(i)}
-                                            className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black rounded-full p-1 transition-colors"
+                                            className="absolute top-1.5 right-1.5 bg-scrim/60 hover:bg-scrim rounded-full p-1 transition-colors"
                                         >
                                             <svg
-                                                className="w-3.5 h-3.5 text-white"
+                                                className="w-3.5 h-3.5 text-on-fill"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
@@ -182,7 +182,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                    <div className="flex items-center justify-between border-t border-ink/5 pt-3">
                         <div className="flex items-center gap-1">
                             {/* Media Button */}
                             <input
@@ -196,7 +196,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                             <button
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={files.length >= MAX_FILES}
-                                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-ink/40 hover:text-ink/70 hover:bg-ink/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 <svg
                                     className="w-5 h-5"
@@ -225,7 +225,7 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                                 (!content.trim() && files.length === 0) ||
                                 isSubmitting
                             }
-                            className="bg-white text-black text-sm font-semibold px-5 py-2 rounded-full hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="bg-ink text-ground text-sm font-semibold px-5 py-2 rounded-full hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {isUploading
                                 ? t("postBox.uploading")

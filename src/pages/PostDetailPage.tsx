@@ -63,10 +63,10 @@ export default function PostDetailPage() {
                 canonical={id ? `/post/${id}` : undefined}
             />
             <div
-                className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center gap-6 cursor-pointer"
+                className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10 px-4 py-3 flex items-center gap-6 cursor-pointer"
                 onClick={() => navigate(-1)}
             >
-                <button className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
+                <button className="text-ink hover:bg-ink/10 p-2 -ml-2 rounded-full transition-colors">
                     <svg
                         width="20"
                         height="20"
@@ -82,14 +82,14 @@ export default function PostDetailPage() {
                         />
                     </svg>
                 </button>
-                <h2 className="text-xl font-bold text-white tracking-wide">
+                <h2 className="text-xl font-bold text-ink tracking-wide">
                     {t("page.post")}
                 </h2>
             </div>
 
             {isLoading ? (
                 <div className="p-8 flex justify-center items-center h-40">
-                    <div className="w-8 h-8 border-4 border-white/10 border-t-white rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-4 border-ink/10 border-t-ink rounded-full animate-spin" />
                 </div>
             ) : post ? (
                 <div>
@@ -103,7 +103,7 @@ export default function PostDetailPage() {
                         target={{ type: "post", id: post.id }}
                         onCommentCreated={addComment}
                     />
-                    <div className="divide-y divide-white/10">
+                    <div className="divide-y divide-ink/10">
                         <CommentList
                             comments={comments}
                             isLoading={commentsLoading}
@@ -117,7 +117,7 @@ export default function PostDetailPage() {
                     </div>
                 </div>
             ) : (
-                <div className="p-8 text-center text-white/40">
+                <div className="p-8 text-center text-ink/40">
                     {t("page.postNotFound")}
                 </div>
             )}

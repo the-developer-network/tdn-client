@@ -68,14 +68,14 @@ export function PageShell({
         : "w-full min-w-0 flex-1 lg:max-w-[600px]";
 
     return (
-        <div className="flex justify-center min-h-screen bg-black">
+        <div className="flex justify-center min-h-screen bg-ground">
             <div className={`flex w-full ${containerClasses}`}>
                 <div className="hidden md:block w-[72px] xl:w-[275px] shrink-0">
                     <Sidebar />
                 </div>
 
                 <main
-                    className={`${columnClasses} md:border-x border-white/10 min-h-screen pb-16 md:pb-0`}
+                    className={`${columnClasses} md:border-x border-ink/10 min-h-screen pb-16 md:pb-0`}
                 >
                     {children}
                 </main>

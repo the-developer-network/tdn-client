@@ -62,7 +62,7 @@ export function PostList({
     if (isLoading) {
         return (
             <div className="flex justify-center p-10">
-                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
             </div>
         );
     }
@@ -82,7 +82,7 @@ export function PostList({
 
     if (posts.length === 0) {
         return (
-            <div className="p-10 text-center text-white/30 italic text-sm">
+            <div className="p-10 text-center text-ink/30 italic text-sm">
                 {emptyMessage ?? t("postList.empty")}
             </div>
         );
@@ -121,11 +121,11 @@ export function PostList({
             )}
             {isLoadingMore && (
                 <div className="flex justify-center p-6">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                 </div>
             )}
             {!hasMore && (
-                <div className="p-6 text-center text-white/20 text-xs">
+                <div className="p-6 text-center text-ink/20 text-xs">
                     {t("postList.noMore")}
                 </div>
             )}

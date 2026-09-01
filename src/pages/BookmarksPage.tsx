@@ -54,13 +54,13 @@ export default function BookmarksPage() {
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             {/*  Header */}
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10">
                 <div className="px-4 py-4">
-                    <h1 className="text-xl font-bold text-white">
+                    <h1 className="text-xl font-bold text-ink">
                         {t("bookmarks.title")}
                     </h1>
                     {/* Username */}
-                    <p className="text-sm text-white/40 mt-1">
+                    <p className="text-sm text-ink/40 mt-1">
                         @{user?.username} ({t("bookmarks.subtitle")})
                     </p>
                 </div>
@@ -68,20 +68,20 @@ export default function BookmarksPage() {
                 {/* One list is mounted at a time on purpose: PostList and
                     ArticleList each install their own IntersectionObserver
                     sentinel, and side by side both would call loadMore. */}
-                <div className="flex w-full border-b border-white/5">
+                <div className="flex w-full border-b border-ink/5">
                     {TABS.map((tab) => (
                         <button
                             key={tab.value}
                             onClick={() => setActiveTab(tab.value)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
                                 activeTab === tab.value
-                                    ? "text-white"
-                                    : "text-white/40 hover:text-white/70"
+                                    ? "text-ink"
+                                    : "text-ink/40 hover:text-ink/70"
                             }`}
                         >
                             {t(tab.labelKey)}
                             {activeTab === tab.value && (
-                                <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-white rounded-full" />
+                                <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-ink rounded-full" />
                             )}
                         </button>
                     ))}
@@ -91,17 +91,17 @@ export default function BookmarksPage() {
             {/* Loading */}
             {isLoading && (
                 <div className="flex justify-center py-16">
-                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                 </div>
             )}
 
             {/* (Empty State) — nothing saved at all; a tab that is empty on its
                 own falls through to the list's own empty state. */}
             {!isLoading && isEmpty && !error ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center border-b border-white/10">
-                    <div className="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center mb-4">
+                <div className="flex flex-col items-center justify-center p-12 text-center border-b border-ink/10">
+                    <div className="w-16 h-16 rounded-full border border-ink/10 bg-ink/5 flex items-center justify-center mb-4">
                         <svg
-                            className="w-8 h-8 text-white/40"
+                            className="w-8 h-8 text-ink/40"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -114,10 +114,10 @@ export default function BookmarksPage() {
                             />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">
+                    <h2 className="text-xl font-bold text-ink mb-2">
                         {t("bookmarks.emptyTitle")}
                     </h2>
-                    <p className="text-white/40 text-[15px] max-w-[250px]">
+                    <p className="text-ink/40 text-[15px] max-w-[250px]">
                         {t("bookmarks.emptyBody")}
                     </p>
                 </div>

@@ -75,10 +75,10 @@ export function RecoveryView() {
                 </svg>
             </div>
 
-            <h2 className="text-2xl font-bold text-white text-center mb-2 tracking-tight">
+            <h2 className="text-2xl font-bold text-ink text-center mb-2 tracking-tight">
                 {t("auth.recoveryTitle")}
             </h2>
-            <p className="text-white/40 text-center text-sm mb-8 max-w-xs leading-relaxed">
+            <p className="text-ink/40 text-center text-sm mb-8 max-w-xs leading-relaxed">
                 {t("auth.recoverySubtitle")}
             </p>
 
@@ -106,13 +106,13 @@ export function RecoveryView() {
                     size="full"
                     onClick={() => setStep("identifier")}
                     disabled={isLoading}
-                    className="text-white/40 hover:text-white py-2"
+                    className="text-ink/40 hover:text-ink py-2"
                 >
                     {t("auth.recoveryBack")}
                 </Button>
             </div>
 
-            <p className="text-white/20 text-xs mt-6 text-center">
+            <p className="text-ink/20 text-xs mt-6 text-center">
                 {t("auth.recoveryExpiry")}
             </p>
         </div>

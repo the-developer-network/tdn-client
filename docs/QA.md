@@ -126,9 +126,11 @@ src/
   shared/
     store/
       toast.store.test.ts
+      theme.store.test.ts
     hooks/
       useNetworkStatus.test.ts
       useTranslation.test.ts
+      useTheme.test.ts
     utils/
       assert-list.test.ts
       error-handler.test.ts
@@ -152,6 +154,7 @@ worker/
 
 e2e/
   fixtures.ts
+  theme.spec.ts
   article-editor.spec.ts
   articles.spec.ts
   auth.spec.ts
@@ -237,6 +240,23 @@ rather than its result.
 | `addToast()`          | Toast added with unique id                            |
 | Auto-remove after 4 s | `vi.useFakeTimers()` + `vi.advanceTimersByTime(4000)` |
 | `removeToast(id)`     | Only the targeted toast removed                       |
+
+#### `theme.store` (`src/shared/store/theme.store.test.ts`)
+
+9 tests. Persists under `tdn-theme`, so the **`vi.hoisted` localStorage stub is required**.
+
+| Scenario                                  | Assert                                          |
+| ----------------------------------------- | ----------------------------------------------- |
+| Initial state                             | `"dark"` — see below                            |
+| `setTheme(t)`                             | Recorded verbatim                               |
+| `resolveTheme("light" \| "dark")`         | Passed straight through, `matchMedia` never called |
+| `resolveTheme("system")`                  | Resolves against `prefers-color-scheme`         |
+| `systemPrefersDark()` with no `matchMedia`| Falls back to dark rather than throwing         |
+| `watchSystemTheme`                        | Fires on change; the returned unsubscribe detaches |
+
+**The default is asserted, not incidental.** `"dark"` rather than `"system"` is the decision that keeps every existing account reading what it has always read — the app shipped dark-only, so resolving against the OS would repaint it white for everyone whose laptop is set light. A change of that default is a product decision, and this test is what makes it a deliberate one.
+
+**`matchMedia` is guarded because jsdom does not define it.** An unguarded call would fail every suite whose module graph reaches this file — which, through `useTheme` and `AppInit`, is most of them — and the failure would name whatever that suite was actually testing. Two tests stub it away entirely to hold the guard down.
 
 #### `onboarding.store` (`src/features/onboarding/store/onboarding.store.test.ts`)
 
@@ -449,7 +469,11 @@ The `ASSETS` stub **records the paths it was asked for**. Every routing bug in t
 
 > **Both list endpoints cap `limit` at 50 — 100 is a 400, not a truncation.** `fetchPostPage` swallows a failed page into `[]`, so asking for 100 cost the live sitemap every post *and* every profile (profiles are derived from post authors) while still returning 200 and looking healthy. The handler in the regression test enforces the cap the real API enforces; the old one ignored the query string entirely, which is why nothing caught it.
 
-> The `API_BASE` tests register a handler for **both** origins and assert the recorded request URLs, rather than only asserting the tags. `tests/setup.ts` runs MSW with `onUnhandledRequest: "warn"`, so a request to the wrong origin with no handler escapes to the real network and the spec passes against the bug it exists to catch. Requests are collected with `server.events.on("request:start", …)` and released with `server.events.removeAllListeners()` in `afterEach`.
+> The `API_BASE` tests register a handler for **both** origins and assert the recorded request URLs, rather than only asserting the tags — a request to the wrong origin then fails an assertion naming the origin it reached. Requests are collected with `server.events.on("request:start", …)` and released with `server.events.removeAllListeners()` in `afterEach`.
+
+**Every test here stubs the production origin, and `tests/setup.ts` errors on anything unhandled.** Most call `makeEnv()` with no `API_BASE`, which is the deployed configuration, so the Worker reads `DEFAULT_API_BASE` — the real API. The handlers in `tests/mocks/handlers.ts` only cover the dev origin, so four of those reads escaped to production on every run: `/posts/p1` and `/articles/anything` for the metadata tests, and two pages of `/articles` for the sitemap. MSW's `"warn"` default let them through. They passed while the API was warm and timed out at the 5 s limit when it was not, as a failure with nothing in it pointing at the cause — which is how CI failed on a PR that had touched none of this.
+
+`stubProductionApi()` runs in the file's `beforeEach` with the emptiest payloads the Worker accepts; a test that cares about content registers its own `server.use`, which is checked first. `onUnhandledRequest: "error"` is what keeps it that way for tests nobody has written yet.
 
 > **Do not decide "is this an asset?" by testing the whole pathname for a trailing extension.** Usernames are `^[a-zA-Z0-9._]+$`, so `/profile/john.smith` ends in something that looks exactly like a file extension. `isAssetPath` requires either the `/assets/` prefix or a single root-level segment, which is what the build actually produces.
 
@@ -792,6 +816,25 @@ The row is a `role="button"` `<div>` rather than a `<button>` because a button c
 | `DELETE /follows` fails           | Label back to "Following"; `onFollowChange` called `-1` then `1`             |
 | Signed-out click                  | `onClose` called and auth modal `isOpen=true` — both modals share `z-[100]`, so the list must close first |
 | `isMe` row                        | No follow button rendered                                                    |
+
+#### `useTheme` (`src/shared/hooks/useTheme.test.ts`)
+
+6 tests. Needs the `vi.hoisted` localStorage stub (`theme.store` persists), and stubs `matchMedia` per test.
+
+Asserts against `document.documentElement.dataset.theme`, because that attribute is the entire contract — it is what the token overrides in `index.css` key off, and nothing else the hook does is observable.
+
+| Scenario                        | Assert                                      |
+| ------------------------------- | ------------------------------------------- |
+| Mount                           | `data-theme` stamped                        |
+| `setTheme("light")`             | Restamped, and the store agrees             |
+| `"system"` on a light desktop   | Resolves to `light`                         |
+| OS flips while on `"system"`    | Restamped without a rerender                |
+| OS flips after an explicit pick | **No listener attached at all**             |
+| Unmount                         | Listener detached                           |
+
+The fifth is the one worth keeping. A reader who picked light picked it for a reason, and a listener left attached would hand their theme back to the laptop at sunset. Asserting the listener count is zero says that in a way that asserting the colour cannot — the colour is right either way until the OS actually changes.
+
+> jsdom has no cascade, so none of these prove a pixel changed. That is `e2e/theme.spec.ts`'s job.
 
 #### `useNetworkStatus` (`src/shared/hooks/useNetworkStatus.test.ts`)
 
@@ -1422,14 +1465,20 @@ Needs the `vi.hoisted` localStorage stub: `getErrorMessage` resolves its strings
 
 **`SettingsPage`** (`src/pages/SettingsPage.test.tsx`)
 
-2 tests covering the form-reset rule the three mutation sections share. `handleSubmit` resolves to a boolean; the sections must branch on that, never on the `error` returned by the hook — after `await`, that binding still holds the value from the render the submit started in, so it reports the previous attempt's outcome.
+4 tests: two on the form-reset rule, two on the theme picker.
+
+The form-reset pair covers the rule the three mutation sections share. `handleSubmit` resolves to a boolean; the sections must branch on that, never on the `error` returned by the hook — after `await`, that binding still holds the value from the render the submit started in, so it reports the previous attempt's outcome.
 
 MSW fails the first `PATCH /users/me/username` and accepts every one after it, so a single render covers both transitions.
+
+The theme pair asserts the store, the `data-theme` attribute, and `aria-pressed` — the pills are the only control on the page with no label of their own to read state from, so a sighted reader sees the fill and everyone else has the attribute or nothing. Both register their own `GET /users/me`: the shared handler answers with a shape the page does not read, and `AccountInfoSection` throws on it before the pills ever render.
 
 | Scenario                       | Assert                                            |
 | ------------------------------ | ------------------------------------------------- |
 | Update fails (409)             | Error rendered; the typed username is still there |
 | Success straight after failure | Success rendered; the field is cleared            |
+| Click "Light"                  | Store set, `<html data-theme="light">`            |
+| Click "System"                 | `aria-pressed` moves; only one pill is pressed    |
 
 **`OnboardingPage`:**
 
@@ -1516,6 +1565,12 @@ Five tests: the full flow out to `/`; an account at 4 follows still gated and as
 **`quotes.spec.ts`** — five tests over the quote flow end to end: the embedded card in the feed, a textless quote drawn as a repost, the badge routing to `/posts/:id/quotes`, that page's own empty state, and composing a quote. The last one is the one worth keeping: it asserts both the request body (`content` + `quotedPostId`) and that the new row appears **without a refetch**. The feed is cached for 60 s server-side, so a quote that only showed up after reloading would look, to the person who wrote it, exactly like one that failed to post.
 
 **The follow control in the follower/following list is measured, not asserted by class.** It sits inside a row that navigates to the profile, so every pixel the thumb misses opens the profile instead — which is indistinguishable, to the person holding the phone, from a button that does nothing. `profile.spec` sets a 390px viewport and reads `boundingBox().height`, because the number is the whole point: the pill shipped at 26px against a 44px minimum, and only a measurement catches it going back.
+
+**`theme.spec.ts`** — six tests, and the only place the theme is proved to change anything. The unit tests can assert the attribute; only a browser resolves `--color-ground` through the cascade, so these read `getComputedStyle(document.body).backgroundColor` and expect literal `rgb(255, 255, 255)` / `rgb(0, 0, 0)`. Three cover the stored choice (light, dark, and an account that never picked one still getting dark), one uses `test.use({ colorScheme: "light" })` to prove `"system"` follows the desktop, and one switches in Settings and reloads.
+
+**The sixth blocks every module and expects the attribute anyway.** That is the only way to test the inline script in `index.html`, which duplicates `resolveTheme` so the first paint is already the right colour — `persist` cannot read `localStorage` until React has mounted, and until then the stylesheet's default is dark. Aborting only `/src/app/main.tsx` does **not** work: Vite serves modules with a `?t=` cache key, so a path-exact route misses and the app boots regardless, leaving a test that passes while proving nothing. The route is a regex over module extensions instead, and `#root` is asserted empty to show nothing of the app ran.
+
+**It pins the locale.** `useI18n` sniffs `navigator.language`, so `seed()` writes `tdn-language` alongside `tdn-theme`: a spec that clicks a pill labelled "Light" should say which language it means rather than inherit one from whatever machine is running it. The rest of the suite leaves this to the default and passes, so this is insurance rather than a fix for an observed failure.
 
 **`mobile-zoom.spec.ts`** — the only spec that overrides the viewport (`test.use({ viewport: { width: 390, height: 844 } })`), and it has to: the rule it guards lives behind a `max-width` media query, so at the desktop width every other spec runs at, the assertion would pass while proving nothing.
 

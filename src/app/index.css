@@ -1,7 +1,122 @@
 @import "tailwindcss";
 
+/*
+ * `light:` — for the handful of things a token cannot reach.
+ *
+ * Almost everything themes itself by reading `--color-*`, but a raster asset
+ * carries its own colours and cannot. The variant is the escape hatch for
+ * those, and deliberately a narrow one: reach for a token first, and if you
+ * find yourself writing `light:` on anything with a `--color-*` behind it,
+ * the token is what wants fixing.
+ */
+@custom-variant light (&:where(:root[data-theme="light"] *));
+
+/*
+ * ---------------------------------------------------------------------------
+ * Theme tokens
+ * ---------------------------------------------------------------------------
+ *
+ * The app was written dark-only, with `text-white` / `bg-black` / `bg-zinc-900`
+ * spelled out at nine hundred-odd call sites. Those names describe a pixel, not
+ * a role, so there is nothing for a light theme to redefine: `text-white` on a
+ * white page is invisible however you set it up.
+ *
+ * So the neutrals are named for their role instead, and only the values move
+ * between themes:
+ *
+ *   ground          the page behind everything
+ *   ink             the primary foreground — and, filled, the primary button
+ *   ink-hover       that button's hover, which has to move *toward* the page
+ *                   in dark and *away* from it in light
+ *   surface-1..3    a ramp of panels raised off the ground: inputs, cards and
+ *                   toasts at 1, the secondary button and the fill of skeletons
+ *                   and avatar fallbacks at 2, that button's hover at 3. Each
+ *                   step moves further from the ground, which means lighter in
+ *                   dark and darker in light — the ramp is elevation, not
+ *                   brightness, so it survives the swap
+ *   scrim           the wash over an image or behind a modal
+ *   on-fill         what goes on top of a scrim or a filled accent
+ *
+ * `ink` and `ground` swap wholesale, which is what makes the rename enough on
+ * its own: `border-ink/10` is a faint light line on black and a faint dark line
+ * on white, `bg-ink text-ground` is a white button with black text and then a
+ * black button with white text. Every opacity step comes along for free,
+ * because Tailwind resolves `/40` against the variable at the point of use.
+ *
+ * `scrim` and `on-fill` are the exceptions that prove the rule, and they are
+ * the same exception twice. A wash over a user's photo, and the white on a red
+ * delete button or a blue unread badge, are contrasting against something that
+ * did not change when the page did — so neither of them changes either. They
+ * are tokens rather than a plain `bg-black` / `text-white` so that the next
+ * person sweeping the app for stragglers can see they were left on purpose.
+ */
+@theme {
+    --color-ground: #000000;
+    --color-ink: #ffffff;
+    --color-ink-hover: #e5e7eb;
+    --color-surface-1: #18181b;
+    --color-surface-2: #27272a;
+    --color-surface-3: #3f3f46;
+    --color-scrim: #000000;
+    --color-on-fill: #ffffff;
+}
+
+:root {
+    color-scheme: dark;
+}
+
+/*
+ * `data-theme` is stamped on <html> by `useTheme`, and before that by the
+ * inline script in `index.html` — early enough that the first paint is already
+ * the right colour. Without it a light-theme reader gets a black flash on every
+ * cold load, because the stylesheet's default is dark and React only mounts
+ * afterwards.
+ */
+:root[data-theme="light"] {
+    color-scheme: light;
+
+    --color-ground: #ffffff;
+    --color-ink: #0a0a0b;
+    --color-ink-hover: #3f3f46;
+    --color-surface-1: #f4f4f5;
+    --color-surface-2: #e4e4e7;
+    --color-surface-3: #d4d4d8;
+
+    /*
+     * The accents are the one place a straight swap is not enough. The palette
+     * was picked to glow against black, and the 300–500 shades that do that are
+     * the ones that fail on white: `text-red-400` (#f87171) reads at 2.9:1
+     * there and `text-blue-400` at 2.6:1, both under the 4.5:1 AA needs for the
+     * error text and links they are used for.
+     *
+     * Redefining the shade is deliberate, and the alternative was worse. There
+     * are a hundred-odd accent utilities across the app in a dozen shades and
+     * opacities; giving each a semantic name would have been a rename with no
+     * behaviour behind it, and every new `text-red-400` written afterwards
+     * would have gone back to being unreadable. Held here, the ramp keeps its
+     * shape — a `-300` hover still sits a step past its `-400` — and the fix
+     * applies to code nobody has written yet.
+     *
+     * The direction reverses because the ground did: on black, lighter reads,
+     * so the light theme walks the same steps darker.
+     */
+    --color-red-300: #991b1b;
+    --color-red-400: #b91c1c;
+    --color-red-500: #dc2626;
+    --color-blue-300: #1d4ed8;
+    --color-blue-400: #2563eb;
+    --color-blue-500: #2563eb;
+    --color-green-400: #15803d;
+    --color-pink-300: #be185d;
+    --color-pink-400: #db2777;
+    --color-pink-500: #db2777;
+    --color-violet-400: #7c3aed;
+    --color-orange-400: #c2410c;
+}
+
 body {
-    background-color: black;
+    background-color: var(--color-ground);
+    color: var(--color-ink);
     margin: 0;
 }
 

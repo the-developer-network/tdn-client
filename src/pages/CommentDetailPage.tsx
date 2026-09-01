@@ -80,11 +80,11 @@ export default function CommentDetailPage() {
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center gap-6">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10 px-4 py-3 flex items-center gap-6">
                 <button
                     type="button"
                     onClick={handleBack}
-                    className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
+                    className="text-ink hover:bg-ink/10 p-2 -ml-2 rounded-full transition-colors"
                 >
                     <svg
                         width="20"
@@ -102,13 +102,13 @@ export default function CommentDetailPage() {
                     </svg>
                 </button>
 
-                <h2 className="text-xl font-bold text-white tracking-wide">
+                <h2 className="text-xl font-bold text-ink tracking-wide">
                     {t("page.comment")}
                 </h2>
             </div>
 
             {isLoading ? (
-                <div className="p-8 text-white/40">
+                <div className="p-8 text-ink/40">
                     {t("page.loadingComment")}
                 </div>
             ) : error ? (
@@ -140,7 +140,7 @@ export default function CommentDetailPage() {
                         />
                     )}
                     {repliesLoading ? (
-                        <div className="p-8 text-white/40">
+                        <div className="p-8 text-ink/40">
                             {t("page.loadingReplies")}
                         </div>
                     ) : repliesError ? (
@@ -171,14 +171,14 @@ export default function CommentDetailPage() {
 
                             {repliesLoadingMore && (
                                 <div className="flex justify-center py-4">
-                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                    <div className="w-5 h-5 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                                 </div>
                             )}
                         </>
                     )}
                 </>
             ) : (
-                <div className="p-8 text-white/40">
+                <div className="p-8 text-ink/40">
                     {t("page.commentNotFound")}
                 </div>
             )}

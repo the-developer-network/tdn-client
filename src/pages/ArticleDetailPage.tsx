@@ -37,22 +37,22 @@ export default function ArticleDetailPage() {
                 canonical={slug ? `/articles/${slug}` : undefined}
             />
 
-            <div className="sticky top-0 z-10 flex items-center gap-6 border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md">
+            <div className="sticky top-0 z-10 flex items-center gap-6 border-b border-ink/10 bg-ground/80 px-4 py-3 backdrop-blur-md">
                 <button
                     onClick={() => navigate(-1)}
-                    className="-ml-2 rounded-full p-2 text-white transition-colors hover:bg-white/10"
+                    className="-ml-2 rounded-full p-2 text-ink transition-colors hover:bg-ink/10"
                     aria-label={t("common.back")}
                 >
                     <ArrowLeft size={20} />
                 </button>
-                <h2 className="truncate text-xl font-bold tracking-wide text-white">
+                <h2 className="truncate text-xl font-bold tracking-wide text-ink">
                     {article ? article.title : t("page.article")}
                 </h2>
             </div>
 
             {isLoading ? (
                 <div className="flex h-40 items-center justify-center p-8">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/10 border-t-white" />
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-ink/10 border-t-ink" />
                 </div>
             ) : error ? (
                 <div className="flex flex-col items-center gap-4 p-10 text-center">
@@ -73,7 +73,7 @@ export default function ArticleDetailPage() {
                     slug={slug ?? ""}
                 />
             ) : (
-                <div className="p-8 text-center text-white/40">
+                <div className="p-8 text-center text-ink/40">
                     {t("page.articleNotFound")}
                 </div>
             )}
@@ -135,7 +135,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                 reserved for it, so a text-only article reads as deliberate
                 rather than as a picture that failed to load. */}
             {cover && (
-                <figure className="border-b border-white/10">
+                <figure className="border-b border-ink/10">
                     {/* Full width, but bounded in height. Left to its natural
                         ratio, a portrait cover renders 720 wide by over a
                         thousand tall and the reader opens the article to a
@@ -147,18 +147,18 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                         className="max-h-[60vh] w-full object-cover"
                     />
                     {article.coverImageAlt && (
-                        <figcaption className="px-4 py-2 text-center text-xs text-white/35">
+                        <figcaption className="px-4 py-2 text-center text-xs text-ink/35">
                             {article.coverImageAlt}
                         </figcaption>
                     )}
                 </figure>
             )}
 
-            <header className="border-b border-white/10 px-4 pb-6 pt-8">
-                <h1 className="text-[32px] font-bold leading-[1.2] tracking-tight text-white sm:text-[40px]">
+            <header className="border-b border-ink/10 px-4 pb-6 pt-8">
+                <h1 className="text-[32px] font-bold leading-[1.2] tracking-tight text-ink sm:text-[40px]">
                     {article.title}
                 </h1>
-                <p className="mt-3 text-lg leading-7 text-white/50">
+                <p className="mt-3 text-lg leading-7 text-ink/50">
                     {article.excerpt}
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
@@ -172,18 +172,18 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                             <img
                                 src={avatar}
                                 alt=""
-                                className="h-10 w-10 rounded-full border border-white/10 object-cover"
+                                className="h-10 w-10 rounded-full border border-ink/10 object-cover"
                             />
                         ) : (
-                            <span className="h-10 w-10 rounded-full bg-white/10" />
+                            <span className="h-10 w-10 rounded-full bg-ink/10" />
                         )}
-                        <span className="font-medium text-white">
+                        <span className="font-medium text-ink">
                             {article.author.fullName ||
                                 `@${article.author.username}`}
                         </span>
                     </button>
-                    <span className="text-white/20">·</span>
-                    <span className="text-white/40">
+                    <span className="text-ink/20">·</span>
+                    <span className="text-ink/40">
                         {new Date(
                             article.publishedAt ?? article.createdAt,
                         ).toLocaleDateString(locale, {
@@ -192,8 +192,8 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                             year: "numeric",
                         })}
                     </span>
-                    <span className="text-white/20">·</span>
-                    <span className="flex items-center gap-1 text-white/40">
+                    <span className="text-ink/20">·</span>
+                    <span className="flex items-center gap-1 text-ink/40">
                         <Clock size={13} />
                         {t("article.readingTime", {
                             n: article.readingTimeMinutes,
@@ -205,7 +205,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                         {article.tags.map((tag) => (
                             <span
                                 key={tag.name}
-                                className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white/50"
+                                className="rounded-full bg-ink/5 px-2.5 py-1 text-xs text-ink/50"
                             >
                                 #{tag.name}
                             </span>
@@ -216,7 +216,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
 
             <MarkdownBody body={article.body} />
 
-            <div className="flex items-center gap-6 border-y border-white/10 px-4 py-3 text-white/30">
+            <div className="flex items-center gap-6 border-y border-ink/10 px-4 py-3 text-ink/30">
                 <button
                     onClick={handleLike}
                     disabled={isLikeLoading}
@@ -225,7 +225,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                     className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors disabled:opacity-50 ${
                         isLiked
                             ? "text-pink-500"
-                            : "hover:bg-white/5 hover:text-white/60"
+                            : "hover:bg-ink/5 hover:text-ink/60"
                     }`}
                 >
                     <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
@@ -239,7 +239,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                     className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors disabled:opacity-50 ${
                         isBookmarked
                             ? "text-blue-400"
-                            : "hover:bg-white/5 hover:text-white/60"
+                            : "hover:bg-ink/5 hover:text-ink/60"
                     }`}
                 >
                     <Bookmark
@@ -250,7 +250,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                 <button
                     onClick={handleShare}
                     aria-label={t("article.share")}
-                    className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-white/60"
+                    className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-ink/5 hover:text-ink/60"
                 >
                     <Share2 size={16} />
                 </button>
@@ -258,7 +258,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                     <Link
                         to={`/articles/${slug}/edit`}
                         aria-label={t("editor.editTitle")}
-                        className="ml-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-white/60"
+                        className="ml-auto flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-ink/5 hover:text-ink/60"
                     >
                         <Pencil size={16} />
                     </Link>
@@ -269,7 +269,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                 target={{ type: "article", id: article.id }}
                 onCommentCreated={addComment}
             />
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-ink/10">
                 <CommentList
                     comments={comments}
                     isLoading={commentsLoading}

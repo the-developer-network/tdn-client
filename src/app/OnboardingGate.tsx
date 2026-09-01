@@ -94,8 +94,8 @@ export function OnboardingGate() {
 
     if (status === "checking") {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-black">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <div className="flex min-h-screen items-center justify-center bg-ground">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
             </div>
         );
     }

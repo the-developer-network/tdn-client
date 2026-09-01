@@ -116,10 +116,10 @@ export function RegisterView() {
 
     return (
         <div className="w-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-ink tracking-tight">
                 {t("auth.registerTitle")}
             </h2>
-            <p className="text-white/40 mb-6 text-sm">
+            <p className="text-ink/40 mb-6 text-sm">
                 {t("auth.registerSubtitle")}
             </p>
 
@@ -148,11 +148,11 @@ export function RegisterView() {
                         value={formData.email}
                         onChange={(e) => handleChange("email", e.target.value)}
                         placeholder={t("auth.emailPlaceholder")}
-                        className={`w-full bg-black border ${
+                        className={`w-full bg-ground border ${
                             errorField === "email"
                                 ? "border-red-500"
-                                : "border-white/20"
-                        } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
+                                : "border-ink/20"
+                        } rounded-md p-4 text-ink focus:border-blue-500 outline-none transition-all placeholder:text-ink/20`}
                     />
                 </div>
 
@@ -165,11 +165,11 @@ export function RegisterView() {
                             handleChange("username", e.target.value)
                         }
                         placeholder={t("auth.usernamePlaceholder")}
-                        className={`w-full bg-black border ${
+                        className={`w-full bg-ground border ${
                             errorField === "username"
                                 ? "border-red-500"
-                                : "border-white/20"
-                        } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
+                                : "border-ink/20"
+                        } rounded-md p-4 text-ink focus:border-blue-500 outline-none transition-all placeholder:text-ink/20`}
                     />
                 </div>
 
@@ -182,11 +182,11 @@ export function RegisterView() {
                             handleChange("password", e.target.value)
                         }
                         placeholder={t("auth.passwordPlaceholder")}
-                        className={`w-full bg-black border ${
+                        className={`w-full bg-ground border ${
                             errorField === "password"
                                 ? "border-red-500"
-                                : "border-white/20"
-                        } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
+                                : "border-ink/20"
+                        } rounded-md p-4 text-ink focus:border-blue-500 outline-none transition-all placeholder:text-ink/20`}
                     />
                 </div>
 
@@ -210,7 +210,7 @@ export function RegisterView() {
                     type="button"
                     variant="ghost"
                     size="full"
-                    className="text-white/40 hover:text-white py-2"
+                    className="text-ink/40 hover:text-ink py-2"
                     onClick={() => setStep("identifier")}
                 >
                     {t("auth.back")}

@@ -13,15 +13,15 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-scrim/60 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-md bg-black border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="relative w-full max-w-md bg-ground border border-ink/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 left-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                    className="absolute top-4 left-4 p-2 text-ink/60 hover:text-ink hover:bg-ink/10 rounded-full transition-colors"
                 >
                     <svg
                         className="w-5 h-5"

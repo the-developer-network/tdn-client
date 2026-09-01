@@ -70,10 +70,10 @@ export default function OAuthSuccess() {
         updateUser,
     ]);
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="min-h-screen bg-ground flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-4 border-white/10 border-t-white rounded-full animate-spin" />
-                <p className="text-white/40 font-medium animate-pulse text-sm">
+                <div className="w-10 h-10 border-4 border-ink/10 border-t-ink rounded-full animate-spin" />
+                <p className="text-ink/40 font-medium animate-pulse text-sm">
                     {t("common.syncingAccount")}
                 </p>
             </div>

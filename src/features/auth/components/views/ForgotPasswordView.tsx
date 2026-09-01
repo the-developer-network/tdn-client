@@ -35,10 +35,10 @@ export function ForgotPasswordView() {
 
     return (
         <div className="w-full flex flex-col animate-in fade-in duration-300">
-            <h2 className="text-2xl font-bold mb-4 text-white text-center">
+            <h2 className="text-2xl font-bold mb-4 text-ink text-center">
                 {t("auth.forgotTitle")}
             </h2>
-            <p className="text-white/40 text-center mb-8 text-sm">
+            <p className="text-ink/40 text-center mb-8 text-sm">
                 {t("auth.forgotSubtitle")}
             </p>
 
@@ -68,7 +68,7 @@ export function ForgotPasswordView() {
                     }}
                     placeholder={t("auth.forgotEmailPlaceholder")}
                     autoComplete="email"
-                    className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all"
+                    className="w-full bg-ground border border-ink/20 rounded-md p-4 text-ink focus:border-blue-500 outline-none transition-all"
                     autoFocus
                 />
 
@@ -86,7 +86,7 @@ export function ForgotPasswordView() {
                 <button
                     type="button"
                     onClick={() => setStep("login")}
-                    className="text-white/40 text-sm hover:text-white w-full py-2"
+                    className="text-ink/40 text-sm hover:text-ink w-full py-2"
                 >
                     {t("auth.backToLogin")}
                 </button>

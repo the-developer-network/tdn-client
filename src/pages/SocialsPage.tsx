@@ -64,9 +64,9 @@ const socials: Social[] = [
         url: "https://x.com/devnetworknet",
         descriptionKey: "socials.xDescription",
         icon: <XIcon />,
-        hoverBorder: "group-hover:border-white/30",
+        hoverBorder: "group-hover:border-ink/30",
         hoverShadow: "group-hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]",
-        hoverIcon: "group-hover:text-white",
+        hoverIcon: "group-hover:text-ink",
     },
     {
         id: "github",
@@ -88,15 +88,15 @@ export default function SocialsPage() {
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             {/* Sticky header */}
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10">
                 <div className="flex items-center gap-3 px-4 py-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+                        className="p-2 rounded-full hover:bg-ink/10 transition-colors text-ink/70 hover:text-ink"
                     >
                         <ArrowLeft size={18} />
                     </button>
-                    <h1 className="text-base font-bold text-white">
+                    <h1 className="text-base font-bold text-ink">
                         {t("socials.title")}
                     </h1>
                 </div>
@@ -104,7 +104,7 @@ export default function SocialsPage() {
 
             <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-6">
                 {/* Intro */}
-                <p className="text-white/40 text-sm leading-relaxed">
+                <p className="text-ink/40 text-sm leading-relaxed">
                     {t("socials.intro")}
                 </p>
 
@@ -116,11 +116,11 @@ export default function SocialsPage() {
                             href={social.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`group flex items-start gap-4 p-4 rounded-xl border border-white/10 bg-white/[0.03] transition-all duration-300 hover:bg-white/[0.06] ${social.hoverBorder} ${social.hoverShadow}`}
+                            className={`group flex items-start gap-4 p-4 rounded-xl border border-ink/10 bg-ink/[0.03] transition-all duration-300 hover:bg-ink/[0.06] ${social.hoverBorder} ${social.hoverShadow}`}
                         >
                             {/* Platform Icon */}
                             <div
-                                className={`mt-0.5 flex-shrink-0 text-white/40 transition-colors duration-300 ${social.hoverIcon}`}
+                                className={`mt-0.5 flex-shrink-0 text-ink/40 transition-colors duration-300 ${social.hoverIcon}`}
                             >
                                 {social.icon}
                             </div>
@@ -128,27 +128,27 @@ export default function SocialsPage() {
                             {/* Text */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-white font-semibold text-sm">
+                                    <span className="text-ink font-semibold text-sm">
                                         {social.name}
                                     </span>
-                                    <span className="text-white/30 text-xs font-mono truncate">
+                                    <span className="text-ink/30 text-xs font-mono truncate">
                                         {social.handle}
                                     </span>
                                 </div>
-                                <p className="text-white/50 text-sm leading-relaxed">
+                                <p className="text-ink/50 text-sm leading-relaxed">
                                     {t(social.descriptionKey)}
                                 </p>
                             </div>
 
                             {/* External link indicator */}
-                            <div className="mt-0.5 flex-shrink-0 text-white/20 group-hover:text-white/50 transition-colors duration-300">
+                            <div className="mt-0.5 flex-shrink-0 text-ink/20 group-hover:text-ink/50 transition-colors duration-300">
                                 <ExternalLink size={14} />
                             </div>
                         </a>
                     ))}
                 </div>
 
-                <div className="border-t border-white/10 pt-6 text-white/25 text-xs">
+                <div className="border-t border-ink/10 pt-6 text-ink/25 text-xs">
                     {t("socials.footer")}
                 </div>
             </div>

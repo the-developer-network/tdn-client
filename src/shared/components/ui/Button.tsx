@@ -16,10 +16,10 @@ export function Button({
         "font-semibold rounded-full transition-all duration-200 active:scale-95 inline-flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-        primary: "bg-white text-black hover:bg-gray-200 shadow-sm",
-        secondary: "bg-zinc-800 text-white hover:bg-zinc-700",
-        outline: "border border-white/20 text-white hover:bg-white/5",
-        ghost: "text-white hover:bg-white/10",
+        primary: "bg-ink text-ground hover:bg-ink-hover shadow-sm",
+        secondary: "bg-surface-2 text-ink hover:bg-surface-3",
+        outline: "border border-ink/20 text-ink hover:bg-ink/5",
+        ghost: "text-ink hover:bg-ink/10",
     };
 
     const sizes = {

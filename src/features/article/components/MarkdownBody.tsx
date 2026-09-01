@@ -21,23 +21,23 @@ interface MarkdownBodyProps {
  */
 export function MarkdownBody({ body }: MarkdownBodyProps) {
     return (
-        <div className="px-4 py-8 text-[18px] leading-[1.75] text-white/80">
+        <div className="px-4 py-8 text-[18px] leading-[1.75] text-ink/80">
             <Markdown
                 skipHtml
                 remarkPlugins={[remarkGfm]}
                 components={{
                     h1: ({ children }) => (
-                        <h1 className="mt-10 mb-4 text-[28px] font-bold leading-snug tracking-tight text-white first:mt-0">
+                        <h1 className="mt-10 mb-4 text-[28px] font-bold leading-snug tracking-tight text-ink first:mt-0">
                             {children}
                         </h1>
                     ),
                     h2: ({ children }) => (
-                        <h2 className="mt-9 mb-3 text-[24px] font-bold leading-snug tracking-tight text-white first:mt-0">
+                        <h2 className="mt-9 mb-3 text-[24px] font-bold leading-snug tracking-tight text-ink first:mt-0">
                             {children}
                         </h2>
                     ),
                     h3: ({ children }) => (
-                        <h3 className="mt-8 mb-2 text-[20px] font-semibold leading-snug text-white first:mt-0">
+                        <h3 className="mt-8 mb-2 text-[20px] font-semibold leading-snug text-ink first:mt-0">
                             {children}
                         </h3>
                     ),
@@ -65,7 +65,7 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                         </ol>
                     ),
                     blockquote: ({ children }) => (
-                        <blockquote className="my-6 border-l-[3px] border-white/25 pl-5 text-[19px] italic text-white/60">
+                        <blockquote className="my-6 border-l-[3px] border-ink/25 pl-5 text-[19px] italic text-ink/60">
                             {children}
                         </blockquote>
                     ),
@@ -75,12 +75,12 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                         className ? (
                             <code className={className}>{children}</code>
                         ) : (
-                            <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[13px] text-pink-300">
+                            <code className="rounded bg-ink/10 px-1.5 py-0.5 font-mono text-[13px] text-pink-300">
                                 {children}
                             </code>
                         ),
                     pre: ({ children }) => (
-                        <pre className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-zinc-900 p-4 font-mono text-[13px] leading-6 text-white/80">
+                        <pre className="my-4 overflow-x-auto rounded-xl border border-ink/10 bg-surface-1 p-4 font-mono text-[13px] leading-6 text-ink/80">
                             {children}
                         </pre>
                     ),
@@ -95,10 +95,10 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                             src={typeof src === "string" ? src : undefined}
                             alt={alt ?? ""}
                             loading="lazy"
-                            className="mx-auto my-6 block max-h-[70vh] max-w-full rounded-xl border border-white/10"
+                            className="mx-auto my-6 block max-h-[70vh] max-w-full rounded-xl border border-ink/10"
                         />
                     ),
-                    hr: () => <hr className="my-8 border-white/10" />,
+                    hr: () => <hr className="my-8 border-ink/10" />,
                     table: ({ children }) => (
                         <div className="my-4 overflow-x-auto">
                             <table className="w-full border-collapse text-sm">
@@ -107,12 +107,12 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                         </div>
                     ),
                     th: ({ children }) => (
-                        <th className="border border-white/10 bg-white/5 px-3 py-2 text-left font-semibold text-white">
+                        <th className="border border-ink/10 bg-ink/5 px-3 py-2 text-left font-semibold text-ink">
                             {children}
                         </th>
                     ),
                     td: ({ children }) => (
-                        <td className="border border-white/10 px-3 py-2">
+                        <td className="border border-ink/10 px-3 py-2">
                             {children}
                         </td>
                     ),

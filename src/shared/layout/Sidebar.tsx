@@ -30,17 +30,25 @@ export function Sidebar() {
          * with the labels still hidden, so its extra width bought nothing and
          * cost the feed 200px.
          */
-        <aside className="fixed h-screen w-[72px] xl:w-[275px] flex flex-col justify-between py-6 px-2 xl:px-4 border-r border-white/10 bg-black">
+        <aside className="fixed h-screen w-[72px] xl:w-[275px] flex flex-col justify-between py-6 px-2 xl:px-4 border-r border-ink/10 bg-ground">
             <div className="flex flex-col gap-y-6">
                 {/* Brand Logo */}
                 <Link
                     to="/"
                     className="mb-2 flex justify-center xl:justify-start xl:px-3"
                 >
+                    {/*
+                     * The mark is a white glyph baked onto an opaque black
+                     * square, so on a light page it reads as a black tile
+                     * rather than a logo. It is greyscale end to end, which
+                     * makes inverting it exact — the glyph goes black, its
+                     * square goes white, and the square disappears into the
+                     * page the same way it disappears into black today.
+                     */}
                     <img
                         src={logo}
                         alt="TDN"
-                        className="h-8 w-auto object-contain"
+                        className="h-8 w-auto object-contain light:invert"
                     />
                 </Link>
 
@@ -85,7 +93,7 @@ export function Sidebar() {
                     <button
                         onClick={handleProfileClick}
                         aria-label={t("nav.profile")}
-                        className="flex w-full items-center justify-center gap-x-4 rounded-full py-3 text-left text-white/80 transition-all hover:bg-white/10 hover:text-white group xl:justify-start xl:px-4"
+                        className="flex w-full items-center justify-center gap-x-4 rounded-full py-3 text-left text-ink/80 transition-all hover:bg-ink/10 hover:text-ink group xl:justify-start xl:px-4"
                     >
                         <span className="w-6 h-6 shrink-0 transition-transform group-hover:scale-110">
                             <ProfileIcon />
@@ -98,7 +106,7 @@ export function Sidebar() {
             </div>
 
             {/* Bottom Section: Profile or Sign In */}
-            <div className="mt-auto pt-4 border-t border-white/5">
+            <div className="mt-auto pt-4 border-t border-ink/5">
                 {isAuthenticated && user ? (
                     <div className="group relative">
                         <button
@@ -108,9 +116,9 @@ export function Sidebar() {
                             // Below `xl` all that shows is the avatar, whose
                             // `alt` is the literal word "Avatar".
                             aria-label={user.fullName || user.username}
-                            className="w-full flex items-center justify-center gap-x-3 p-2 rounded-full hover:bg-white/5 transition-all text-left xl:justify-start xl:p-3"
+                            className="w-full flex items-center justify-center gap-x-3 p-2 rounded-full hover:bg-ink/5 transition-all text-left xl:justify-start xl:p-3"
                         >
-                            <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden border border-white/10 bg-zinc-800">
+                            <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden border border-ink/10 bg-surface-2">
                                 {user.avatarUrl ? (
                                     <img
                                         src={user.avatarUrl}
@@ -118,21 +126,21 @@ export function Sidebar() {
                                         className="h-full w-full object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white font-bold">
+                                    <div className="w-full h-full flex items-center justify-center bg-blue-600 text-on-fill font-bold">
                                         {user.username[0].toUpperCase()}
                                     </div>
                                 )}
                             </div>
                             <div className="flex-1 overflow-hidden hidden xl:block">
-                                <p className="font-bold text-white truncate">
+                                <p className="font-bold text-ink truncate">
                                     {user.fullName || user.username}
                                 </p>
-                                <p className="text-sm text-white/40 truncate">
+                                <p className="text-sm text-ink/40 truncate">
                                     @{user.username}
                                 </p>
                             </div>
                             <svg
-                                className="hidden w-5 h-5 text-white/20 group-hover:text-white/50 xl:block"
+                                className="hidden w-5 h-5 text-ink/20 group-hover:text-ink/50 xl:block"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -154,7 +162,7 @@ export function Sidebar() {
                                 e.stopPropagation();
                                 navigate("/settings");
                             }}
-                            className="absolute -top-12 left-0 hidden w-full bg-zinc-900 border border-white/10 rounded-xl py-3 px-4 text-sm font-bold text-white opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all hover:bg-zinc-800 text-left shadow-xl xl:block"
+                            className="absolute -top-12 left-0 hidden w-full bg-surface-1 border border-ink/10 rounded-xl py-3 px-4 text-sm font-bold text-ink opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all hover:bg-surface-2 text-left shadow-xl xl:block"
                         >
                             {t("nav.settings")}
                         </button>
@@ -182,25 +190,25 @@ export function Sidebar() {
             <div className="hidden flex-wrap gap-x-6 gap-y-1 px-3 pt-3 pb-1 xl:flex">
                 <Link
                     to="/privacy"
-                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                    className="text-[11px] text-ink/25 hover:text-ink/50 transition-colors"
                 >
                     {t("auth.privacy")}
                 </Link>
                 <Link
                     to="/terms"
-                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                    className="text-[11px] text-ink/25 hover:text-ink/50 transition-colors"
                 >
                     {t("auth.terms")}
                 </Link>
                 <Link
                     to="/contact"
-                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                    className="text-[11px] text-ink/25 hover:text-ink/50 transition-colors"
                 >
                     {t("nav.contact")}
                 </Link>
                 <Link
                     to="/socials"
-                    className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                    className="text-[11px] text-ink/25 hover:text-ink/50 transition-colors"
                 >
                     {t("nav.social")}
                 </Link>
@@ -229,12 +237,12 @@ function NavItem({
             // out of the accessible name — so without this the rail is a
             // column of six links a screen reader can only call "link".
             aria-label={label}
-            className="flex items-center justify-center gap-x-4 rounded-full py-3 text-white/80 transition-all hover:bg-white/10 hover:text-white group xl:justify-start xl:px-4"
+            className="flex items-center justify-center gap-x-4 rounded-full py-3 text-ink/80 transition-all hover:bg-ink/10 hover:text-ink group xl:justify-start xl:px-4"
         >
             <span className="relative w-6 h-6 shrink-0 transition-transform group-hover:scale-110">
                 {icon}
                 {badge != null && badge > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-on-fill text-[10px] font-bold leading-none">
                         {badge > 9 ? "9+" : badge}
                     </span>
                 )}

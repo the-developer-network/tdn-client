@@ -84,7 +84,7 @@ export function CoverPicker({
             />
 
             {preview ? (
-                <div className="relative overflow-hidden rounded-xl border border-white/10">
+                <div className="relative overflow-hidden rounded-xl border border-ink/10">
                     {/* Bounded the same way the reading page bounds it, so
                         the preview is a fair picture of what a reader gets
                         rather than a taller one the writer has to guess at. */}
@@ -100,7 +100,7 @@ export function CoverPicker({
                             else onRemoveExisting();
                         }}
                         aria-label={t("editor.removeCover")}
-                        className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white transition-colors hover:bg-black"
+                        className="absolute right-2 top-2 rounded-full bg-scrim/70 p-1.5 text-on-fill transition-colors hover:bg-scrim"
                     >
                         <X size={14} />
                     </button>
@@ -109,7 +109,7 @@ export function CoverPicker({
                 <button
                     type="button"
                     onClick={() => inputRef.current?.click()}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 py-8 text-sm text-white/40 transition-colors hover:border-white/30 hover:text-white/70"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-ink/15 py-8 text-sm text-ink/40 transition-colors hover:border-ink/30 hover:text-ink/70"
                 >
                     <ImagePlus size={18} />
                     {t("editor.addCover")}
@@ -126,14 +126,14 @@ export function CoverPicker({
                     }
                     placeholder={t("editor.coverAltPlaceholder")}
                     aria-label={t("editor.coverAlt")}
-                    className="mt-2 w-full bg-transparent text-sm text-white/70 outline-none placeholder:text-white/25"
+                    className="mt-2 w-full bg-transparent text-sm text-ink/70 outline-none placeholder:text-ink/25"
                 />
             )}
 
             {/* A cover is optional — most articles do without one — so this
                 says so rather than leaving the empty slot looking unfinished. */}
             {!preview && (
-                <p className="mt-1.5 text-xs text-white/30">
+                <p className="mt-1.5 text-xs text-ink/30">
                     {t("editor.coverOptional")}
                 </p>
             )}

@@ -6,10 +6,12 @@ import { useInitialUnreadCount } from "../features/notifications/hooks/useInitia
 import { registerSessionExpiredHandler } from "../core/api/client";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
+import { useTheme } from "../shared/hooks/useTheme";
 import { ToastContainer } from "../shared/components/ui/ToastContainer";
 import { OfflineBanner } from "../shared/components/ui/OfflineBanner";
 
 export function AppInit() {
+    useTheme();
     useNotificationSocket();
     useInitialUnreadCount();
 
