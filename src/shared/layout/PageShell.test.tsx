@@ -49,14 +49,36 @@ describe("PageShell", () => {
         it("defaults to the 600px feed column", () => {
             renderShell();
 
-            expect(main().className).toContain("sm:max-w-[600px]");
+            expect(main().className).toContain("lg:max-w-[600px]");
         });
 
         it("widens to 720px for reading", () => {
             renderShell({ width: "reading" });
 
-            expect(main().className).toContain("sm:max-w-[720px]");
-            expect(main().className).not.toContain("sm:max-w-[600px]");
+            expect(main().className).toContain("xl:max-w-[720px]");
+        });
+
+        // The reading column shares the row with a 275px sidebar and a 320px
+        // rail. 275 + 720 + 320 is 1315, so below `xl` it has to come down to
+        // the feed's 600 — a 720px column that never shrinks is one that runs
+        // off the right edge of a tablet, which is what it used to do.
+        it("holds the reading column at the feed width below xl", () => {
+            renderShell({ width: "reading" });
+
+            expect(main().className).toContain("lg:max-w-[600px]");
+            expect(main().className).not.toContain("sm:max-w-[720px]");
+            expect(main().className).not.toContain("md:max-w-[720px]");
+        });
+
+        // Below `lg` the column fills whatever the 72px icon rail leaves.
+        // Capping it at 600 on an 834px tablet would leave 160px of dead
+        // black beside the feed.
+        it("caps neither width below lg", () => {
+            renderShell();
+            expect(main().className).not.toMatch(/\b(sm|md):max-w-\[/);
+
+            renderShell({ width: "reading" });
+            expect(main().className).not.toMatch(/\b(sm|md):max-w-\[/);
         });
 
         // 275 + 720 + 320 is 1315, so the feed's 1250 container would squeeze
@@ -88,7 +110,36 @@ describe("PageShell", () => {
             });
 
             expect(screen.getByTestId("rail")).toBeInTheDocument();
-            expect(main().className).toContain("sm:max-w-[720px]");
+            expect(main().className).toContain("xl:max-w-[720px]");
+        });
+    });
+
+    // The sidebar and the bottom nav have to change over at the same width, or
+    // a tablet gets both at once — or, as it did at 640px, a sidebar that took
+    // 220 of the 640 and left the feed narrower than it gets on a phone.
+    describe("the sidebar / bottom-nav changeover", () => {
+        const sidebarWrapper = () =>
+            screen.getByTestId("sidebar").parentElement!;
+
+        it("holds the sidebar back until md", () => {
+            renderShell();
+
+            expect(sidebarWrapper().className).toContain("hidden md:block");
+        });
+
+        it("leaves room under the column for the bottom nav below md", () => {
+            renderShell();
+
+            expect(main().className).toContain("pb-16 md:pb-0");
+        });
+
+        // 72 + 600 + 320 is 992: the rail arrives at lg only because the
+        // sidebar is still the narrow icon rail there.
+        it("keeps the sidebar at rail width until xl", () => {
+            renderShell();
+
+            expect(sidebarWrapper().className).toContain("w-[72px]");
+            expect(sidebarWrapper().className).toContain("xl:w-[275px]");
         });
     });
 });

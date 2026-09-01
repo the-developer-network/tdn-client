@@ -235,7 +235,9 @@ export default function ProfilePage() {
                     {displayProfile?.isMe && (
                         <button
                             onClick={() => navigate("/settings")}
-                            className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                            // Below `md` there is no sidebar to reach Settings
+                            // through, and `BottomNav` has no room for it.
+                            className="md:hidden p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
                             aria-label={t("profile.settings")}
                         >
                             <Settings size={18} />
