@@ -171,6 +171,8 @@ const en = {
     "notif.commentLike": "@{{username}} liked your comment",
     "notif.commentReply": "@{{username}} replied to your comment",
     "notif.quote": "@{{username}} quoted your post",
+    "notif.mediaRejected":
+        "A media item in your post was removed for breaking the community rules.",
     "notif.generic": "@{{username}} sent you a notification",
 
     "notif.justNow": "just now",
@@ -787,6 +789,8 @@ const tr: Record<TranslationKey, string> = {
     "notif.commentLike": "@{{username}} yorumunuzu beğendi",
     "notif.commentReply": "@{{username}} yorumunuza cevap verdi",
     "notif.quote": "@{{username}} gönderini alıntıladı",
+    "notif.mediaRejected":
+        "Paylaşımınızdaki bir medya, topluluk kurallarına aykırı olduğu için kaldırıldı.",
     "notif.generic": "@{{username}} size bir bildirim gönderdi",
 
     "notif.justNow": "az önce",
