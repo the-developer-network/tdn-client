@@ -36,6 +36,7 @@ vi.mock("../shared/components/TrendingTopicsWidget", () => ({
 }));
 
 import { useAuthStore } from "../core/auth/auth.store";
+import { useThemeStore } from "../shared/store/theme.store";
 import SettingsPage from "./SettingsPage";
 
 const BASE = "http://localhost:8080/api/v1";
@@ -134,5 +135,47 @@ describe("SettingsPage — change username", () => {
         await waitFor(() => {
             expect(usernameInput()).toHaveValue("");
         });
+    });
+});
+
+describe("SettingsPage — theme", () => {
+    beforeEach(() => {
+        // The shared handler answers /users/me with a shape the page does not
+        // read, and `AccountInfoSection` throws on it before the theme pills
+        // ever render.
+        server.use(
+            http.get(`${BASE}/users/me`, () =>
+                HttpResponse.json({ data: accountInfo }),
+            ),
+        );
+        useThemeStore.setState({ theme: "dark" });
+        delete document.documentElement.dataset.theme;
+    });
+
+    it("switches the theme and repaints the document", async () => {
+        const user = userEvent.setup();
+        render(<SettingsPage />);
+
+        await user.click(await screen.findByRole("button", { name: "Light" }));
+
+        expect(useThemeStore.getState().theme).toBe("light");
+        expect(document.documentElement.dataset.theme).toBe("light");
+    });
+
+    it("marks the active theme pressed, and only that one", async () => {
+        render(<SettingsPage />);
+
+        const dark = await screen.findByRole("button", { name: "Dark" });
+        const light = screen.getByRole("button", { name: "Light" });
+        const system = screen.getByRole("button", { name: "System" });
+
+        expect(dark).toHaveAttribute("aria-pressed", "true");
+        expect(light).toHaveAttribute("aria-pressed", "false");
+        expect(system).toHaveAttribute("aria-pressed", "false");
+
+        await userEvent.setup().click(system);
+
+        expect(dark).toHaveAttribute("aria-pressed", "false");
+        expect(system).toHaveAttribute("aria-pressed", "true");
     });
 });

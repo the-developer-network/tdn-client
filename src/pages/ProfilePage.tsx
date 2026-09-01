@@ -210,23 +210,23 @@ export default function ProfilePage() {
                 canonical={`/profile/${username}`}
             />
             {/* Sticky header */}
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10">
                 <div className="flex items-center gap-3 px-4 py-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+                        className="p-2 rounded-full hover:bg-ink/10 transition-colors text-ink/70 hover:text-ink"
                     >
                         <ArrowLeft size={18} />
                     </button>
                     <div className="flex-1">
                         {profileLoading ? (
-                            <div className="h-5 w-32 bg-white/10 rounded animate-pulse" />
+                            <div className="h-5 w-32 bg-ink/10 rounded animate-pulse" />
                         ) : (
-                            <h1 className="text-base font-bold text-white leading-tight">
+                            <h1 className="text-base font-bold text-ink leading-tight">
                                 {displayProfile?.fullName || username}
                             </h1>
                         )}
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-ink/40">
                             {posts.length > 0
                                 ? `${posts.length} ${t("profile.posts")}`
                                 : "\u00a0"}
@@ -237,7 +237,7 @@ export default function ProfilePage() {
                             onClick={() => navigate("/settings")}
                             // Below `md` there is no sidebar to reach Settings
                             // through, and `BottomNav` has no room for it.
-                            className="md:hidden p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                            className="md:hidden p-2 rounded-full hover:bg-ink/10 transition-colors text-ink/50 hover:text-ink"
                             aria-label={t("profile.settings")}
                         >
                             <Settings size={18} />
@@ -260,12 +260,12 @@ export default function ProfilePage() {
             {/* Profile skeleton */}
             {profileLoading && (
                 <div className="animate-pulse">
-                    <div className="h-24 sm:h-32 md:h-40 bg-zinc-900" />
+                    <div className="h-24 sm:h-32 md:h-40 bg-surface-1" />
                     <div className="px-4 pb-4">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-zinc-800 border-4 border-black -mt-10 mb-3" />
-                        <div className="h-5 w-40 bg-zinc-800 rounded mb-2" />
-                        <div className="h-4 w-24 bg-zinc-800 rounded mb-3" />
-                        <div className="h-4 w-64 bg-zinc-800 rounded" />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-surface-2 border-4 border-ground -mt-10 mb-3" />
+                        <div className="h-5 w-40 bg-surface-2 rounded mb-2" />
+                        <div className="h-4 w-24 bg-surface-2 rounded mb-3" />
+                        <div className="h-4 w-64 bg-surface-2 rounded" />
                     </div>
                 </div>
             )}
@@ -274,7 +274,7 @@ export default function ProfilePage() {
             {!profileLoading && displayProfile && (
                 <>
                     {/* Banner */}
-                    <div className="relative h-24 sm:h-32 md:h-40 bg-zinc-900 overflow-hidden">
+                    <div className="relative h-24 sm:h-32 md:h-40 bg-surface-1 overflow-hidden">
                         {displayProfile.bannerUrl && (
                             <img
                                 src={displayProfile.bannerUrl}
@@ -292,13 +292,13 @@ export default function ProfilePage() {
                                 `https://ui-avatars.com/api/?name=${displayProfile.username}&size=80`
                             }
                             alt={displayProfile.username}
-                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-black object-cover shrink-0 bg-zinc-900"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-ground object-cover shrink-0 bg-surface-1"
                         />
 
                         {displayProfile.isMe ? (
                             <button
                                 onClick={() => setIsEditModalOpen(true)}
-                                className="mt-8 sm:mt-12 rounded-full border border-white/20 px-5 py-1.5 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
+                                className="mt-8 sm:mt-12 rounded-full border border-ink/20 px-5 py-1.5 text-sm font-semibold text-ink hover:bg-ink/5 transition-colors"
                             >
                                 {t("profile.editProfile")}
                             </button>
@@ -308,8 +308,8 @@ export default function ProfilePage() {
                                 disabled={followLoading}
                                 className={`mt-8 sm:mt-12 rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
                                     isFollowing
-                                        ? "border-white/20 text-white/70 bg-transparent hover:border-red-500/50 hover:text-red-400"
-                                        : "border-white bg-white text-black hover:bg-white/90"
+                                        ? "border-ink/20 text-ink/70 bg-transparent hover:border-red-500/50 hover:text-red-400"
+                                        : "border-ink bg-ink text-ground hover:bg-ink/90"
                                 }`}
                             >
                                 {followLoading
@@ -322,21 +322,21 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Bio section */}
-                    <div className="px-4 pb-4 border-b border-white/10">
-                        <h2 className="text-xl font-bold text-white leading-tight">
+                    <div className="px-4 pb-4 border-b border-ink/10">
+                        <h2 className="text-xl font-bold text-ink leading-tight">
                             {displayProfile.fullName || displayProfile.username}
                         </h2>
-                        <p className="text-sm text-white/50 mt-0.5">
+                        <p className="text-sm text-ink/50 mt-0.5">
                             @{displayProfile.username}
                         </p>
 
                         {displayProfile.bio && (
-                            <p className="mt-3 text-sm text-white/80 leading-relaxed">
+                            <p className="mt-3 text-sm text-ink/80 leading-relaxed">
                                 {displayProfile.bio}
                             </p>
                         )}
 
-                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-white/40">
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink/40">
                             {displayProfile.location && (
                                 <span className="flex items-center gap-1">
                                     <MapPin size={12} />
@@ -380,12 +380,12 @@ export default function ProfilePage() {
                                 onClick={() => setFollowModal("following")}
                                 className="hover:underline text-left"
                             >
-                                <span className="font-bold text-white">
+                                <span className="font-bold text-ink">
                                     {(
                                         displayProfile.followingCount ?? 0
                                     ).toLocaleString()}
                                 </span>{" "}
-                                <span className="text-white/40">
+                                <span className="text-ink/40">
                                     {t("profile.followingCount")}
                                 </span>
                             </button>
@@ -393,10 +393,10 @@ export default function ProfilePage() {
                                 onClick={() => setFollowModal("followers")}
                                 className="hover:underline text-left"
                             >
-                                <span className="font-bold text-white">
+                                <span className="font-bold text-ink">
                                     {followersCount.toLocaleString()}
                                 </span>{" "}
-                                <span className="text-white/40">
+                                <span className="text-ink/40">
                                     {t("profile.followers")}
                                 </span>
                             </button>
@@ -409,15 +409,15 @@ export default function ProfilePage() {
                 only the page-level error above is shown. */}
             {!hasProfileError && (
                 <>
-                    <div className="flex w-full border-b border-white/10">
+                    <div className="flex w-full border-b border-ink/10">
                         {(["posts", "articles"] as const).map((value) => (
                             <button
                                 key={value}
                                 onClick={() => setTab(value)}
                                 className={`relative flex-1 py-3 text-sm font-medium transition-colors ${
                                     tab === value
-                                        ? "text-white"
-                                        : "text-white/40 hover:text-white/70"
+                                        ? "text-ink"
+                                        : "text-ink/40 hover:text-ink/70"
                                 }`}
                             >
                                 {t(
@@ -426,7 +426,7 @@ export default function ProfilePage() {
                                         : "profile.tabArticles",
                                 )}
                                 {tab === value && (
-                                    <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-white" />
+                                    <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-ink" />
                                 )}
                             </button>
                         ))}
@@ -453,8 +453,8 @@ export default function ProfilePage() {
                                     onClick={() => setArticleStatus(value)}
                                     className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                                         articleStatus === value
-                                            ? "bg-white text-black"
-                                            : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
+                                            ? "bg-ink text-ground"
+                                            : "bg-ink/10 text-ink/60 hover:bg-ink/15 hover:text-ink/80"
                                     }`}
                                 >
                                     {t(
@@ -490,7 +490,7 @@ export default function ProfilePage() {
                         <div className="flex justify-center py-6">
                             <button
                                 onClick={loadMore}
-                                className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
+                                className="rounded-full border border-ink/20 px-6 py-2 text-sm text-ink/70 hover:bg-ink/5 hover:text-ink transition-colors"
                             >
                                 {t("common.loadMore")}
                             </button>
@@ -499,7 +499,7 @@ export default function ProfilePage() {
 
                     {isLoadingMore && (
                         <div className="flex justify-center py-6">
-                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                         </div>
                     )}
                 </>

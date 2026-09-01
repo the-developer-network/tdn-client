@@ -45,10 +45,10 @@ export default function QuotesPage() {
                 canonical={id ? `/posts/${id}/quotes` : undefined}
             />
             <div
-                className="sticky top-0 z-10 flex cursor-pointer items-center gap-6 border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md"
+                className="sticky top-0 z-10 flex cursor-pointer items-center gap-6 border-b border-ink/10 bg-ground/80 px-4 py-3 backdrop-blur-md"
                 onClick={() => navigate(-1)}
             >
-                <button className="-ml-2 rounded-full p-2 text-white transition-colors hover:bg-white/10">
+                <button className="-ml-2 rounded-full p-2 text-ink transition-colors hover:bg-ink/10">
                     <svg
                         width="20"
                         height="20"
@@ -64,7 +64,7 @@ export default function QuotesPage() {
                         />
                     </svg>
                 </button>
-                <h2 className="text-xl font-bold tracking-wide text-white">
+                <h2 className="text-xl font-bold tracking-wide text-ink">
                     {t("page.quotes")}
                 </h2>
             </div>

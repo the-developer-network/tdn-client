@@ -47,8 +47,8 @@ export function CategoryPicker({ selected, onChange }: CategoryPickerProps) {
                         aria-pressed={selected.includes(value)}
                         className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                             selected.includes(value)
-                                ? "bg-white text-black"
-                                : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
+                                ? "bg-ink text-ground"
+                                : "bg-ink/10 text-ink/60 hover:bg-ink/15 hover:text-ink/80"
                         }`}
                     >
                         <Icon size={13} />
@@ -56,7 +56,7 @@ export function CategoryPicker({ selected, onChange }: CategoryPickerProps) {
                     </button>
                 ))}
             </div>
-            <p className="mt-1.5 text-xs text-white/30">
+            <p className="mt-1.5 text-xs text-ink/30">
                 {t("editor.categoriesHint", {
                     max: ARTICLE_LIMITS.categoriesMax,
                 })}

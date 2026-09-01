@@ -72,12 +72,12 @@ export function LoginView() {
 
     return (
         <div className="w-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white tracking-tight text-center">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-ink tracking-tight text-center">
                 {t("auth.passwordTitle")}
             </h2>
-            <p className="text-white/40 text-center mb-8">
+            <p className="text-ink/40 text-center mb-8">
                 {t("auth.loggingInAs")}{" "}
-                <span className="text-white/80 font-medium">
+                <span className="text-ink/80 font-medium">
                     {displayIdentifier}
                 </span>
             </p>
@@ -101,9 +101,9 @@ export function LoginView() {
                         value={password}
                         onChange={(e) => handlePasswordChange(e.target.value)}
                         placeholder={t("auth.passwordPlaceholder")}
-                        className={`w-full bg-black border ${
-                            error ? "border-red-500" : "border-white/20"
-                        } rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/20`}
+                        className={`w-full bg-ground border ${
+                            error ? "border-red-500" : "border-ink/20"
+                        } rounded-md p-4 text-ink focus:border-blue-500 outline-none transition-all placeholder:text-ink/20`}
                         autoComplete="current-password"
                         autoFocus
                     />
@@ -134,7 +134,7 @@ export function LoginView() {
                     type="button"
                     variant="ghost"
                     size="full"
-                    className="text-white/40 hover:text-white py-2"
+                    className="text-ink/40 hover:text-ink py-2"
                     onClick={() => setStep("identifier")}
                 >
                     {t("auth.changeAccount")}

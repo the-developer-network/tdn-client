@@ -67,7 +67,7 @@ export function QuoteComposerModal({
     return (
         <Modal isOpen={isOpen} onClose={handleClose}>
             <div className="px-5 pb-5 pt-14">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-ink">
                     {t("quote.title")}
                 </h3>
 
@@ -78,7 +78,7 @@ export function QuoteComposerModal({
                             `https://ui-avatars.com/api/?name=${user?.username ?? "Guest"}`
                         }
                         alt={user?.username ?? ""}
-                        className="h-10 w-10 shrink-0 rounded-full border border-white/5 object-cover"
+                        className="h-10 w-10 shrink-0 rounded-full border border-ink/5 object-cover"
                     />
                     <div className="min-w-0 flex-1">
                         <textarea
@@ -87,20 +87,20 @@ export function QuoteComposerModal({
                             placeholder={t("quote.placeholder")}
                             rows={3}
                             autoFocus
-                            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-white outline-none placeholder-white/30"
+                            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-ink outline-none placeholder-ink/30"
                         />
                         <QuotedPostCard post={quoted} isPreview />
                     </div>
                 </div>
 
-                <div className="mt-5 flex items-center justify-end gap-3 border-t border-white/5 pt-4">
+                <div className="mt-5 flex items-center justify-end gap-3 border-t border-ink/5 pt-4">
                     {isTooLong ? (
                         <span className="mr-auto text-xs text-red-400">
                             {t("quote.tooLong", { n: MAX_LENGTH })}
                         </span>
                     ) : (
                         content.length > 0 && (
-                            <span className="mr-auto text-xs text-white/30">
+                            <span className="mr-auto text-xs text-ink/30">
                                 {content.length}/{MAX_LENGTH}
                             </span>
                         )
@@ -109,7 +109,7 @@ export function QuoteComposerModal({
                         type="button"
                         onClick={handleClose}
                         disabled={isSubmitting}
-                        className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+                        className="rounded-full border border-ink/10 px-4 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/5 hover:text-ink disabled:opacity-50"
                     >
                         {t("common.cancel")}
                     </button>
@@ -117,7 +117,7 @@ export function QuoteComposerModal({
                         type="button"
                         onClick={handleSubmit}
                         disabled={isSubmitting || isTooLong}
-                        className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-ground transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {isSubmitting ? t("quote.posting") : t("quote.submit")}
                     </button>

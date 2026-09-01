@@ -31,7 +31,7 @@ export function CommentList({
     if (isLoading) {
         return (
             <div className="flex justify-center p-8">
-                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
             </div>
         );
     }
@@ -51,7 +51,7 @@ export function CommentList({
 
     if (comments.length === 0) {
         return (
-            <div className="p-8 text-center text-white/30 text-sm">
+            <div className="p-8 text-center text-ink/30 text-sm">
                 {t("commentList.empty")}
             </div>
         );
@@ -77,7 +77,7 @@ export function CommentList({
 
             {isLoadingMore && (
                 <div className="flex justify-center py-4">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                 </div>
             )}
         </div>

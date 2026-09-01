@@ -42,28 +42,28 @@ export function QuotedPostCard({
     return (
         <div
             onClick={handleClick}
-            className={`mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3 ${
+            className={`mt-3 rounded-2xl border border-ink/10 bg-ink/[0.02] p-3 ${
                 isPreview
                     ? ""
-                    : "cursor-pointer transition-colors hover:bg-white/[0.05]"
+                    : "cursor-pointer transition-colors hover:bg-ink/[0.05]"
             }`}
         >
             <div className="flex items-center gap-2">
                 <img
                     src={post.author.avatarUrl}
                     alt={post.author.username}
-                    className="h-5 w-5 shrink-0 rounded-full border border-white/5 object-cover"
+                    className="h-5 w-5 shrink-0 rounded-full border border-ink/5 object-cover"
                 />
                 {post.author.fullName && (
-                    <span className="truncate text-sm font-semibold text-white">
+                    <span className="truncate text-sm font-semibold text-ink">
                         {post.author.fullName}
                     </span>
                 )}
-                <span className="truncate text-sm text-white/40">
+                <span className="truncate text-sm text-ink/40">
                     @{post.author.username}
                 </span>
-                <span className="text-white/20">·</span>
-                <span className="shrink-0 text-sm text-white/40">
+                <span className="text-ink/20">·</span>
+                <span className="shrink-0 text-sm text-ink/40">
                     {new Date(post.createdAt).toLocaleDateString(locale, {
                         day: "numeric",
                         month: "short",
@@ -74,13 +74,13 @@ export function QuotedPostCard({
             {post.content && (
                 <RichText
                     text={post.content}
-                    className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-white/70"
+                    className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-ink/70"
                 />
             )}
 
             {post.mediaUrls.length > 0 && (
                 <div
-                    className={`mt-2 overflow-hidden rounded-xl border border-white/10 bg-[#080808] ${
+                    className={`mt-2 overflow-hidden rounded-xl border border-ink/10 bg-[#080808] ${
                         post.mediaUrls.length > 1
                             ? "grid grid-cols-2 gap-0.5"
                             : "block"

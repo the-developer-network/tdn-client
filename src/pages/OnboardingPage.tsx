@@ -34,9 +34,9 @@ export default function OnboardingPage() {
     if (!isAuthenticated) return <Navigate to="/" replace />;
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-ground text-ink">
             <div className="mx-auto flex min-h-screen w-full max-w-[600px] flex-col px-4 py-8">
-                <p className="text-xs font-medium uppercase tracking-wide text-white/30">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink/30">
                     {t("onboarding.stepOfTwo", {
                         n: step === "fields" ? 1 : 2,
                     })}
@@ -88,7 +88,7 @@ function FieldsStep({ selected, onChange, onContinue }: FieldsStepProps) {
             <h1 className="mt-2 text-2xl font-bold">
                 {t("onboarding.fieldsTitle")}
             </h1>
-            <p className="mt-2 text-[15px] text-white/50">
+            <p className="mt-2 text-[15px] text-ink/50">
                 {t("onboarding.fieldsBody")}
             </p>
 
@@ -174,14 +174,14 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
                           n: stillNeeded || MIN_FOLLOWS,
                       })}
             </h1>
-            <p className="mt-2 text-[15px] text-white/50">
+            <p className="mt-2 text-[15px] text-ink/50">
                 {t("onboarding.accountsBody")}
             </p>
 
             <div className="mt-6 flex-1">
                 {isLoading && (
                     <div className="flex justify-center py-16">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
                     </div>
                 )}
 
@@ -199,7 +199,7 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
                         <h2 className="text-lg font-bold">
                             {t("onboarding.emptyTitle")}
                         </h2>
-                        <p className="max-w-[320px] text-sm text-white/40">
+                        <p className="max-w-[320px] text-sm text-ink/40">
                             {t("onboarding.emptyBody")}
                         </p>
                     </div>
@@ -207,7 +207,7 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
 
                 {!isLoading && accounts.length > 0 && (
                     <>
-                        <div className="-mx-4 border-t border-white/10">
+                        <div className="-mx-4 border-t border-ink/10">
                             {accounts.map((account) => (
                                 <AccountCard
                                     key={account.userId}
@@ -243,15 +243,15 @@ function AccountsStep({ categories, onBack, onFinish }: AccountsStepProps) {
                 )}
             </div>
 
-            <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-white/10 bg-black/80 px-4 py-4 backdrop-blur-md">
+            <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-ink/10 bg-ground/80 px-4 py-4 backdrop-blur-md">
                 <button
                     type="button"
                     onClick={onBack}
-                    className="shrink-0 rounded-full px-4 py-2 text-sm font-medium text-white/50 transition-colors hover:text-white"
+                    className="shrink-0 rounded-full px-4 py-2 text-sm font-medium text-ink/50 transition-colors hover:text-ink"
                 >
                     {t("onboarding.back")}
                 </button>
-                <span className="flex-1 text-sm text-white/40">
+                <span className="flex-1 text-sm text-ink/40">
                     {t("onboarding.progress", {
                         n: progress,
                         total: required,

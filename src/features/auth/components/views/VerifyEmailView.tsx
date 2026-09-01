@@ -61,10 +61,10 @@ export function VerifyEmailView() {
 
     return (
         <div className="w-full flex flex-col animate-in fade-in zoom-in duration-300 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-ink tracking-tight">
                 {t("auth.verifyTitle")}
             </h2>
-            <p className="text-white/60 mb-8 text-sm leading-relaxed">
+            <p className="text-ink/60 mb-8 text-sm leading-relaxed">
                 {t("auth.verifySubtitle")}
             </p>
 
@@ -92,7 +92,7 @@ export function VerifyEmailView() {
                     placeholder="00000000"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    className="w-full bg-black border border-white/20 rounded-md p-5 text-center text-2xl font-mono tracking-[0.5em] text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/10"
+                    className="w-full bg-ground border border-ink/20 rounded-md p-5 text-center text-2xl font-mono tracking-[0.5em] text-ink focus:border-blue-500 outline-none transition-all placeholder:text-ink/10"
                     autoFocus
                 />
 
@@ -115,7 +115,7 @@ export function VerifyEmailView() {
                         type="button"
                         variant="ghost"
                         size="full"
-                        className="text-white/40 hover:text-white"
+                        className="text-ink/40 hover:text-ink"
                         onClick={closeModal}
                     >
                         {t("auth.skipForNow")}

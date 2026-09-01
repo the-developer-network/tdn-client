@@ -335,27 +335,27 @@ export default function FeedPage() {
                 description="TDN is the social network for developers. Share code, tech news, articles and connect with the dev community."
                 canonical="/"
             />
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10">
                 {/* Search */}
                 <div className="px-4 pt-4 pb-3">
                     <ProfileSearchDropdown />
                 </div>
 
                 {/* Categories */}
-                <div className="flex w-full border-b border-white/5">
+                <div className="flex w-full border-b border-ink/5">
                     {CATEGORIES.map((cat) => (
                         <button
                             key={cat.value}
                             onClick={() => handleTabChange(cat.value)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
                                 activeTab === cat.value
-                                    ? "text-white"
-                                    : "text-white/40 hover:text-white/70"
+                                    ? "text-ink"
+                                    : "text-ink/40 hover:text-ink/70"
                             }`}
                         >
                             {t(cat.labelKey)}
                             {activeTab === cat.value && (
-                                <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-white rounded-full" />
+                                <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-ink rounded-full" />
                             )}
                         </button>
                     ))}
@@ -368,22 +368,22 @@ export default function FeedPage() {
                             onClick={handleFollowedOnlyToggle}
                             className={`flex shrink-0 items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                                 followedOnly
-                                    ? "bg-white text-black"
-                                    : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
+                                    ? "bg-ink text-ground"
+                                    : "bg-ink/10 text-ink/60 hover:bg-ink/15 hover:text-ink/80"
                             }`}
                         >
                             <Users size={13} />
                             {t("feed.following")}
                         </button>
-                        <div className="w-px h-4 bg-white/10 shrink-0" />
+                        <div className="w-px h-4 bg-ink/10 shrink-0" />
                         {CATEGORY_OPTIONS.map(({ labelKey, value, Icon }) => (
                             <button
                                 key={value}
                                 onClick={() => handleToggleCategory(value)}
                                 className={`flex shrink-0 items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                                     selectedCategories.includes(value)
-                                        ? "bg-white text-black"
-                                        : "bg-white/10 text-white/60 hover:bg-white/15 hover:text-white/80"
+                                        ? "bg-ink text-ground"
+                                        : "bg-ink/10 text-ink/60 hover:bg-ink/15 hover:text-ink/80"
                                 }`}
                             >
                                 <Icon size={13} />
@@ -405,7 +405,7 @@ export default function FeedPage() {
             {isArticles && isAuthenticated && (
                 <Link
                     to="/articles/new"
-                    className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.03] hover:text-white"
+                    className="flex items-center gap-2 border-b border-ink/10 px-4 py-3 text-sm font-medium text-ink/60 transition-colors hover:bg-ink/[0.03] hover:text-ink"
                 >
                     <PenLine size={16} />
                     {t("editor.writeArticle")}

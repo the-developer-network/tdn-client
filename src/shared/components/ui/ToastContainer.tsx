@@ -3,9 +3,9 @@ import { useToastStore } from "../../store/toast.store";
 import { useI18n } from "../../hooks/useI18n";
 
 const typeStyles = {
-    error: "bg-zinc-900 border-red-500/40 text-red-400",
-    success: "bg-zinc-900 border-green-500/40 text-green-400",
-    info: "bg-zinc-900 border-white/20 text-white/80",
+    error: "bg-surface-1 border-red-500/40 text-red-400",
+    success: "bg-surface-1 border-green-500/40 text-green-400",
+    info: "bg-surface-1 border-ink/20 text-ink/80",
 };
 
 export function ToastContainer() {

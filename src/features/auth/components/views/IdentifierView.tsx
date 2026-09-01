@@ -52,7 +52,7 @@ export function IdentifierView() {
 
     return (
         <div className="w-full animate-in fade-in zoom-in duration-300">
-            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-white tracking-tight text-center">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-ink tracking-tight text-center">
                 {t("auth.joinTitle")}
             </h2>
 
@@ -60,24 +60,24 @@ export function IdentifierView() {
                 {/* Social Logins */}
                 <button
                     onClick={() => handleSocialLogin("google")}
-                    className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-3 rounded-full hover:bg-zinc-200 transition-all"
+                    className="w-full flex items-center justify-center gap-3 bg-ink text-ground font-bold py-3 rounded-full hover:bg-ink-hover transition-all"
                 >
                     <GoogleIcon /> {t("auth.googleSignUp")}
                 </button>
 
                 <button
                     onClick={() => handleSocialLogin("github")}
-                    className="w-full flex items-center justify-center gap-3 bg-zinc-900 text-white font-bold py-3 rounded-full hover:bg-zinc-800 border border-white/10 transition-all"
+                    className="w-full flex items-center justify-center gap-3 bg-surface-1 text-ink font-bold py-3 rounded-full hover:bg-surface-2 border border-ink/10 transition-all"
                 >
                     <GithubIcon /> {t("auth.githubSignUp")}
                 </button>
 
                 <div className="flex items-center py-4">
-                    <div className="flex-1 h-[1px] bg-white/10"></div>
-                    <span className="px-4 text-sm text-white/40 font-medium">
+                    <div className="flex-1 h-[1px] bg-ink/10"></div>
+                    <span className="px-4 text-sm text-ink/40 font-medium">
                         {t("auth.or")}
                     </span>
-                    <div className="flex-1 h-[1px] bg-white/10"></div>
+                    <div className="flex-1 h-[1px] bg-ink/10"></div>
                 </div>
 
                 {/* Direct Input Field */}
@@ -105,7 +105,7 @@ export function IdentifierView() {
                         autoCorrect="off"
                         spellCheck={false}
                         autoComplete="username"
-                        className="w-full bg-black border border-white/20 rounded-md p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-white/30"
+                        className="w-full bg-ground border border-ink/20 rounded-md p-4 text-ink focus:border-blue-500 outline-none transition-all placeholder:text-ink/30"
                     />
 
                     <Button
@@ -120,7 +120,7 @@ export function IdentifierView() {
                 </form>
             </div>
 
-            <p className="mt-8 text-[12px] text-white/40 leading-relaxed text-center">
+            <p className="mt-8 text-[12px] text-ink/40 leading-relaxed text-center">
                 {t("auth.termsPrefix")}{" "}
                 <span
                     className="text-blue-500 hover:underline cursor-pointer"

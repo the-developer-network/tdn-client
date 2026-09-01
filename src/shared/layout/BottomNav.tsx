@@ -23,13 +23,13 @@ export function BottomNav() {
     return (
         <nav
             data-testid="bottom-nav"
-            className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-white/10 bg-black md:hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-ink/10 bg-ground md:hidden"
         >
             <NavLink
                 to="/"
                 end
                 className={({ isActive }) =>
-                    `flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-white" : "text-white/40 hover:text-white/70"}`
+                    `flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-ink" : "text-ink/40 hover:text-ink/70"}`
                 }
             >
                 <Home size={22} />
@@ -39,7 +39,7 @@ export function BottomNav() {
             <NavLink
                 to="/explore"
                 className={({ isActive }) =>
-                    `flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-white" : "text-white/40 hover:text-white/70"}`
+                    `flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-ink" : "text-ink/40 hover:text-ink/70"}`
                 }
             >
                 <Compass size={22} />
@@ -49,13 +49,13 @@ export function BottomNav() {
             <NavLink
                 to="/notifications"
                 className={({ isActive }) =>
-                    `relative flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-white" : "text-white/40 hover:text-white/70"}`
+                    `relative flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-ink" : "text-ink/40 hover:text-ink/70"}`
                 }
             >
                 <span className="relative">
                     <Bell size={22} />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-white text-[9px] font-bold leading-none">
+                        <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-on-fill text-[9px] font-bold leading-none">
                             {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                     )}
@@ -66,7 +66,7 @@ export function BottomNav() {
             <NavLink
                 to="/bookmarks"
                 className={({ isActive }) =>
-                    `flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-white" : "text-white/40 hover:text-white/70"}`
+                    `flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors ${isActive ? "text-ink" : "text-ink/40 hover:text-ink/70"}`
                 }
             >
                 <Bookmark size={22} />
@@ -75,13 +75,13 @@ export function BottomNav() {
 
             <button
                 onClick={handleProfileClick}
-                className="flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors text-white/40 hover:text-white/70"
+                className="flex flex-col items-center justify-center flex-1 py-3 gap-0.5 text-[10px] transition-colors text-ink/40 hover:text-ink/70"
             >
                 {isAuthenticated && user?.avatarUrl ? (
                     <img
                         src={user.avatarUrl}
                         alt=""
-                        className="w-6 h-6 rounded-full object-cover border border-white/20"
+                        className="w-6 h-6 rounded-full object-cover border border-ink/20"
                     />
                 ) : (
                     <CircleUser size={22} />

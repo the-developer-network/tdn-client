@@ -85,7 +85,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
     return (
         <>
             <article
-                className="p-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                className="p-4 border-b border-ink/10 hover:bg-ink/[0.02] transition-colors cursor-pointer"
                 onClick={handleCardClick}
             >
                 <div className="flex gap-3">
@@ -94,7 +94,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                         back to and nothing to sanitise. */}
                     <img
                         src={author.avatarUrl}
-                        className="h-9 w-9 rounded-full border border-white/5 object-cover shrink-0 cursor-pointer"
+                        className="h-9 w-9 rounded-full border border-ink/5 object-cover shrink-0 cursor-pointer"
                         alt={author.username}
                         onClick={goToProfile}
                     />
@@ -105,16 +105,16 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                 onClick={goToProfile}
                             >
                                 {author.fullName && (
-                                    <span className="font-semibold text-white text-sm hover:underline">
+                                    <span className="font-semibold text-ink text-sm hover:underline">
                                         {author.fullName}
                                     </span>
                                 )}
-                                <span className="text-white/40 text-sm hover:underline">
+                                <span className="text-ink/40 text-sm hover:underline">
                                     @{author.username}
                                 </span>
                             </span>
-                            <span className="text-white/20">·</span>
-                            <span className="text-white/40 text-xs">
+                            <span className="text-ink/20">·</span>
+                            <span className="text-ink/40 text-xs">
                                 {new Date(createdAt).toLocaleDateString(
                                     locale,
                                     {
@@ -127,7 +127,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
                         <RichText
                             text={displayContent}
-                            className="mt-1.5 text-[15px] text-white/90 leading-relaxed whitespace-pre-wrap"
+                            className="mt-1.5 text-[15px] text-ink/90 leading-relaxed whitespace-pre-wrap"
                         />
                         {(showTranslate || isTranslated || translateError) && (
                             <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -148,17 +148,17 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                 )}
                                 {isTranslated && (
                                     <>
-                                        <span className="text-xs text-white/30">
+                                        <span className="text-xs text-ink/30">
                                             {t("post.translated")}
                                         </span>
-                                        <span className="text-white/20">·</span>
+                                        <span className="text-ink/20">·</span>
                                         <button
                                             type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleRevert();
                                             }}
-                                            className="text-xs text-white/40 hover:underline"
+                                            className="text-xs text-ink/40 hover:underline"
                                         >
                                             {t("post.showOriginal")}
                                         </button>
@@ -175,7 +175,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                                 e.stopPropagation();
                                                 handleRevert();
                                             }}
-                                            className="text-xs text-white/40 hover:underline"
+                                            className="text-xs text-ink/40 hover:underline"
                                         >
                                             {t("post.dismiss")}
                                         </button>
@@ -186,7 +186,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
                         {mediaUrls && mediaUrls.length > 0 && (
                             <div
-                                className={`mt-3 rounded-2xl overflow-hidden border border-white/10 bg-[#080808] ${mediaUrls.length > 1 ? "grid grid-cols-2 gap-0.5" : "block"}`}
+                                className={`mt-3 rounded-2xl overflow-hidden border border-ink/10 bg-[#080808] ${mediaUrls.length > 1 ? "grid grid-cols-2 gap-0.5" : "block"}`}
                             >
                                 {mediaUrls.map((url, index) => (
                                     <div
@@ -213,13 +213,13 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             </div>
                         )}
 
-                        <div className="mt-3 flex items-center gap-6 text-white/30">
+                        <div className="mt-3 flex items-center gap-6 text-ink/30">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     navigate(`/comments/${id}`);
                                 }}
-                                className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-white/60"
+                                className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-ink/5 hover:text-ink/60"
                             >
                                 <svg
                                     className="h-4 w-4"
@@ -243,7 +243,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                 className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors disabled:opacity-50 ${
                                     isLiked
                                         ? "text-pink-500"
-                                        : "hover:bg-white/5 hover:text-white/60"
+                                        : "hover:bg-ink/5 hover:text-ink/60"
                                 }`}
                             >
                                 <svg
@@ -268,7 +268,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                 className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors disabled:opacity-50 ${
                                     isBookmarked
                                         ? "text-blue-400"
-                                        : "hover:bg-white/5 hover:text-white/60"
+                                        : "hover:bg-ink/5 hover:text-ink/60"
                                 }`}
                             >
                                 <svg
@@ -290,7 +290,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
                             <button
                                 onClick={handleShare}
-                                className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-white/60"
+                                className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:bg-ink/5 hover:text-ink/60"
                             >
                                 <svg
                                     className="h-4 w-4"
@@ -312,7 +312,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                     type="button"
                                     onClick={handleOpenDeleteModal}
                                     disabled={isDeleteLoading}
-                                    className="flex items-center gap-1.5 rounded-full px-2 py-1.5 text-white/40 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex items-center gap-1.5 rounded-full px-2 py-1.5 text-ink/40 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-label={t("comment.deleteTitle")}
                                     title={t("comment.deleteTitle")}
                                 >
@@ -338,10 +338,10 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
             <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal}>
                 <div className="px-6 pb-6 pt-14">
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className="text-lg font-semibold text-ink">
                         {t("comment.deleteTitle")}
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-white/50">
+                    <p className="mt-2 text-sm leading-relaxed text-ink/50">
                         {t("comment.deleteBody")}
                     </p>
 
@@ -350,7 +350,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             type="button"
                             onClick={handleCloseDeleteModal}
                             disabled={isDeleteLoading}
-                            className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+                            className="rounded-full border border-ink/10 px-4 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/5 hover:text-ink disabled:opacity-50"
                         >
                             {t("common.cancel")}
                         </button>
@@ -358,7 +358,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             type="button"
                             onClick={handleConfirmDelete}
                             disabled={isDeleteLoading}
-                            className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-400 disabled:opacity-50"
+                            className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-on-fill transition-colors hover:bg-red-400 disabled:opacity-50"
                         >
                             {isDeleteLoading
                                 ? t("common.deleting")

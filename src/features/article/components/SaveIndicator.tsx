@@ -45,7 +45,7 @@ export function SaveIndicator({
 
     if (state === "saving") {
         return (
-            <span className="flex items-center gap-1.5 text-xs text-white/40">
+            <span className="flex items-center gap-1.5 text-xs text-ink/40">
                 <Loader2 size={13} className="animate-spin" />
                 {t("editor.saving")}
             </span>
@@ -67,7 +67,7 @@ export function SaveIndicator({
 
         return (
             <span
-                className={`text-xs ${problem === "empty" ? "text-white/30" : "text-red-400/80"}`}
+                className={`text-xs ${problem === "empty" ? "text-ink/30" : "text-red-400/80"}`}
             >
                 {message}
             </span>
@@ -76,13 +76,13 @@ export function SaveIndicator({
 
     if (isDirty) {
         return (
-            <span className="text-xs text-white/40">{t("editor.unsaved")}</span>
+            <span className="text-xs text-ink/40">{t("editor.unsaved")}</span>
         );
     }
 
     if (state === "saved") {
         return (
-            <span className="flex items-center gap-1.5 text-xs text-white/40">
+            <span className="flex items-center gap-1.5 text-xs text-ink/40">
                 <Check size={13} />
                 {t("editor.saved")}
             </span>

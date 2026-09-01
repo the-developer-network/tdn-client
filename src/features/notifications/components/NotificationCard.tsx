@@ -81,12 +81,12 @@ export function NotificationCard({ notification }: NotificationCardProps) {
     return (
         <div
             onClick={handleClick}
-            className={`flex items-start gap-3 px-4 py-4 border-b border-white/10 hover:bg-white/5 cursor-pointer transition-colors ${
+            className={`flex items-start gap-3 px-4 py-4 border-b border-ink/10 hover:bg-ink/5 cursor-pointer transition-colors ${
                 !notification.isRead ? "border-l-2 border-l-blue-500" : ""
             }`}
         >
             {/* Avatar */}
-            <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden bg-zinc-800">
+            <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden bg-surface-2">
                 {notification.avatarUrl ? (
                     <img
                         src={notification.avatarUrl}
@@ -94,7 +94,7 @@ export function NotificationCard({ notification }: NotificationCardProps) {
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-bold">
+                    <div className="w-full h-full flex items-center justify-center text-ink/40 text-sm font-bold">
                         {notification.username.charAt(0).toUpperCase()}
                     </div>
                 )}
@@ -102,10 +102,10 @@ export function NotificationCard({ notification }: NotificationCardProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-                <p className="text-white/90 text-[15px] leading-snug">
+                <p className="text-ink/90 text-[15px] leading-snug">
                     {t(messageKey, { username: notification.username })}
                 </p>
-                <p className="text-white/40 text-xs mt-1">
+                <p className="text-ink/40 text-xs mt-1">
                     {getRelativeTime(notification.createdAt, t, locale)}
                 </p>
             </div>

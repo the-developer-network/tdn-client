@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
@@ -13,9 +14,11 @@ import { useDeleteAccount } from "../features/settings/hooks/useDeleteAccount";
 import { authApi } from "../features/auth/api/auth-api";
 import { getErrorMessage } from "../shared/utils/error-handler";
 import { useLanguageStore } from "../shared/store/language.store";
+import { useTheme } from "../shared/hooks/useTheme";
 import { useI18n } from "../shared/hooks/useI18n";
 import type { AccountInfo } from "../features/settings/api/settings.types";
 import type { Locale } from "../shared/store/language.store";
+import type { Theme } from "../shared/store/theme.store";
 
 export default function SettingsPage() {
     const { isAuthenticated } = useAuthStore();
@@ -38,16 +41,16 @@ export default function SettingsPage() {
 
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4">
-                <h1 className="text-xl font-bold text-white">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10 px-4 py-4">
+                <h1 className="text-xl font-bold text-ink">
                     {t("settings.title")}
                 </h1>
-                <p className="text-sm text-white/40 mt-1">
+                <p className="text-sm text-ink/40 mt-1">
                     {t("settings.subtitle")}
                 </p>
             </div>
 
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-ink/10">
                 <AccountInfoSection
                     accountInfo={accountInfo}
                     isLoading={infoLoading}
@@ -57,6 +60,7 @@ export default function SettingsPage() {
                     <VerifyEmailSection onVerified={refetchAccountInfo} />
                 )}
                 <LanguageSection />
+                <ThemeSection />
                 <ChangeUsernameSection />
                 <ChangeEmailSection />
                 <ChangePasswordSection />
@@ -75,7 +79,7 @@ function SectionCard({
 }) {
     return (
         <div className="px-4 py-6">
-            <h2 className="text-base font-bold text-white mb-4">{title}</h2>
+            <h2 className="text-base font-bold text-ink mb-4">{title}</h2>
             {children}
         </div>
     );
@@ -106,7 +110,7 @@ function LanguageSection() {
 
     return (
         <SectionCard title={t("settings.language")}>
-            <p className="text-sm text-white/50 mb-4">
+            <p className="text-sm text-ink/50 mb-4">
                 {t("settings.languageSubtitle")}
             </p>
             <div className="flex gap-3">
@@ -116,11 +120,47 @@ function LanguageSection() {
                         onClick={() => setLocale(opt.value)}
                         className={`px-5 py-2 rounded-full text-sm font-semibold border transition-colors ${
                             locale === opt.value
-                                ? "bg-white text-black border-white"
-                                : "bg-transparent text-white/60 border-white/20 hover:border-white/40 hover:text-white"
+                                ? "bg-ink text-ground border-ink"
+                                : "bg-transparent text-ink/60 border-ink/20 hover:border-ink/40 hover:text-ink"
                         }`}
                     >
                         {opt.label}
+                    </button>
+                ))}
+            </div>
+        </SectionCard>
+    );
+}
+
+function ThemeSection() {
+    const { t } = useI18n();
+    const { theme, setTheme } = useTheme();
+
+    const options: { value: Theme; label: string; Icon: typeof Sun }[] = [
+        { value: "dark", label: t("settings.themeDark"), Icon: Moon },
+        { value: "light", label: t("settings.themeLight"), Icon: Sun },
+        { value: "system", label: t("settings.themeSystem"), Icon: Monitor },
+    ];
+
+    return (
+        <SectionCard title={t("settings.theme")}>
+            <p className="text-sm text-ink/50 mb-4">
+                {t("settings.themeSubtitle")}
+            </p>
+            <div className="flex flex-wrap gap-3">
+                {options.map(({ value, label, Icon }) => (
+                    <button
+                        key={value}
+                        onClick={() => setTheme(value)}
+                        aria-pressed={theme === value}
+                        className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold border transition-colors ${
+                            theme === value
+                                ? "bg-ink text-ground border-ink"
+                                : "bg-transparent text-ink/60 border-ink/20 hover:border-ink/40 hover:text-ink"
+                        }`}
+                    >
+                        <Icon size={15} aria-hidden="true" />
+                        {label}
                     </button>
                 ))}
             </div>
@@ -142,7 +182,7 @@ function AccountInfoSection({
     return (
         <SectionCard title={t("settings.accountInfo")}>
             {isLoading && (
-                <p className="text-sm text-white/40">
+                <p className="text-sm text-ink/40">
                     {t("settings.accountInfoLoading")}
                 </p>
             )}
@@ -188,8 +228,8 @@ function AccountInfoSection({
 function InfoRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex items-center justify-between gap-4">
-            <span className="text-sm text-white/50 shrink-0">{label}</span>
-            <span className="text-sm text-white text-right truncate">
+            <span className="text-sm text-ink/50 shrink-0">{label}</span>
+            <span className="text-sm text-ink text-right truncate">
                 {value}
             </span>
         </div>
@@ -219,7 +259,7 @@ function ChangeUsernameSection() {
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     placeholder={t("settings.newUsernamePlaceholder")}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
+                    className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm"
                 />
                 <Button
                     type="submit"
@@ -264,7 +304,7 @@ function ChangeEmailSection() {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder={t("settings.newEmailPlaceholder")}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
+                    className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm"
                 />
                 <Button
                     type="submit"
@@ -324,21 +364,21 @@ function ChangePasswordSection() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder={t("settings.currentPasswordPlaceholder")}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
+                    className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm"
                 />
                 <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder={t("settings.newPasswordPlaceholder")}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
+                    className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm"
                 />
                 <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t("settings.confirmPasswordPlaceholder")}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
+                    className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm"
                 />
                 <Button
                     type="submit"
@@ -410,7 +450,7 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
 
     return (
         <SectionCard title={t("settings.verifyEmail")}>
-            <p className="text-sm text-white/50 mb-4">
+            <p className="text-sm text-ink/50 mb-4">
                 {t("settings.verifyEmailBody")}
             </p>
 
@@ -446,7 +486,7 @@ function VerifyEmailSection({ onVerified }: { onVerified: () => void }) {
                             setCode(e.target.value.replace(/[^0-9]/g, ""))
                         }
                         placeholder={t("settings.codeInputPlaceholder")}
-                        className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm font-mono tracking-widest text-center"
+                        className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm font-mono tracking-widest text-center"
                         autoFocus
                     />
                     <div className="flex gap-2">
@@ -513,10 +553,10 @@ function DangerZoneSection() {
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-ink">
                             {t("settings.logOut")}
                         </p>
-                        <p className="text-xs text-white/40 mt-0.5">
+                        <p className="text-xs text-ink/40 mt-0.5">
                             {t("settings.logOutSubtitle")}
                         </p>
                     </div>
@@ -530,12 +570,12 @@ function DangerZoneSection() {
                     </Button>
                 </div>
 
-                <div className="border-t border-white/10 pt-3 flex items-center justify-between">
+                <div className="border-t border-ink/10 pt-3 flex items-center justify-between">
                     <div>
                         <p className="text-sm font-medium text-red-400">
                             {t("settings.deleteAccount")}
                         </p>
-                        <p className="text-xs text-white/40 mt-0.5">
+                        <p className="text-xs text-ink/40 mt-0.5">
                             {t("settings.deleteAccountSubtitle")}
                         </p>
                     </div>
@@ -550,15 +590,15 @@ function DangerZoneSection() {
 
             <Modal isOpen={showConfirm} onClose={closeConfirm}>
                 <div className="p-6">
-                    <h3 className="text-lg font-bold text-white mb-2">
+                    <h3 className="text-lg font-bold text-ink mb-2">
                         {t("settings.deleteAccountTitle")}
                     </h3>
-                    <p className="text-sm text-white/60 mb-4">
+                    <p className="text-sm text-ink/60 mb-4">
                         {t("settings.deleteAccountBody")}
                     </p>
                     <label
                         htmlFor="delete-account-password"
-                        className="block text-sm text-white/60 mb-2"
+                        className="block text-sm text-ink/60 mb-2"
                     >
                         {t("settings.deleteAccountPasswordLabel")}
                     </label>
@@ -570,7 +610,7 @@ function DangerZoneSection() {
                         placeholder={t(
                             "settings.deleteAccountPasswordPlaceholder",
                         )}
-                        className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm mb-2"
+                        className="w-full bg-surface-1 border border-ink/10 rounded-xl px-4 py-3 text-ink placeholder:text-ink/30 focus:outline-none focus:border-ink/30 text-sm mb-2"
                     />
                     {(localError ?? error) && (
                         <p className="text-sm text-red-400 mb-2">
@@ -588,7 +628,7 @@ function DangerZoneSection() {
                         <button
                             onClick={() => void handleConfirmDelete()}
                             disabled={isLoading}
-                            className="flex-1 py-2.5 px-4 rounded-full text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                            className="flex-1 py-2.5 px-4 rounded-full text-sm font-bold text-on-fill bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >
                             {isLoading
                                 ? t("settings.deleting")

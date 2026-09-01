@@ -74,7 +74,7 @@ export function EditProfileModal({
     });
 
     const inputClass =
-        "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors";
+        "w-full bg-ink/5 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-ink/30 outline-none focus:border-ink/30 transition-colors";
 
     const fallbackAvatar = `https://ui-avatars.com/api/?name=${profile.username}&size=80`;
 
@@ -110,7 +110,7 @@ export function EditProfileModal({
 
             <div className="pb-6">
                 {/* Banner */}
-                <div className="relative h-24 sm:h-32 bg-zinc-900 overflow-hidden rounded-t-2xl">
+                <div className="relative h-24 sm:h-32 bg-surface-1 overflow-hidden rounded-t-2xl">
                     {currentBanner && (
                         <img
                             src={currentBanner}
@@ -122,12 +122,12 @@ export function EditProfileModal({
                         type="button"
                         onClick={() => bannerInputRef.current?.click()}
                         disabled={bannerUploading}
-                        className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/60 transition-colors"
+                        className="absolute inset-0 flex items-center justify-center bg-scrim/40 hover:bg-scrim/60 transition-colors"
                     >
                         {bannerUploading ? (
-                            <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-2 border-on-fill/40 border-t-on-fill rounded-full animate-spin" />
                         ) : (
-                            <Camera size={20} className="text-white" />
+                            <Camera size={20} className="text-on-fill" />
                         )}
                     </button>
                 </div>
@@ -138,18 +138,18 @@ export function EditProfileModal({
                         <img
                             src={currentAvatar}
                             alt={profile.username}
-                            className="w-16 h-16 rounded-full border-4 border-black object-cover bg-zinc-900"
+                            className="w-16 h-16 rounded-full border-4 border-ground object-cover bg-surface-1"
                         />
                         <button
                             type="button"
                             onClick={() => avatarInputRef.current?.click()}
                             disabled={avatarUploading}
-                            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+                            className="absolute inset-0 flex items-center justify-center rounded-full bg-scrim/50 hover:bg-scrim/70 transition-colors"
                         >
                             {avatarUploading ? (
-                                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                <div className="w-4 h-4 border-2 border-on-fill/40 border-t-on-fill rounded-full animate-spin" />
                             ) : (
-                                <Camera size={14} className="text-white" />
+                                <Camera size={14} className="text-on-fill" />
                             )}
                         </button>
                     </div>
@@ -161,13 +161,13 @@ export function EditProfileModal({
                 </div>
 
                 <div className="px-6 space-y-4">
-                    <h3 className="text-lg font-bold text-white">
+                    <h3 className="text-lg font-bold text-ink">
                         {t("profile.editProfile")}
                     </h3>
 
                     {/* Full Name */}
                     <div>
-                        <label className="block text-xs font-medium text-white/50 mb-1.5">
+                        <label className="block text-xs font-medium text-ink/50 mb-1.5">
                             {t("editProfile.fullName")}
                         </label>
                         <input
@@ -182,7 +182,7 @@ export function EditProfileModal({
 
                     {/* Bio */}
                     <div>
-                        <label className="block text-xs font-medium text-white/50 mb-1.5">
+                        <label className="block text-xs font-medium text-ink/50 mb-1.5">
                             {t("editProfile.bio")}
                         </label>
                         <textarea
@@ -193,14 +193,14 @@ export function EditProfileModal({
                             rows={3}
                             className={`${inputClass} resize-none`}
                         />
-                        <p className="text-right text-xs text-white/30 mt-1">
+                        <p className="text-right text-xs text-ink/30 mt-1">
                             {bio.length}/160
                         </p>
                     </div>
 
                     {/* Location */}
                     <div>
-                        <label className="block text-xs font-medium text-white/50 mb-1.5">
+                        <label className="block text-xs font-medium text-ink/50 mb-1.5">
                             {t("editProfile.location")}
                         </label>
                         <input
@@ -216,7 +216,7 @@ export function EditProfileModal({
                     {/* Socials */}
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-medium text-white/50">
+                            <label className="text-xs font-medium text-ink/50">
                                 {t("editProfile.socials")}
                             </label>
                             <button
@@ -231,7 +231,7 @@ export function EditProfileModal({
 
                         <div className="space-y-2">
                             {socials.length === 0 && (
-                                <p className="text-xs text-white/30 py-1">
+                                <p className="text-xs text-ink/30 py-1">
                                     {t("editProfile.noSocials")}
                                 </p>
                             )}
@@ -254,7 +254,7 @@ export function EditProfileModal({
                                             "editProfile.socialLabelPlaceholder",
                                         )}
                                         maxLength={32}
-                                        className="w-24 shrink-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors"
+                                        className="w-24 shrink-0 bg-ink/5 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-ink/30 outline-none focus:border-ink/30 transition-colors"
                                     />
                                     <input
                                         type="text"
@@ -267,12 +267,12 @@ export function EditProfileModal({
                                             )
                                         }
                                         placeholder="https://..."
-                                        className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors"
+                                        className="flex-1 min-w-0 bg-ink/5 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-ink/30 outline-none focus:border-ink/30 transition-colors"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => removeSocial(i)}
-                                        className="p-2 text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        className="p-2 text-ink/30 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -288,7 +288,7 @@ export function EditProfileModal({
                             type="button"
                             onClick={onClose}
                             disabled={isLoading}
-                            className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+                            className="rounded-full border border-ink/10 px-4 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/5 hover:text-ink disabled:opacity-50"
                         >
                             {t("common.cancel")}
                         </button>

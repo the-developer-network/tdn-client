@@ -70,8 +70,8 @@ function FollowListRow({
         "rounded-full text-xs font-semibold transition-colors",
         "disabled:opacity-50",
         isFollowing
-            ? "bg-transparent border border-white/30 text-white hover:border-red-500/60 hover:text-red-400"
-            : "bg-white text-black hover:bg-white/90",
+            ? "bg-transparent border border-ink/30 text-ink hover:border-red-500/60 hover:text-red-400"
+            : "bg-ink text-ground hover:bg-ink/90",
     ].join(" ");
 
     return (
@@ -85,7 +85,7 @@ function FollowListRow({
                     onNavigate(user.username);
                 }
             }}
-            className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/5 transition-colors text-left cursor-pointer"
+            className="w-full flex items-center gap-3 px-6 py-3 hover:bg-ink/5 transition-colors text-left cursor-pointer"
         >
             <img
                 src={
@@ -93,17 +93,15 @@ function FollowListRow({
                     `https://ui-avatars.com/api/?name=${user.username}`
                 }
                 alt={user.username}
-                className="w-10 h-10 rounded-full border border-white/10 object-cover shrink-0"
+                className="w-10 h-10 rounded-full border border-ink/10 object-cover shrink-0"
             />
             <div className="min-w-0">
-                <p className="text-sm font-semibold text-white truncate">
+                <p className="text-sm font-semibold text-ink truncate">
                     {user.fullName || user.username}
                 </p>
-                <p className="text-xs text-white/40 truncate">
-                    @{user.username}
-                </p>
+                <p className="text-xs text-ink/40 truncate">@{user.username}</p>
                 {user.bio && (
-                    <p className="text-xs text-white/30 truncate mt-0.5">
+                    <p className="text-xs text-ink/30 truncate mt-0.5">
                         {user.bio}
                     </p>
                 )}
@@ -142,7 +140,7 @@ export function FollowListModal({
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="pt-14 pb-2">
-                <h2 className="px-6 pb-3 text-base font-bold text-white border-b border-white/10">
+                <h2 className="px-6 pb-3 text-base font-bold text-ink border-b border-ink/10">
                     {type === "followers"
                         ? t("profile.followers")
                         : t("profile.followingCount")}
@@ -151,7 +149,7 @@ export function FollowListModal({
                 <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
                     {isLoading && (
                         <div className="flex justify-center py-10">
-                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                         </div>
                     )}
 
@@ -162,7 +160,7 @@ export function FollowListModal({
                     )}
 
                     {!isLoading && !error && users.length === 0 && (
-                        <p className="px-6 py-10 text-sm text-white/40 text-center">
+                        <p className="px-6 py-10 text-sm text-ink/40 text-center">
                             {type === "followers"
                                 ? t("followList.noFollowers")
                                 : t("followList.noFollowing")}
@@ -185,7 +183,7 @@ export function FollowListModal({
                             <button
                                 type="button"
                                 onClick={loadMore}
-                                className="rounded-full border border-white/20 px-6 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
+                                className="rounded-full border border-ink/20 px-6 py-2 text-sm text-ink/70 hover:bg-ink/5 hover:text-ink transition-colors"
                             >
                                 {t("common.loadMore")}
                             </button>
@@ -194,7 +192,7 @@ export function FollowListModal({
 
                     {isLoadingMore && (
                         <div className="flex justify-center py-4">
-                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            <div className="w-5 h-5 border-2 border-ink/20 border-t-ink rounded-full animate-spin" />
                         </div>
                     )}
                 </div>

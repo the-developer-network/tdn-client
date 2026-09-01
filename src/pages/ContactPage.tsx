@@ -18,51 +18,51 @@ export default function ContactPage() {
             />
 
             {/* Sticky header */}
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10">
                 <div className="flex items-center gap-3 px-4 py-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white"
+                        className="p-2 rounded-full hover:bg-ink/10 transition-colors text-ink/70 hover:text-ink"
                     >
                         <ArrowLeft size={18} />
                     </button>
-                    <h1 className="text-base font-bold text-white">
+                    <h1 className="text-base font-bold text-ink">
                         {t("contact.title")}
                     </h1>
                 </div>
             </div>
 
-            <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-8 text-white/80 text-sm leading-relaxed">
+            <div className="px-4 sm:px-6 py-8 max-w-full sm:max-w-2xl space-y-8 text-ink/80 text-sm leading-relaxed">
                 <div>
-                    <p className="text-white/40 text-xs mb-6">
+                    <p className="text-ink/40 text-xs mb-6">
                         {t("legal.lastUpdated")}
                     </p>
                     <p>{t("contact.intro")}</p>
                 </div>
 
                 <section>
-                    <h2 className="text-white font-bold text-base mb-4">
+                    <h2 className="text-ink font-bold text-base mb-4">
                         {t("contact.generalTitle")}
                     </h2>
                     <a
                         href="mailto:contact@developernetwork.net"
-                        className="inline-flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-2xl px-5 py-4 hover:bg-zinc-800 hover:border-white/20 transition-all"
+                        className="inline-flex items-center gap-3 bg-surface-1 border border-ink/10 rounded-2xl px-5 py-4 hover:bg-surface-2 hover:border-ink/20 transition-all"
                     >
                         <Mail className="w-5 h-5 text-blue-400 shrink-0" />
-                        <span className="text-white font-medium">
+                        <span className="text-ink font-medium">
                             contact@developernetwork.net
                         </span>
                     </a>
-                    <p className="mt-4 text-white/50">
+                    <p className="mt-4 text-ink/50">
                         {t("contact.responseTime")}
                     </p>
                 </section>
 
                 <section>
-                    <h2 className="text-white font-bold text-base mb-3">
+                    <h2 className="text-ink font-bold text-base mb-3">
                         {t("contact.aboutTitle")}
                     </h2>
-                    <ul className="list-disc list-inside space-y-2 text-white/70">
+                    <ul className="list-disc list-inside space-y-2 text-ink/70">
                         <li>{t("contact.aboutAccount")}</li>
                         <li>{t("contact.aboutAbuse")}</li>
                         <li>{t("contact.aboutPrivacy")}</li>
@@ -73,26 +73,24 @@ export default function ContactPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-white font-bold text-base mb-3">
+                    <h2 className="text-ink font-bold text-base mb-3">
                         {t("contact.openSourceTitle")}
                     </h2>
-                    <p className="text-white/70">
-                        {t("contact.openSourceBody")}
-                    </p>
+                    <p className="text-ink/70">{t("contact.openSourceBody")}</p>
                 </section>
 
-                <div className="border-t border-white/10 pt-6 text-white/40 text-xs">
+                <div className="border-t border-ink/10 pt-6 text-ink/40 text-xs">
                     {t("legal.brand")} ·{" "}
                     <a
                         href="/privacy"
-                        className="hover:text-white/60 transition-colors"
+                        className="hover:text-ink/60 transition-colors"
                     >
                         {t("legal.privacyTitle")}
                     </a>{" "}
                     ·{" "}
                     <a
                         href="/terms"
-                        className="hover:text-white/60 transition-colors"
+                        className="hover:text-ink/60 transition-colors"
                     >
                         {t("legal.termsTitle")}
                     </a>

@@ -45,7 +45,7 @@ export function TagInput({ tags, onChange }: TagInputProps) {
                 {tags.map((tag) => (
                     <span
                         key={tag}
-                        className="flex items-center gap-1 rounded-full bg-white/10 py-1 pl-3 pr-1.5 text-xs text-white/70"
+                        className="flex items-center gap-1 rounded-full bg-ink/10 py-1 pl-3 pr-1.5 text-xs text-ink/70"
                     >
                         #{tag}
                         <button
@@ -54,7 +54,7 @@ export function TagInput({ tags, onChange }: TagInputProps) {
                                 onChange(tags.filter((it) => it !== tag))
                             }
                             aria-label={t("editor.removeTag", { tag })}
-                            className="rounded-full p-0.5 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                            className="rounded-full p-0.5 text-ink/40 transition-colors hover:bg-ink/10 hover:text-ink"
                         >
                             <X size={12} />
                         </button>
@@ -68,12 +68,12 @@ export function TagInput({ tags, onChange }: TagInputProps) {
                         onBlur={commit}
                         placeholder={t("editor.tagPlaceholder")}
                         aria-label={t("editor.tags")}
-                        className="min-w-[10rem] flex-1 bg-transparent py-1 text-sm text-white outline-none placeholder:text-white/30"
+                        className="min-w-[10rem] flex-1 bg-transparent py-1 text-sm text-ink outline-none placeholder:text-ink/30"
                     />
                 )}
             </div>
 
-            <p className="mt-1.5 text-xs text-white/30">
+            <p className="mt-1.5 text-xs text-ink/30">
                 {isFull
                     ? t("editor.tagsFull", { max: ARTICLE_LIMITS.tagsMax })
                     : willChange

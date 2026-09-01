@@ -12,19 +12,19 @@ export default function FollowsPage() {
     return (
         <PageShell rightRail={<TrendingTopicsWidget />}>
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-4 flex items-center justify-between">
+            <div className="sticky top-0 z-10 bg-ground/80 backdrop-blur-md border-b border-ink/10 px-4 py-4 flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-white">
+                    <h1 className="text-xl font-bold text-ink">
                         {t("follows.title")}
                     </h1>
-                    <p className="text-sm text-white/40 mt-1">
+                    <p className="text-sm text-ink/40 mt-1">
                         {t("follows.subtitle")}
                     </p>
                 </div>
                 <button
                     onClick={refetch}
                     disabled={isLoading}
-                    className="p-2 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30"
+                    className="p-2 rounded-full text-ink/50 hover:text-ink hover:bg-ink/10 transition-colors disabled:opacity-30"
                     aria-label={t("follows.title")}
                 >
                     <RefreshCw
@@ -36,17 +36,17 @@ export default function FollowsPage() {
 
             {/* Loading skeletons */}
             {isLoading && suggestions.length === 0 && (
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-ink/10">
                     {Array.from({ length: 5 }).map((_, i) => (
                         <div
                             key={i}
                             className="flex items-start gap-3 px-4 py-4"
                         >
-                            <div className="shrink-0 w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+                            <div className="shrink-0 w-10 h-10 rounded-full bg-ink/10 animate-pulse" />
                             <div className="flex-1 space-y-2">
-                                <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
-                                <div className="h-3 w-24 bg-white/10 rounded animate-pulse" />
-                                <div className="h-3 w-48 bg-white/10 rounded animate-pulse" />
+                                <div className="h-4 w-32 bg-ink/10 rounded animate-pulse" />
+                                <div className="h-3 w-24 bg-ink/10 rounded animate-pulse" />
+                                <div className="h-3 w-48 bg-ink/10 rounded animate-pulse" />
                             </div>
                         </div>
                     ))}
@@ -56,10 +56,10 @@ export default function FollowsPage() {
             {/* Error state */}
             {error && !isLoading && (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <p className="text-white/60 text-[15px] mb-4">{error}</p>
+                    <p className="text-ink/60 text-[15px] mb-4">{error}</p>
                     <button
                         onClick={refetch}
-                        className="px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors"
+                        className="px-4 py-2 rounded-full bg-ink text-ground text-sm font-semibold hover:bg-ink/90 transition-colors"
                     >
                         {t("follows.tryAgain")}
                     </button>
@@ -69,9 +69,9 @@ export default function FollowsPage() {
             {/* Empty state */}
             {!isLoading && !error && suggestions.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <div className="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full border border-ink/10 bg-ink/5 flex items-center justify-center mb-4">
                         <svg
-                            className="w-8 h-8 text-white/40"
+                            className="w-8 h-8 text-ink/40"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -84,10 +84,10 @@ export default function FollowsPage() {
                             />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">
+                    <h2 className="text-xl font-bold text-ink mb-2">
                         {t("follows.emptyTitle")}
                     </h2>
-                    <p className="text-white/40 text-[15px] max-w-[250px]">
+                    <p className="text-ink/40 text-[15px] max-w-[250px]">
                         {t("follows.emptyBody")}
                     </p>
                 </div>

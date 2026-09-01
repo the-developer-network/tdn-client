@@ -47,7 +47,7 @@ function EditExisting({ slug }: { slug: string }) {
         return (
             <PageShell width="reading">
                 <div className="flex h-40 items-center justify-center p-8">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/10 border-t-white" />
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-ink/10 border-t-ink" />
                 </div>
             </PageShell>
         );
@@ -57,7 +57,7 @@ function EditExisting({ slug }: { slug: string }) {
         return (
             <PageShell width="reading">
                 <div className="flex flex-col items-center gap-4 p-10 text-center">
-                    <p className="text-sm text-white/40">
+                    <p className="text-sm text-ink/40">
                         {error ?? t("page.articleNotFound")}
                     </p>
                     {error && (
@@ -152,17 +152,17 @@ function Editor({ initial }: { initial: Article | null }) {
                 title={initial ? t("editor.editTitle") : t("editor.newTitle")}
             />
 
-            <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md">
+            <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-ink/10 bg-ground/80 px-4 py-3 backdrop-blur-md">
                 <button
                     onClick={() => navigate(slug ? `/articles/${slug}` : "/")}
                     aria-label={t("common.back")}
-                    className="-ml-2 rounded-full p-2 text-white transition-colors hover:bg-white/10"
+                    className="-ml-2 rounded-full p-2 text-ink transition-colors hover:bg-ink/10"
                 >
                     <ArrowLeft size={20} />
                 </button>
 
                 {status && (
-                    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                    <span className="rounded-full border border-ink/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink/50">
                         {t(
                             status === "PUBLISHED"
                                 ? "editor.statusPublished"
@@ -217,15 +217,15 @@ function Editor({ initial }: { initial: Article | null }) {
                 </div>
             </div>
 
-            <div className="flex border-b border-white/5">
+            <div className="flex border-b border-ink/5">
                 {(["write", "preview"] as const).map((value) => (
                     <button
                         key={value}
                         onClick={() => setTab(value)}
                         className={`relative flex-1 py-2.5 text-sm font-medium transition-colors ${
                             tab === value
-                                ? "text-white"
-                                : "text-white/40 hover:text-white/70"
+                                ? "text-ink"
+                                : "text-ink/40 hover:text-ink/70"
                         }`}
                     >
                         {t(
@@ -234,7 +234,7 @@ function Editor({ initial }: { initial: Article | null }) {
                                 : "editor.preview",
                         )}
                         {tab === value && (
-                            <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-white" />
+                            <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-ink" />
                         )}
                     </button>
                 ))}
@@ -255,7 +255,7 @@ function Editor({ initial }: { initial: Article | null }) {
                         }
                         placeholder={t("editor.titlePlaceholder")}
                         aria-label={t("editor.titlePlaceholder")}
-                        className="w-full bg-transparent text-[32px] font-bold leading-tight tracking-tight text-white outline-none placeholder:text-white/20"
+                        className="w-full bg-transparent text-[32px] font-bold leading-tight tracking-tight text-ink outline-none placeholder:text-ink/20"
                     />
 
                     <CoverPicker
@@ -274,7 +274,7 @@ function Editor({ initial }: { initial: Article | null }) {
                             placeholder={t("editor.bodyPlaceholder")}
                             aria-label={t("editor.bodyPlaceholder")}
                             rows={18}
-                            className="w-full resize-y bg-transparent text-[18px] leading-[1.75] text-white/80 outline-none placeholder:text-white/20"
+                            className="w-full resize-y bg-transparent text-[18px] leading-[1.75] text-ink/80 outline-none placeholder:text-ink/20"
                         />
                     </div>
 
@@ -293,9 +293,9 @@ function Editor({ initial }: { initial: Article | null }) {
                             placeholder={t("editor.excerptPlaceholder")}
                             aria-label={t("editor.excerpt")}
                             rows={2}
-                            className="w-full resize-none bg-transparent text-sm text-white/70 outline-none placeholder:text-white/25"
+                            className="w-full resize-none bg-transparent text-sm text-ink/70 outline-none placeholder:text-ink/25"
                         />
-                        <p className="text-xs text-white/30">
+                        <p className="text-xs text-ink/30">
                             {t("editor.excerptHint")}
                         </p>
                     </Field>
@@ -317,13 +317,13 @@ function Editor({ initial }: { initial: Article | null }) {
                     </Field>
                 </div>
             ) : draft.body.trim() === "" ? (
-                <p className="p-10 text-center text-sm italic text-white/30">
+                <p className="p-10 text-center text-sm italic text-ink/30">
                     {t("editor.emptyPreview")}
                 </p>
             ) : (
                 <div>
                     {draft.title && (
-                        <h1 className="px-4 pt-8 text-[32px] font-bold leading-[1.2] tracking-tight text-white sm:text-[40px]">
+                        <h1 className="px-4 pt-8 text-[32px] font-bold leading-[1.2] tracking-tight text-ink sm:text-[40px]">
                             {draft.title}
                         </h1>
                     )}
@@ -334,14 +334,14 @@ function Editor({ initial }: { initial: Article | null }) {
             )}
 
             <Modal isOpen={confirm !== null} onClose={() => setConfirm(null)}>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-ink">
                     {t(
                         confirm === "delete"
                             ? "editor.deleteTitle"
                             : "editor.archiveTitle",
                     )}
                 </h3>
-                <p className="mt-2 text-sm text-white/60">
+                <p className="mt-2 text-sm text-ink/60">
                     {t(
                         confirm === "delete"
                             ? "editor.deleteBody"
@@ -383,8 +383,8 @@ function Field({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex flex-col gap-1.5 border-t border-white/5 pt-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-white/40">
+        <div className="flex flex-col gap-1.5 border-t border-ink/5 pt-5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink/40">
                 {label}
             </span>
             {children}
