@@ -326,6 +326,67 @@ describe("useArticleEditor", () => {
             expect(uploads).toHaveLength(1);
         });
 
+        /*
+         * The other half of the memo above, and the case it gets wrong on its
+         * own. Caching the key is right while a retry follows a save that
+         * never landed — the ordinary 5xx. It comes apart when the request
+         * times out *after* the server wrote: the article owns that key now,
+         * so every retry re-sends a spent one and is refused, and the editor
+         * can never be saved again. Dropping the memo turns a locked editor
+         * into one more upload.
+         */
+        it("re-uploads the cover once the server says the key was spent", async () => {
+            const uploads: string[] = [];
+            let creates = 0;
+
+            server.use(
+                http.post(`${BASE}/articles/cover`, () => {
+                    uploads.push(`key-${uploads.length + 1}`);
+                    return HttpResponse.json({
+                        data: {
+                            coverImageKey: uploads[uploads.length - 1],
+                            coverImageUrl: "https://cdn.example.com/abc.png",
+                        },
+                    });
+                }),
+                http.post(`${BASE}/articles`, () => {
+                    creates += 1;
+                    if (creates === 1) {
+                        return HttpResponse.json(
+                            {
+                                type: "about:blank",
+                                title: "MediaNotOwnedError",
+                                status: 400,
+                                detail: "That upload is already in use.",
+                                instance: "/api/v1/articles",
+                            },
+                            { status: 400 },
+                        );
+                    }
+                    return HttpResponse.json({ data: article() });
+                }),
+            );
+
+            const { result } = renderHook(() => useArticleEditor(null));
+            type(result, "My Article", "Body text.");
+            act(() => {
+                result.current.setCoverFile(file());
+            });
+
+            await flushAutosave();
+            await waitFor(() => expect(result.current.saveState).toBe("error"));
+            expect(uploads).toHaveLength(1);
+
+            act(() => {
+                result.current.update("body", "Revised.");
+            });
+            await flushAutosave();
+
+            await waitFor(() => expect(result.current.saveState).toBe("saved"));
+            // The second save carries a fresh key rather than the spent one.
+            expect(uploads).toHaveLength(2);
+        });
+
         // `undefined` leaves the cover alone, `null` erases it. Collapsing the
         // two would make removing a cover impossible.
         it("omits coverImageKey entirely when the cover did not change", async () => {

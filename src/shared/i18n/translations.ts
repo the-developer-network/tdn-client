@@ -424,6 +424,23 @@ const en = {
     "error.server":
         "The server could not complete the request. Please try again.",
 
+    // Moderation. Keyed by the API's `title`, because two of these share a
+    // status and the wording has to be ours — see `media-errors.ts`.
+    "error.mediaRejected":
+        "That file breaks the community rules and was not uploaded.",
+    "error.moderationUnavailable":
+        "Media checks are unavailable right now. Please try again in a moment.",
+    // Both 415s name the formats rather than the file: the check reads the
+    // bytes and ignores the extension, so someone holding a HEIC named
+    // ".png" is otherwise told their image is not an image.
+    "error.invalidMediaType":
+        "That file type is not supported, whatever it is named. Use JPEG, PNG, GIF, WEBP, AVIF, MP4, MOV, WEBM or 3GP.",
+    "error.invalidFileType":
+        "That file type is not supported, whatever it is named. Use JPEG, PNG, GIF, WEBP or AVIF.",
+    "error.payloadTooLarge": "That file is larger than 5 MB.",
+    "error.mediaNotOwned":
+        "That upload has already been used. Please pick the file again.",
+
     "ad.promotion": "Promotion",
     "ad.label": "Ad",
     "ad.cta": "Want to reach developers?",
@@ -1017,6 +1034,18 @@ const tr: Record<TranslationKey, string> = {
     "error.api": "Bir API hatası oluştu.",
     "error.unexpected": "Beklenmeyen bir hata oluştu.",
     "error.server": "Sunucu isteği tamamlayamadı. Lütfen tekrar deneyin.",
+
+    "error.mediaRejected":
+        "Bu dosya topluluk kurallarına aykırı olduğu için yüklenmedi.",
+    "error.moderationUnavailable":
+        "Medya kontrolü şu an yapılamıyor. Birazdan tekrar deneyin.",
+    "error.invalidMediaType":
+        "Bu dosya türü desteklenmiyor — adı ne olursa olsun dosyanın kendisine bakılıyor. JPEG, PNG, GIF, WEBP, AVIF, MP4, MOV, WEBM veya 3GP kullanın.",
+    "error.invalidFileType":
+        "Bu dosya türü desteklenmiyor — adı ne olursa olsun dosyanın kendisine bakılıyor. JPEG, PNG, GIF, WEBP veya AVIF kullanın.",
+    "error.payloadTooLarge": "Bu dosya 5 MB'den büyük.",
+    "error.mediaNotOwned":
+        "Bu yükleme zaten kullanılmış. Lütfen dosyayı yeniden seçin.",
 
     "ad.promotion": "Tanıtım",
     "ad.label": "Reklam",

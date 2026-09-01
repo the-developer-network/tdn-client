@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NetworkError } from "../../core/api/api-types";
 import { translate } from "../i18n/translate";
+import { MEDIA_ERROR_MESSAGE_KEYS } from "./media-errors";
 import type { ApiErrorResponse } from "../../core/api/api-types";
 
 /**
@@ -63,6 +64,17 @@ export const getErrorMessage = (err: unknown): string => {
         if (err.validation && err.validation.length > 0) {
             return err.validation[0].message;
         }
+
+        /*
+         * Checked before both branches below, and that ordering is the point.
+         * `ModerationUnavailableError` is a 503, so the generic-5xx branch
+         * would otherwise answer it with "something went wrong" — losing the
+         * one thing the person needs to know, which is that trying again in a
+         * moment will work. The rest are 4xx and would fall through to the
+         * server's English `detail`.
+         */
+        const mediaKey = MEDIA_ERROR_MESSAGE_KEYS[err.title];
+        if (mediaKey) return translate(mediaKey);
 
         if (isGenericServerError(err)) return translate("error.server");
 

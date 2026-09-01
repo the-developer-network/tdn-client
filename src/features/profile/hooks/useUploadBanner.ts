@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { profileApi } from "../api/profile.api";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { withModerationRetry } from "../../../shared/utils/media-errors";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -43,7 +44,13 @@ export function useUploadBanner({ onSuccess }: UseUploadBannerOptions) {
         setIsLoading(true);
 
         try {
-            const res = await profileApi.uploadBanner(file);
+            // A 503 means the checker was unreachable, not that the
+            // image was refused. The preview is dropped on failure and
+            // the hook keeps no file, so there is no retry to offer by
+            // hand — absorbing one blink here is the only retry there is.
+            const res = await withModerationRetry(() =>
+                profileApi.uploadBanner(file),
+            );
             onSuccess(res.bannerUrl);
         } catch (err) {
             setError(getErrorMessage(err));
