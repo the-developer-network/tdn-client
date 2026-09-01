@@ -65,6 +65,22 @@ Everything network goes through `api.get/post/patch/delete`. Base URL switches o
 - A body that will not parse — empty, HTML from a proxy, anything outside the API's problem+json — is thrown as a synthesised RFC 7807 document carrying the real HTTP status, never as a bare `SyntaxError`. A `SyntaxError` has no `status` and no `title`, so `getErrorMessage` can only say "An unexpected error occurred." and the status never reaches the caller.
 - Surface errors to users via `getErrorMessage(err)` from `src/shared/utils/error-handler.ts`. The API answers in English only, so a `detail` shown verbatim reaches a Turkish reader in English. `getErrorMessage` replaces only the sentences the API writes when it has nothing specific to say (the generic 5xx details, a 5xx with no detail, and documents the client synthesised). Everything else keeps the server's words — translating by status would turn a 401 from `/auth/login` into "your session ended" when it means "wrong password", and would bury a `CustomError` that carries a real message at a 5xx status.
 
+### Media moderation
+
+Uploads are scanned. Four endpoints can now refuse one — `POST /media`, `POST /articles/cover`, `PATCH /profiles/me/avatar`, `PATCH /profiles/me/banner` — and post/comment creation can refuse the URLs afterwards. `src/shared/utils/media-errors.ts` owns all of it.
+
+**Branch on `title`, never on status.** Two of the errors share 415, and 422 (`MediaRejectedError`) against 503 (`ModerationUnavailableError`) is the difference between "this file is not allowed" and "try again in a moment". `withModerationRetry` absorbs one 503 before the caller sees it — one retry, not a loop.
+
+**`clearsSelection` defaults to keeping the files** and names the four verdicts that discard them. The other way round would take someone's picked files away over a 500 from the create call, or a dropped connection. A verdict clears *all* of them: `/media` takes four files, processes them in order, and returns no URLs at all once one is rejected — not even for the ones that uploaded — without saying which it was.
+
+**One upload belongs to one piece of content.** Re-sending the same `mediaUrls` or `coverImageKey` gets `MediaNotOwnedError` (400). Safe to retry after a 5xx (nothing was written); not safe after a success. `useArticleEditor` memoises the cover key and drops that memo on this error — without it, a save that timed out *after* the server wrote locks the editor permanently.
+
+**The six messages are ours, keyed by `title`** — a deliberate exception to `getErrorMessage`'s rule of showing a 4xx `detail` verbatim, and the only one. The lookup sits above the generic-5xx branch so the 503 is not answered with "the server could not complete the request".
+
+`isSensitive` and `mediaPending` are **content-level, not per-media**, on `Post`, `Comment` and `QuotedPost` (`ArticleSummary` gets `isSensitive` only — a cover is always an image, so it never waits). Wrap media in `SensitiveMedia`, which takes the flag rather than assuming it; `QuotedPostCard` must pass the quoted post's own, or quoting becomes the way round the filter. `mediaPending` means `mediaUrls` is `[]` — indistinguishable from a post with no media, which is why `PendingMedia` exists. **Do not try to show "media was removed"**: after a rejection the payload is identical to a post that never had any, and reconstructing the difference from session memory shows two readers different things. That is a product decision, not an oversight.
+
+`usePendingMedia` polls **the one post**, never the feed — the list is cached 60 s server-side. It stops when `mediaPending` clears, after five minutes, and while the tab is hidden.
+
 Feature API modules (`*.api.ts`) are plain object literals of typed thunks that build query strings and call `api` — see `src/features/feed/api/feed.api.ts` for the canonical shape.
 
 ### State

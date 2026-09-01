@@ -248,6 +248,31 @@ describe("PostCard", () => {
             ).toBeInTheDocument();
         });
 
+        it("offers a refresh only where there is somewhere to put the answer", () => {
+            const { rerender } = render(
+                <PostCard {...mockPost} mediaPending mediaUrls={[]} />,
+            );
+
+            // No `onUpdated`: the wait is still shown, but a button that
+            // fetched a post nothing would receive is worse than none.
+            expect(
+                screen.queryByRole("button", { name: /refresh/i }),
+            ).not.toBeInTheDocument();
+
+            rerender(
+                <PostCard
+                    {...mockPost}
+                    mediaPending
+                    mediaUrls={[]}
+                    onUpdated={vi.fn()}
+                />,
+            );
+
+            expect(
+                screen.getByRole("button", { name: /refresh/i }),
+            ).toBeInTheDocument();
+        });
+
         it("says nothing about media on an ordinary post", () => {
             render(<PostCard {...mockPost} mediaUrls={[]} />);
 

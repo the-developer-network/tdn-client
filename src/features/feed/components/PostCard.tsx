@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Repeat2 } from "lucide-react";
 import type { Post, PostType, QuotedPost } from "../api/feed.types";
 import { usePostActions } from "../hooks/usePostActions";
+import { usePendingMedia } from "../hooks/usePendingMedia";
 import { QuotedPostCard } from "./QuotedPostCard";
 import { QuoteComposerModal } from "./QuoteComposerModal";
 import { useAuthStore } from "../../../core/auth/auth.store";
@@ -30,6 +31,12 @@ interface PostCardProps extends Post {
      * Optional: a page with no list to prepend to simply omits it.
      */
     onQuoted?: (post: Post) => void;
+    /**
+     * Handed a freshly read copy of this post when its pending video resolves.
+     * Without one there is nowhere to put the answer, so the placeholder shows
+     * the wait but offers no way to end it.
+     */
+    onUpdated?: (post: Post) => void;
 }
 
 export function PostCard({
@@ -47,6 +54,7 @@ export function PostCard({
     quotedPost = null,
     isSensitive,
     mediaPending,
+    onUpdated,
     onDeleted,
     onQuoted,
 }: PostCardProps) {
@@ -57,6 +65,11 @@ export function PostCard({
     const navigate = useNavigate();
     const { t, locale } = useI18n();
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const { refresh, isRefreshing } = usePendingMedia({
+        postId: id,
+        mediaPending,
+        onUpdated,
+    });
     const { openModal } = useAuthModalStore();
 
     /**
@@ -282,7 +295,12 @@ export function PostCard({
                                 </div>
                             )}
 
-                        {mediaPending && <PendingMedia />}
+                        {mediaPending && (
+                            <PendingMedia
+                                onRefresh={onUpdated ? refresh : undefined}
+                                isRefreshing={isRefreshing}
+                            />
+                        )}
 
                         {mediaUrls.length > 0 && (
                             <SensitiveMedia isSensitive={isSensitive}>

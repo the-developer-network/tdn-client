@@ -124,6 +124,9 @@ src/
       hooks/
         useDeleteAccount.test.ts
   shared/
+    components/
+      ui/
+        SensitiveMedia.test.tsx
     store/
       toast.store.test.ts
       theme.store.test.ts
@@ -134,6 +137,7 @@ src/
     utils/
       assert-list.test.ts
       error-handler.test.ts
+      media-errors.test.ts
   pages/
     ArticleDetailPage.test.tsx
     ArticleEditorPage.test.tsx
@@ -835,6 +839,46 @@ Asserts against `document.documentElement.dataset.theme`, because that attribute
 The fifth is the one worth keeping. A reader who picked light picked it for a reason, and a listener left attached would hand their theme back to the laptop at sunset. Asserting the listener count is zero says that in a way that asserting the colour cannot — the colour is right either way until the OS actually changes.
 
 > jsdom has no cascade, so none of these prove a pixel changed. That is `e2e/theme.spec.ts`'s job.
+
+#### `media-errors` (`src/shared/utils/media-errors.test.ts`)
+
+12 tests over the moderation contract. No DOM and no localStorage stub — it is pure predicates plus one retry.
+
+| Scenario | Assert |
+| --- | --- |
+| 422 / two 415s / 413 | `clearsSelection` is true |
+| 503 `ModerationUnavailableError` | `clearsSelection` is **false** |
+| A 500, an `Error`, `null`, a bare string | `clearsSelection` is false |
+| `isMediaError` on the two 415s | Does not confuse them |
+| `withModerationRetry` on success | Called once |
+| 503 then success | Called twice |
+| 503 twice | Throws the second on, called twice |
+| 422 | Not retried |
+
+**The polarity is the test.** `clearsSelection` defaulting the other way — clear unless told otherwise — would take four picked files away over a 500 from the create call that follows the upload, or over a dropped connection, neither of which says anything about the files. The "not a verdict" case is what pins that down.
+
+**`withModerationRetry` is tested here rather than through a component**, with fake timers and no DOM. In a component test the three-second wait deadlocks: `waitFor` drives its polling off the same clock, and MSW answers on the same loop. `CommentBox` therefore waits the real three seconds and asserts only the selection.
+
+#### `usePendingMedia` (`src/features/feed/hooks/usePendingMedia.test.ts`)
+
+6 tests. Fake timers with `shouldAdvanceTime`, and MSW counts the reads so "only this post" is an assertion rather than a claim.
+
+| Scenario | Assert |
+| --- | --- |
+| Manual refresh | Reads `/posts/post-1` once, hands the post back |
+| `mediaPending: true` | Reads again every 20 s |
+| `mediaPending: false` | Never polls, even after two minutes |
+| Past five minutes | Stops; the count stops moving |
+| Unmount | Stops |
+| A failing poll | No throw, no callback, `isRefreshing` back to false |
+
+The five-minute cap and the unmount case are both about a page left open: a video that has not been judged in five minutes is not about to be, and something is wrong further back.
+
+#### `SensitiveMedia` (`src/shared/components/ui/SensitiveMedia.test.tsx`)
+
+4 tests. **The accessibility assertion is by role, not by alt text** — `*ByAltText` walks the DOM and finds the blurred copy whether or not it is `aria-hidden`, so it would pass against a cover that reads out the photo it is covering. `queryByRole("img")` is the only query that answers the question being asked.
+
+The click test asserts the event does not reach a parent handler. The cards this sits inside navigate on click, so without that the photo would be uncovered on a page nobody asked to be on.
 
 #### `useNetworkStatus` (`src/shared/hooks/useNetworkStatus.test.ts`)
 

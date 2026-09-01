@@ -135,6 +135,7 @@ export default function FeedPage() {
         loadMoreError,
         fetchPosts,
         addPost,
+        replacePost,
         removePost,
         hasMore,
         loadMore,
@@ -437,6 +438,7 @@ export default function FeedPage() {
                     // would not come back from a refetch. The create response
                     // is the post itself — prepend it and the reader sees it.
                     onPostQuoted={addPost}
+                    onPostUpdated={replacePost}
                     onLoadMore={loadMore}
                     onRetry={retry}
                     onRetryLoadMore={retryLoadMore}

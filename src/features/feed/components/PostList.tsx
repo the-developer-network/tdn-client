@@ -16,6 +16,8 @@ interface PostListProps {
     loadMoreError?: string | null;
     onPostDeleted?: (postId: string) => void;
     onPostQuoted?: (post: Post) => void;
+    /** Handed a re-read post when its pending video resolves. */
+    onPostUpdated?: (post: Post) => void;
     /**
      * Overrides the feed's own "Category Empty". A list that is not the feed
      * — the quotes of one post, say — has its own way of being empty.
@@ -35,6 +37,7 @@ export function PostList({
     loadMoreError,
     onPostDeleted,
     onPostQuoted,
+    onPostUpdated,
     emptyMessage,
     onLoadMore,
     onRetry,
@@ -98,6 +101,7 @@ export function PostList({
                         {...post}
                         onDeleted={onPostDeleted}
                         onQuoted={onPostQuoted}
+                        onUpdated={onPostUpdated}
                     />
                     {showAds && (index + 1) % AD_INTERVAL === 0 && (
                         <AdPlaceholderCard />

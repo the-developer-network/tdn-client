@@ -206,6 +206,55 @@ describe("useFeed", () => {
         expect(result.current.posts).toHaveLength(1);
     });
 
+    /*
+     * The alternative was refetching the feed when a pending video resolves.
+     * That is cached for 60 s server-side, so it would cost every other row to
+     * ask about one, and would usually answer with the same stale copy.
+     */
+    it("replacePost() swaps one row in place, leaving the rest alone", async () => {
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+
+        act(() => {
+            result.current.addPost({ ...mockPost, id: "post-new" });
+        });
+        const before = result.current.posts.map((post) => post.id);
+
+        act(() => {
+            result.current.replacePost({
+                ...mockPost,
+                id: "post-new",
+                mediaPending: false,
+                mediaUrls: ["https://cdn.example.com/clip.mp4"],
+            });
+        });
+
+        // Same rows, same order — only the one post's contents moved on.
+        expect(result.current.posts.map((post) => post.id)).toEqual(before);
+        expect(result.current.posts[0].mediaUrls).toEqual([
+            "https://cdn.example.com/clip.mp4",
+        ]);
+        expect(result.current.posts[0].mediaPending).toBe(false);
+    });
+
+    it("replacePost() ignores a post the list does not hold", async () => {
+        const { result } = renderHook(() => useFeed());
+
+        await act(async () => {
+            await result.current.fetchPosts("COMMUNITY");
+        });
+        const before = result.current.posts;
+
+        act(() => {
+            result.current.replacePost({ ...mockPost, id: "not-in-the-list" });
+        });
+
+        expect(result.current.posts).toEqual(before);
+    });
+
     it("fetchPosts() forwards categories to the API", async () => {
         let capturedCategories: string[] = [];
 
