@@ -44,8 +44,53 @@ function get(path: string) {
     return new Request(`https://developernetwork.net${path}`);
 }
 
+/*
+ * The production origin, answered offline.
+ *
+ * Most tests here call `makeEnv()` with no `API_BASE`, which is the deployed
+ * configuration — so the Worker reads `DEFAULT_API_BASE`, the real API. The
+ * handlers in `tests/mocks/handlers.ts` only cover the dev origin, so those
+ * reads used to escape to production: `/posts/p1` and `/articles/anything` for
+ * the metadata tests, and two pages of `/articles` for the sitemap. They
+ * passed while the API was warm and timed out at 5 s when it was not, which is
+ * how CI failed on a PR that had touched none of this.
+ *
+ * These are deliberately the emptiest payloads the Worker will accept. A test
+ * that cares about the content registers its own `server.use`, which is
+ * checked first — so this settles what happens by default without changing
+ * what any existing test asserts.
+ */
+function stubProductionApi() {
+    server.use(
+        http.get(`${API}/posts`, () => HttpResponse.json({ data: [] })),
+        http.get(`${API}/posts/:id`, () =>
+            HttpResponse.json({
+                data: {
+                    id: "p1",
+                    content: "",
+                    mediaUrls: [],
+                    author: { username: "", fullName: "", avatarUrl: "" },
+                },
+            }),
+        ),
+        http.get(`${API}/articles`, () => HttpResponse.json({ data: [] })),
+        http.get(`${API}/articles/:slug`, () =>
+            HttpResponse.json({
+                data: {
+                    slug: "",
+                    title: "",
+                    excerpt: "",
+                    coverImageUrl: null,
+                    author: { username: "", fullName: "", avatarUrl: "" },
+                },
+            }),
+        ),
+    );
+}
+
 beforeEach(() => {
     vi.restoreAllMocks();
+    stubProductionApi();
 });
 
 describe("worker routing", () => {

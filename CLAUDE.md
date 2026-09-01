@@ -107,7 +107,7 @@ Tailwind CSS 4 utilities only — no CSS Modules, styled-components, or inline s
 
 ## Testing
 
-Vitest + @testing-library/react + MSW v2 + jsdom; Playwright for E2E. Specs are co-located (`Foo.test.tsx` next to `Foo.tsx`); only shared infra lives in `tests/`. Handlers reset automatically after each test (`tests/setup.ts`); override per-test with `server.use()`.
+Vitest + @testing-library/react + MSW v2 + jsdom; Playwright for E2E. Specs are co-located (`Foo.test.tsx` next to `Foo.tsx`); only shared infra lives in `tests/`. Handlers reset automatically after each test (`tests/setup.ts`); override per-test with `server.use()`. **MSW runs with `onUnhandledRequest: "error"`** — an unhandled request is a bug, not a fallback to the real network. The `"warn"` default had `worker/index.test.ts` calling the live production API on every run, which passed while the API was warm and timed out at 5 s when it was cold.
 
 Non-obvious requirements:
 
