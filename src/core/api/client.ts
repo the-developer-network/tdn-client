@@ -1,5 +1,5 @@
 import { NetworkError } from "./api-types";
-import type { ApiErrorResponse, ApiResponse } from "./api-types";
+import type { ApiErrorResponse, ApiResponse, CursorMeta } from "./api-types";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -33,6 +33,19 @@ interface ApiOptions extends RequestInit {
     isAnonymous?: boolean;
     _retry?: boolean;
     contentType?: boolean;
+    /**
+     * Return the whole `{ data, meta }` document instead of unwrapping `data`.
+     *
+     * Internal — reach it through `api.getPage`, which types the envelope. It
+     * exists because cursor-paginated listings keep their cursor in `meta`,
+     * and unwrapping throws that away: without it there is no way to page
+     * backwards through a conversation at all.
+     *
+     * Deliberately an option on the one client rather than a second one. The
+     * 401 refresh, the shared queue and the 15 s budget are the hard part, and
+     * a parallel implementation of them would drift.
+     */
+    _envelope?: boolean;
 }
 
 let isRefreshing = false;
@@ -166,6 +179,16 @@ const refreshOnce = (): Promise<string | null> => {
     return refreshPromise;
 };
 
+/**
+ * `data` or the whole document, depending on what the caller asked for.
+ *
+ * The cast is the price of one client serving both shapes: when `_envelope`
+ * is set the caller's `T` *is* the envelope type, which `api.getPage` fixes
+ * for it, so no call site has to state the relationship itself.
+ */
+const unwrap = <T>(body: unknown, envelope: boolean): T =>
+    (envelope ? body : (body as ApiResponse<T>).data) as T;
+
 export const apiClient = async <T>(
     endpoint: string,
     options: ApiOptions = {},
@@ -175,6 +198,7 @@ export const apiClient = async <T>(
         isAnonymous = false,
         _retry = false,
         contentType = true,
+        _envelope = false,
         ...fetchOptions
     } = options;
     const token = isAnonymous ? null : localStorage.getItem("access_token");
@@ -236,7 +260,7 @@ export const apiClient = async <T>(
             const retryParsed = await readBody(retryRes);
             if (!retryParsed.ok) throw retryParsed.body;
             if (!retryRes.ok) throw retryParsed.body as ApiErrorResponse;
-            return (retryParsed.body as ApiResponse<T>).data;
+            return unwrap<T>(retryParsed.body, _envelope);
         }
 
         // Authenticated endpoints: queue behind an in-flight refresh
@@ -264,6 +288,10 @@ export const apiClient = async <T>(
         throw new Error("Session Expired");
     }
 
+    // Answered before the envelope branch below, and the same either way: a
+    // 204 has no document to hand back. `api.getPage` on an endpoint that can
+    // answer 204 would therefore see `data` undefined — no listing does, and
+    // one that did would have nothing to page through.
     if (response.status === 204) {
         return {} as T;
     }
@@ -278,7 +306,7 @@ export const apiClient = async <T>(
         throw parsed.body as ApiErrorResponse;
     }
 
-    return (parsed.body as ApiResponse<T>).data;
+    return unwrap<T>(parsed.body, _envelope);
 };
 
 export const api = {
@@ -297,5 +325,18 @@ export const api = {
             ...options,
             method: "PATCH",
             body: body instanceof FormData ? body : JSON.stringify(body),
+        }),
+    /**
+     * A cursor-paginated GET: the rows *and* the cursor that reaches the next
+     * page, which `api.get` would discard along with the rest of `meta`.
+     *
+     * Use it only where the endpoint is cursor-paginated. Everything paged by
+     * `page`/`limit` stays on `api.get` — it has no cursor to lose.
+     */
+    getPage: <T>(url: string, options?: ApiOptions) =>
+        apiClient<ApiResponse<T, CursorMeta>>(url, {
+            ...options,
+            method: "GET",
+            _envelope: true,
         }),
 };
