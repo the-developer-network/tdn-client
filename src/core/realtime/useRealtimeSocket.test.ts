@@ -23,10 +23,12 @@ vi.hoisted(() => {
     });
 });
 
-import { useAuthStore } from "../../../core/auth/auth.store";
-import { useToastStore } from "../../../shared/store/toast.store";
-import { translate } from "../../../shared/i18n/translate";
-import { useNotificationSocket } from "./useNotificationSocket";
+import { useAuthStore } from "../auth/auth.store";
+import { useToastStore } from "../../shared/store/toast.store";
+import { translate } from "../../shared/i18n/translate";
+import { useNotificationStore } from "../../features/notifications/store/notification.store";
+import { useMessageStore } from "../../features/messages/store/message.store";
+import { useRealtimeSocket } from "./useRealtimeSocket";
 
 const sockets: FakeWebSocket[] = [];
 
@@ -57,6 +59,8 @@ class FakeWebSocket {
 beforeEach(() => {
     sockets.length = 0;
     localStorage.clear();
+    useNotificationStore.setState(useNotificationStore.getInitialState());
+    useMessageStore.setState(useMessageStore.getInitialState());
     useAuthStore.setState({
         user: null,
         token: null,
@@ -67,12 +71,12 @@ beforeEach(() => {
     vi.stubGlobal("WebSocket", FakeWebSocket);
 });
 
-describe("useNotificationSocket", () => {
+describe("useRealtimeSocket", () => {
     it("connects and authenticates with the stored access token", async () => {
         localStorage.setItem("access_token", "jwt-123");
         useAuthStore.setState({ isAuthenticated: true, token: "jwt-123" });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
 
         await waitFor(() => expect(sockets).toHaveLength(1));
         sockets[0].onopen?.();
@@ -91,7 +95,7 @@ describe("useNotificationSocket", () => {
         localStorage.setItem("access_token", "jwt-from-storage");
         useAuthStore.setState({ isAuthenticated: true, token: null });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
 
         await waitFor(() => expect(sockets).toHaveLength(1));
         sockets[0].onopen?.();
@@ -109,7 +113,7 @@ describe("useNotificationSocket", () => {
         localStorage.setItem("access_token", "jwt-123");
         useAuthStore.setState({ isAuthenticated: true, token: "jwt-123" });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
 
         await waitFor(() => expect(sockets).toHaveLength(1));
 
@@ -117,7 +121,7 @@ describe("useNotificationSocket", () => {
     });
 
     it("does not connect when unauthenticated", () => {
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
 
         expect(sockets).toHaveLength(0);
     });
@@ -125,9 +129,147 @@ describe("useNotificationSocket", () => {
     it("does not connect when authenticated but no token exists anywhere", () => {
         useAuthStore.setState({ isAuthenticated: true, token: null });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
 
         expect(sockets).toHaveLength(0);
+    });
+});
+
+/**
+ * Direct messages ride this connection rather than opening a second one, which
+ * the API asks clients not to do. So one socket now feeds two features, and
+ * what matters is that each frame reaches the right store — the rules
+ * themselves are tested against those stores directly.
+ */
+describe("useRealtimeSocket dispatch", () => {
+    function connect() {
+        localStorage.setItem("access_token", "jwt-123");
+        useAuthStore.setState({ isAuthenticated: true, token: "jwt-123" });
+        renderHook(() => useRealtimeSocket());
+    }
+
+    function deliver(event: string, payload?: unknown) {
+        act(() => {
+            sockets[0].onmessage?.({
+                data: JSON.stringify({ event, payload }),
+            } as MessageEvent);
+        });
+    }
+
+    const incoming = {
+        conversationId: "c1",
+        messageId: "m1",
+        senderId: "u2",
+        preview: "hello",
+        hasMedia: false,
+        createdAt: "2026-09-03T12:00:00.000Z",
+    };
+
+    beforeEach(async () => {
+        connect();
+        await waitFor(() => expect(sockets).toHaveLength(1));
+    });
+
+    it("raises the notification badge on a notification", () => {
+        deliver("new-notification", { type: "LIKE", issuerId: "u2" });
+
+        expect(useNotificationStore.getState().unreadCount).toBe(1);
+    });
+
+    it("raises the message badge on a new message", () => {
+        deliver("message:new", incoming);
+
+        expect(useMessageStore.getState().unreadCount).toBe(1);
+    });
+
+    /*
+     * The distinction the API sends two events for: a message opening a
+     * request must not raise the unread badge, or an open inbox becomes a
+     * broadcast channel with a notification attached.
+     */
+    it("counts a request without raising the message badge", () => {
+        deliver("conversation:request", incoming);
+
+        expect(useMessageStore.getState().requestCount).toBe(1);
+        expect(useMessageStore.getState().unreadCount).toBe(0);
+    });
+
+    it("routes a read, a deletion and a rejection to the message store", () => {
+        act(() => {
+            useMessageStore.getState().setThread(
+                {
+                    id: "c1",
+                    status: "ACCEPTED",
+                    isRequest: false,
+                    canSend: true,
+                    participant: {
+                        id: "u2",
+                        username: "ayse",
+                        avatarUrl: "",
+                    },
+                    unreadCount: 0,
+                    lastMessagePreview: null,
+                    lastMessageAt: null,
+                    otherLastReadAt: null,
+                    createdAt: "2026-09-01T00:00:00.000Z",
+                },
+                [
+                    {
+                        id: "m1",
+                        conversationId: "c1",
+                        senderId: "u2",
+                        content: "hello",
+                        mediaUrls: [],
+                        isSensitive: false,
+                        mediaPending: true,
+                        mediaRejected: false,
+                        isDeleted: false,
+                        isMine: false,
+                        createdAt: "2026-09-03T12:00:00.000Z",
+                    },
+                ],
+                null,
+            );
+        });
+
+        deliver("message:read", {
+            conversationId: "c1",
+            senderId: "u2",
+            readAt: "2026-09-03T13:00:00.000Z",
+        });
+        expect(
+            useMessageStore.getState().activeConversation?.otherLastReadAt,
+        ).toBe("2026-09-03T13:00:00.000Z");
+
+        deliver("message:media_rejected", {
+            conversationId: "c1",
+            messageId: "m1",
+            senderId: "u1",
+        });
+        expect(useMessageStore.getState().messages[0].mediaRejected).toBe(true);
+
+        deliver("message:deleted", {
+            conversationId: "c1",
+            messageId: "m1",
+            senderId: "u2",
+        });
+        expect(useMessageStore.getState().messages[0].isDeleted).toBe(true);
+    });
+
+    // Newer servers are expected to send events this build has not heard of.
+    it("ignores an unknown event without touching either store", () => {
+        deliver("something:new", { anything: true });
+
+        expect(useMessageStore.getState().unreadCount).toBe(0);
+        expect(useNotificationStore.getState().unreadCount).toBe(0);
+    });
+
+    it("ignores a malformed frame", () => {
+        act(() => {
+            sockets[0].onmessage?.({ data: "not json" } as MessageEvent);
+        });
+
+        expect(useMessageStore.getState().unreadCount).toBe(0);
     });
 });
 
@@ -147,7 +289,7 @@ function setOnline(value: boolean) {
     });
 }
 
-describe("useNotificationSocket reconnect", () => {
+describe("useRealtimeSocket reconnect", () => {
     beforeEach(() => {
         vi.useFakeTimers();
         useToastStore.setState({ toasts: [] });
@@ -178,7 +320,7 @@ describe("useNotificationSocket reconnect", () => {
         localStorage.setItem("access_token", "expired-jwt");
         useAuthStore.setState({ isAuthenticated: true, token: "expired-jwt" });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
         expect(sockets).toHaveLength(1);
 
         await exhaustRetries();
@@ -194,7 +336,7 @@ describe("useNotificationSocket reconnect", () => {
         localStorage.setItem("access_token", "expired-jwt");
         useAuthStore.setState({ isAuthenticated: true, token: "expired-jwt" });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
         await exhaustRetries();
 
         // Asserted here rather than after advancing again: toasts dismiss
@@ -208,7 +350,7 @@ describe("useNotificationSocket reconnect", () => {
         localStorage.setItem("access_token", "jwt-old");
         useAuthStore.setState({ isAuthenticated: true, token: null });
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
         expect(sockets).toHaveLength(1);
 
         sockets[0].onopen?.();
@@ -239,7 +381,7 @@ describe("useNotificationSocket reconnect", () => {
         useAuthStore.setState({ isAuthenticated: true, token: "jwt-a" });
         setOnline(false);
 
-        renderHook(() => useNotificationSocket());
+        renderHook(() => useRealtimeSocket());
         expect(sockets).toHaveLength(1);
 
         // Offline, the hook arms an `online` listener instead of backing off.
