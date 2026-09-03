@@ -1,8 +1,19 @@
 import type { PostCategory } from "../../feed/api/feed.types";
 
 export interface Profile {
-    id?: string;
-    userId: string;
+    /**
+     * The account id, and the one every write about this profile carries.
+     *
+     * `GET /profiles/:username` sends this and does **not** send `userId` —
+     * which used to be declared required here while `id` was optional, exactly
+     * the wrong way round. Nothing caught it, because a field the server never
+     * sends still typechecks as a `string` at every call site; the failure
+     * only appears at the far end, as a body whose key `JSON.stringify` quietly
+     * dropped.
+     */
+    id: string;
+    /** The older name for `id`. Kept for callers that still read it. */
+    userId?: string;
     username: string;
     fullName: string;
     bio: string;

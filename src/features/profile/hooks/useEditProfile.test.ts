@@ -30,7 +30,9 @@ import { useEditProfile } from "./useEditProfile";
 const BASE = "http://localhost:8080/api/v1";
 
 const profile: Profile = {
-    userId: "user-1",
+    // `id`, as the API sends it. This fixture said `userId` for as long as the
+    // type did, which is how a profile shape nothing returns went unnoticed.
+    id: "user-1",
     username: "alice",
     fullName: "Alice",
     bio: "my bio",
