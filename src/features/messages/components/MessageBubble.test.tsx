@@ -177,6 +177,7 @@ describe("MessageBubble", () => {
             renderBubble({
                 message: message({ isMine: true }),
                 otherLastReadAt: "2026-09-03T13:00:00.000Z",
+                isLatestMine: true,
             });
 
             expect(screen.getByText("Seen")).toBeInTheDocument();
@@ -186,15 +187,34 @@ describe("MessageBubble", () => {
             renderBubble({
                 message: message({ isMine: true }),
                 otherLastReadAt: "2026-09-03T11:00:00.000Z",
+                isLatestMine: true,
             });
 
             expect(screen.getByText("Sent")).toBeInTheDocument();
+        });
+
+        /*
+         * One watermark per conversation, not a receipt per message — so
+         * repeating it under every outgoing bubble states the same fact six
+         * times down a screen and reads as six separate events. Only the
+         * newest one the reader sent carries it.
+         */
+        it("says nothing under an older message of yours", () => {
+            renderBubble({
+                message: message({ isMine: true }),
+                otherLastReadAt: "2026-09-03T13:00:00.000Z",
+                isLatestMine: false,
+            });
+
+            expect(screen.queryByText("Seen")).toBeNull();
+            expect(screen.queryByText("Sent")).toBeNull();
         });
 
         it("says nothing about a message you did not send", () => {
             renderBubble({
                 message: message({ isMine: false }),
                 otherLastReadAt: "2026-09-03T13:00:00.000Z",
+                isLatestMine: true,
             });
 
             expect(screen.queryByText("Seen")).toBeNull();

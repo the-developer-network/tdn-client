@@ -496,8 +496,15 @@ export const handlers = [
         () => new HttpResponse(null, { status: 204 }),
     ),
 
+    /*
+     * `trends`, which is what the API sends and what `useTrends` reads. This
+     * said `trending` — so the hook set `undefined` and any test rendering the
+     * real widget died on `trends.length`. It never surfaced because every
+     * page test mocks the widget away, which is exactly how a mock that
+     * disagrees with its endpoint survives.
+     */
     http.get(`${BASE}/tags/trends`, () =>
-        HttpResponse.json({ data: { trending: [] } }),
+        HttpResponse.json({ data: { trends: [] } }),
     ),
 
     http.get(`${BASE}/tags/search`, () => HttpResponse.json({ data: [] })),

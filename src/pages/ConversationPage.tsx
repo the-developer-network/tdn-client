@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
+import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { MessageBubble } from "../features/messages/components/MessageBubble";
 import { MessageComposer } from "../features/messages/components/MessageComposer";
 import { RequestActions } from "../features/messages/components/RequestActions";
@@ -37,6 +38,7 @@ function ConversationView({ conversationId }: { conversationId: string }) {
     const conversation = useMessageStore((s) => s.activeConversation);
     const messages = useMessageStore((s) => s.messages);
     const { remove } = useConversationActions();
+    const latestMineId = messages.find((m) => m.isMine)?.id;
     const {
         isLoading,
         isLoadingOlder,
@@ -48,11 +50,21 @@ function ConversationView({ conversationId }: { conversationId: string }) {
         refresh,
     } = useConversation(conversationId);
 
-    // No right rail: the composer wants the width, and a trending list beside
-    // a private conversation reads as an advert in the middle of one.
+    /*
+     * The rail stays. It was dropped on the argument that a trending list
+     * beside a private conversation reads as an advert, and that was not worth
+     * what it cost: `PageShell` centres a fixed-width block, so a page without
+     * a rail sat to the left of a 375px void and read as broken rather than as
+     * uncluttered. The shell now handles a missing rail properly, but the
+     * inconsistency was the real complaint — every other page has this.
+     *
+     * `fill` puts the viewport height in the shell, where the rest of the
+     * breakpoint ladder lives, so nothing here repeats `100dvh` or the bottom
+     * bar height.
+     */
     return (
-        <PageShell>
-            <div className="flex h-[100dvh] flex-col">
+        <PageShell rightRail={<TrendingTopicsWidget />} fill>
+            <div className="flex h-full flex-col">
                 <header className="flex shrink-0 items-center gap-3 border-b border-ink/10 bg-ground/80 px-3 py-3 backdrop-blur-md">
                     <Link
                         to="/messages"
@@ -149,6 +161,11 @@ function ConversationView({ conversationId }: { conversationId: string }) {
                             </p>
                         )}
 
+                    {/*
+                     * The array runs newest first, so the reader's most recent
+                     * message is the first `isMine` in it — the only one that
+                     * carries the read state.
+                     */}
                     {messages.map((message) => (
                         <MessageBubble
                             key={message.id}
@@ -157,6 +174,7 @@ function ConversationView({ conversationId }: { conversationId: string }) {
                             isRefreshing={isRefreshing}
                             onDelete={(id) => void remove(id)}
                             otherLastReadAt={conversation?.otherLastReadAt}
+                            isLatestMine={message.id === latestMineId}
                         />
                     ))}
 
@@ -177,10 +195,11 @@ function ConversationView({ conversationId }: { conversationId: string }) {
                 </div>
 
                 {/*
-                 * `BottomNav` is fixed to the bottom below `md` and would sit
-                 * on top of the composer, so the composer clears it there.
+                 * No bottom padding here any more: `fill` keeps `pb-16` inside
+                 * the shell's fixed height, so the composer already sits above
+                 * `BottomNav` without this page knowing how tall that bar is.
                  */}
-                <div className="shrink-0 pb-[68px] md:pb-0">
+                <div className="shrink-0">
                     {/*
                      * The other side of a request: the initiator may write,
                      * has nothing to accept, and gets no read receipt until

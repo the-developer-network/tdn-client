@@ -1887,6 +1887,19 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `messages.spec`       | A request sits in its own tab, offers accept/decline, and gains a composer                              |
 | `messages.spec`       | A thread that is not yours reads "not found", never "forbidden"                                         |
 | `messages.spec`       | The four message states render — tombstone, removed, pending, sensitive                                 |
+| `responsive.spec`     | The thread fills the viewport at 390 — `scrollHeight === innerHeight`                                   |
+| `responsive.spec`     | The composer sits above `BottomNav` on a phone                                                          |
+| `responsive.spec`     | The trends rail is present on the thread at 1440, like every other page                                 |
+| `responsive.spec`     | The inbox fits every width in the ladder                                                                |
+
+**The two thread rows are measured, not eyeballed**, and both fail on the code
+they were written against: 908 against an 844px screen, and no rail at 1440.
+`PageShell` gives `main` `min-h-screen pb-16`, so a page setting its own
+`h-[100dvh]` and its own bottom padding made the document 64px taller than the
+screen — the header could be dragged away and a dead strip opened under
+`BottomNav`. The height and the container width belong to the shell (`fill`,
+and a container that follows the rail); `PageShell.test.tsx` covers both in
+jsdom by class, and these cover what only a real viewport can show.
 
 **`messages.spec.ts`** — its route helper answers the full `{ data, meta }`
 envelope on every listing. A `route.fulfill` that returns `{ data }` alone leaves

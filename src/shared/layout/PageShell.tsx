@@ -36,6 +36,25 @@ interface PageShellProps {
      * it; an interpolated `max-w-[${n}px]` would never be emitted.
      */
     width?: "feed" | "reading";
+    /**
+     * The page owns the viewport instead of growing the document.
+     *
+     * A thread pins its header and its composer and scrolls only the messages
+     * between them. Doing that from inside the page did not work: `main` is
+     * `min-h-screen` with `pb-16` for the bottom bar, so a child that set its
+     * own `h-[100dvh]` and its own bottom padding produced a document 64px
+     * taller than the screen — the header scrolled away and a dead strip
+     * opened under `BottomNav`.
+     *
+     * So the height belongs here, with the rest of the ladder. `pb-16` stays
+     * *inside* the fixed height, which is what keeps the composer clear of
+     * `BottomNav` without a page repeating that number.
+     *
+     * `100dvh` rather than `100vh`: on a phone `vh` is the large viewport, so
+     * it stays taller than the screen while the URL bar is showing, which is
+     * the same overflow one layer up.
+     */
+    fill?: boolean;
 }
 
 /**
@@ -59,23 +78,49 @@ export function PageShell({
     children,
     rightRail,
     width = "feed",
+    fill = false,
 }: PageShellProps) {
     const isReading = width === "reading";
 
-    const containerClasses = isReading ? "max-w-[1320px]" : "max-w-[1250px]";
+    /*
+     * The container is centred as a block, so its width has to account for
+     * what is actually in it. With a rail it holds 275 + 600 + 320; without
+     * one it holds 875, and keeping the 1250 left the column sitting to the
+     * left of a 375px void — the page looked misaligned against every other
+     * page rather than simply missing its rail.
+     *
+     * Only from `lg`, because that is where the column stops growing. Below
+     * it the column fills whatever room the rail leaves, and the viewport is
+     * narrower than any of these caps anyway.
+     */
+    const containerClasses = rightRail
+        ? isReading
+            ? "max-w-[1320px]"
+            : "max-w-[1250px]"
+        : isReading
+          ? "lg:max-w-[672px] xl:max-w-[995px]"
+          : "lg:max-w-[672px] xl:max-w-[875px]";
     const columnClasses = isReading
         ? "w-full min-w-0 flex-1 lg:max-w-[600px] xl:max-w-[720px]"
         : "w-full min-w-0 flex-1 lg:max-w-[600px]";
 
     return (
-        <div className="flex justify-center min-h-screen bg-ground">
-            <div className={`flex w-full ${containerClasses}`}>
+        <div
+            className={`flex justify-center bg-ground ${
+                fill ? "h-[100dvh] overflow-hidden" : "min-h-screen"
+            }`}
+        >
+            <div
+                className={`flex w-full ${containerClasses} ${fill ? "h-full" : ""}`}
+            >
                 <div className="hidden md:block w-[72px] xl:w-[275px] shrink-0">
                     <Sidebar />
                 </div>
 
                 <main
-                    className={`${columnClasses} md:border-x border-ink/10 min-h-screen pb-16 md:pb-0`}
+                    className={`${columnClasses} md:border-x border-ink/10 pb-16 md:pb-0 ${
+                        fill ? "h-full overflow-hidden" : "min-h-screen"
+                    }`}
                 >
                     {children}
                 </main>
