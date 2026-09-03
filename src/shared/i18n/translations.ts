@@ -442,6 +442,15 @@ const en = {
     "error.payloadTooLarge": "That file is larger than 5 MB.",
     "error.mediaNotOwned":
         "That upload has already been used. Please pick the file again.",
+    // The two the message upload adds. Neither is a verdict on the files, so
+    // neither clears the selection — see `VERDICT_TITLES` in `media-errors.ts`.
+    "error.mediaLimitExceeded": "You can attach up to 4 files.",
+    "error.noMediaProvided": "Pick a file first.",
+    // The second and last exception to showing a 4xx `detail` verbatim. The
+    // write budget is five a minute, low enough that an ordinary exchange
+    // reaches it, so this sentence lands mid-conversation in front of someone
+    // who is not reading English by choice.
+    "error.rateLimited": "You are going a little fast. Try again in a minute.",
 
     "media.sensitive": "Sensitive content",
     "media.sensitiveReveal": "Tap to view",
@@ -1055,6 +1064,9 @@ const tr: Record<TranslationKey, string> = {
     "error.payloadTooLarge": "Bu dosya 5 MB'den büyük.",
     "error.mediaNotOwned":
         "Bu yükleme zaten kullanılmış. Lütfen dosyayı yeniden seçin.",
+    "error.mediaLimitExceeded": "En fazla 4 dosya ekleyebilirsiniz.",
+    "error.noMediaProvided": "Önce bir dosya seçin.",
+    "error.rateLimited": "Biraz hızlı gidiyorsunuz. Bir dakika sonra deneyin.",
 
     "media.sensitive": "Hassas içerik",
     "media.sensitiveReveal": "Görmek için dokunun",

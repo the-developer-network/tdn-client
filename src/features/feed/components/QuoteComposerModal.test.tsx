@@ -176,17 +176,21 @@ describe("QuoteComposerModal", () => {
         expect(called).toBe(false);
     });
 
+    // The example is deliberately not a 429 any more: `getErrorMessage`
+    // translates that one by title, so it would prove the opposite of what
+    // this case is about. A 4xx the client has no wording for still arrives in
+    // the server's own words.
     it("toasts the API's own message when the create fails", async () => {
         server.use(
             http.post(`${BASE}/posts`, () =>
                 HttpResponse.json(
                     {
                         type: "about:blank",
-                        title: "TooManyRequestsError",
-                        status: 429,
-                        detail: "Rate limit exceeded, retry in 1 minute.",
+                        title: "QuotedPostNotFoundError",
+                        status: 400,
+                        detail: "The quoted post no longer exists.",
                     },
-                    { status: 429 },
+                    { status: 400 },
                 ),
             ),
         );
@@ -199,7 +203,7 @@ describe("QuoteComposerModal", () => {
         );
         const [toast] = useToastStore.getState().toasts;
         expect(toast.type).toBe("error");
-        expect(toast.message).toContain("Rate limit exceeded");
+        expect(toast.message).toContain("The quoted post no longer exists.");
         expect(onQuoted).not.toHaveBeenCalled();
     });
 });
