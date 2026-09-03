@@ -377,3 +377,54 @@ test.describe("the conversation screen", () => {
         });
     }
 });
+
+/**
+ * The shell is centred as a block, so its container has to be the sum of the
+ * columns in it and never a round number above them.
+ *
+ * Every column is fixed from `lg` up — 72 then 275 for the sidebar, 600 for
+ * the column until `xl`, 320 for the rail — so anything beyond their sum
+ * cannot be absorbed (`main` is capped) and lands as dead space at the right
+ * end, with the layout packed left. The old 1250 did that across the whole
+ * `lg` band: measured, a 1200px tablet had 208px of nothing to the right of
+ * the trends rail, growing to 273px just before `xl`. It was reported from a
+ * tablet, which is the only place it is impossible to miss.
+ */
+test.describe("the shell stays centred", () => {
+    const WIDTHS = [1024, 1100, 1200, 1279, 1280, 1440, 1600];
+
+    for (const width of WIDTHS) {
+        test(`at ${width}px`, async ({ authenticatedPage: page }) => {
+            await stubApi(page);
+            await page.setViewportSize({ width, height: 800 });
+            await page.goto("/");
+            await expect(page.locator("article").first()).toBeVisible();
+
+            /*
+             * Measured on the columns, not on the container. The dead space
+             * sat *inside* the container — at 1200 the container was
+             * full-width, so its own margins were 0 and 0 and looked perfectly
+             * centred while the rail ended 208px short of the right edge.
+             * Asserting on the container passes on the broken layout, which is
+             * worth saying because that is what this test asserted first.
+             */
+            const gaps = await page.evaluate(() => {
+                const container =
+                    document.querySelector("main")!.parentElement!;
+                const first = container.firstElementChild!;
+                const last = container.lastElementChild!;
+                const viewport = document.documentElement.clientWidth;
+                return {
+                    left: Math.round(first.getBoundingClientRect().left),
+                    right: Math.round(
+                        viewport - last.getBoundingClientRect().right,
+                    ),
+                };
+            });
+
+            // One pixel of slack for an odd remainder, and no more: at 1200
+            // this used to be 0 on the left against 208 on the right.
+            expect(Math.abs(gaps.left - gaps.right)).toBeLessThanOrEqual(1);
+        });
+    }
+});

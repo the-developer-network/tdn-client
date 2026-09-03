@@ -1891,6 +1891,15 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `responsive.spec`     | The composer sits above `BottomNav` on a phone                                                          |
 | `responsive.spec`     | The trends rail is present on the thread at 1440, like every other page                                 |
 | `responsive.spec`     | The inbox fits every width in the ladder                                                                |
+| `responsive.spec`     | The shell stays centred at 1024–1600 — the columns, not the container                                   |
+
+**The centring row measures the columns, not the container, and that distinction
+is the test.** The dead space sat _inside_ the container: at 1200 the container
+was full-width, so its own margins were 0 and 0 and read as perfectly centred
+while the rail ended 208px short of the right edge. The first version of this
+assertion measured the container and passed on the broken layout. Measured on
+`firstElementChild`/`lastElementChild` it fails by 32, 108, 208 and 258 across
+the `lg` band.
 
 **The two thread rows are measured, not eyeballed**, and both fail on the code
 they were written against: 908 against an 844px screen, and no rail at 1440.
