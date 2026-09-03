@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./router";
-import { useNotificationSocket } from "../features/notifications/hooks/useNotificationSocket";
+import { useRealtimeSocket } from "../core/realtime/useRealtimeSocket";
 import { useInitialUnreadCount } from "../features/notifications/hooks/useInitialUnreadCount";
+import { useInitialUnreadMessages } from "../features/messages/hooks/useInitialUnreadMessages";
 import { registerSessionExpiredHandler } from "../core/api/client";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
@@ -12,8 +13,11 @@ import { OfflineBanner } from "../shared/components/ui/OfflineBanner";
 
 export function AppInit() {
     useTheme();
-    useNotificationSocket();
+    // One connection, carrying notifications and direct messages both — the
+    // API is explicit that a client should not open a second.
+    useRealtimeSocket();
     useInitialUnreadCount();
+    useInitialUnreadMessages();
 
     useEffect(() => {
         registerSessionExpiredHandler(() => {

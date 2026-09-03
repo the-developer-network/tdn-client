@@ -456,3 +456,82 @@ describe("apiClient", () => {
         });
     });
 });
+
+/**
+ * `api.get` unwraps `ApiResponse.data` and drops `meta` with it. That is right
+ * for everything paged by `page`/`limit`, and fatal for a cursor-paginated
+ * listing: the cursor that reaches the next page lives in `meta`, so
+ * unwrapping leaves no way to walk a conversation backwards at all.
+ */
+describe("api.getPage", () => {
+    it("hands back the whole envelope, cursor included", async () => {
+        server.use(
+            http.get(`${BASE}/conversations`, () =>
+                HttpResponse.json({
+                    data: [{ id: "c1" }],
+                    meta: { timestamp: "t", nextCursor: "opaque-cursor" },
+                }),
+            ),
+        );
+
+        const page = await api.getPage<{ id: string }[]>("/conversations");
+
+        expect(page.data).toEqual([{ id: "c1" }]);
+        expect(page.meta?.nextCursor).toBe("opaque-cursor");
+    });
+
+    it("reports the end of a listing as a null cursor", async () => {
+        server.use(
+            http.get(`${BASE}/conversations`, () =>
+                HttpResponse.json({
+                    data: [],
+                    meta: { timestamp: "t", nextCursor: null },
+                }),
+            ),
+        );
+
+        const page = await api.getPage<unknown[]>("/conversations");
+
+        expect(page.meta?.nextCursor).toBeNull();
+    });
+
+    // The envelope option changes what is returned, not how failures are
+    // reported: the problem document still reaches the caller untouched.
+    it("still throws the problem document on an error", async () => {
+        server.use(
+            http.get(`${BASE}/conversations/x/messages`, () =>
+                HttpResponse.json(
+                    {
+                        type: "about:blank",
+                        title: "ConversationNotFoundError",
+                        status: 404,
+                        detail: "No such conversation.",
+                    },
+                    { status: 404 },
+                ),
+            ),
+        );
+
+        await expect(
+            api.getPage<unknown>("/conversations/x/messages"),
+        ).rejects.toMatchObject({
+            title: "ConversationNotFoundError",
+            status: 404,
+        });
+    });
+
+    it("leaves api.get unwrapping as it was", async () => {
+        server.use(
+            http.get(`${BASE}/conversations/unread-count`, () =>
+                HttpResponse.json({
+                    data: { count: 3 },
+                    meta: { timestamp: "t" },
+                }),
+            ),
+        );
+
+        await expect(
+            api.get<{ count: number }>("/conversations/unread-count"),
+        ).resolves.toEqual({ count: 3 });
+    });
+});

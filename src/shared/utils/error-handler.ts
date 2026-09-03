@@ -25,6 +25,17 @@ const GENERIC_SERVER_DETAILS = new Set([
 const UNREADABLE_RESPONSE_TYPE = "tdn:unreadable-response";
 
 /**
+ * The second exception to the rule below, and the last one.
+ *
+ * Direct messaging allows five writes a minute, which an ordinary exchange
+ * reaches — so unlike most 4xx sentences this one is read often, mid
+ * conversation, by someone who did nothing wrong. The wording is fixed and
+ * carries no detail the server could add, which is what makes it safe to
+ * replace; a `detail` that says anything specific is still shown verbatim.
+ */
+const RATE_LIMIT_TITLE = "TooManyRequestsError";
+
+/**
  * Whether the server said anything worth preserving.
  *
  * The API answers in English only — it reads no `Accept-Language` — so every
@@ -75,6 +86,9 @@ export const getErrorMessage = (err: unknown): string => {
          */
         const mediaKey = MEDIA_ERROR_MESSAGE_KEYS[err.title];
         if (mediaKey) return translate(mediaKey);
+
+        if (err.title === RATE_LIMIT_TITLE)
+            return translate("error.rateLimited");
 
         if (isGenericServerError(err)) return translate("error.server");
 

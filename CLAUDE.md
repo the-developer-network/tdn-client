@@ -38,6 +38,7 @@ Feature-first React 19 SPA served by a Cloudflare Worker.
 ```
 src/app/        main.tsx (bootstrap) → AppInit.tsx → router.tsx; index.css
 src/core/       api/client.ts, auth/auth.store.ts — the two cross-cutting singletons
+                realtime/useRealtimeSocket.ts — the one WebSocket, shared by two features
 src/features/   <name>/{api,components,hooks,store}/ — self-contained feature modules
 src/pages/      one component per route, registered in src/app/router.tsx
 src/shared/     components/ui, layout, hooks, store, utils, i18n
@@ -57,6 +58,7 @@ Four TypeScript project references build together (`tsconfig.json`): `app` (src,
 Everything network goes through `api.get/post/patch/delete`. Base URL switches on `import.meta.env.PROD`: production `https://api.developernetwork.net/api/v1`, dev `http://localhost:8080/api/v1` — a local backend on :8080 is expected during development.
 
 - `apiClient` **unwraps `ApiResponse<T>.data`** before returning. Every mock — MSW handler, Playwright `route.fulfill` — must therefore wrap its payload in `{ data: ... }`.
+- `api.getPage` is the exception, and the only one: it returns the whole `{ data, meta }` document. Cursor-paginated listings keep their cursor in `meta.nextCursor`, which the unwrap would throw away — so a mock for one of those must carry `meta` as well, or the client reads a missing cursor as "there is always another page". Use it **only** where the endpoint is cursor-paginated; everything paged by `page`/`limit` stays on `api.get`. `nextCursor` is opaque: echo it back verbatim, never parse or construct one.
 - `{ isPublic: true }` — for content readable with or without a session. On 401, retries once without the Authorization header so the request still resolves anonymously, then refreshes in the background.
 - `{ isAnonymous: true }` — for endpoints called to _obtain_ a session (all of `auth-api.ts` bar `sendVerification`, `verifyEmail`, `logout`). No token is sent, and a 401 is the endpoint's answer about the credentials, so it is thrown to the caller with no replay and no refresh. Never flag a credential endpoint `isPublic`: the replay doubles it against the STRICT 3-per-15-minutes rate limit on `/auth/login`, and the background refresh then reports the session as expired.
 - Authenticated 401 → single in-flight refresh; concurrent requests queue in `failedQueue` and replay after the new token lands. Refresh failure clears `access_token` and fires the session-expired handler registered in `AppInit.tsx` (clears auth store, reopens the auth modal at the `identifier` step).
@@ -71,15 +73,43 @@ Uploads are scanned. Four endpoints can now refuse one — `POST /media`, `POST 
 
 **Branch on `title`, never on status.** Two of the errors share 415, and 422 (`MediaRejectedError`) against 503 (`ModerationUnavailableError`) is the difference between "this file is not allowed" and "try again in a moment". `withModerationRetry` absorbs one 503 before the caller sees it — one retry, not a loop.
 
-**`clearsSelection` defaults to keeping the files** and names the four verdicts that discard them. The other way round would take someone's picked files away over a 500 from the create call, or a dropped connection. A verdict clears *all* of them: `/media` takes four files, processes them in order, and returns no URLs at all once one is rejected — not even for the ones that uploaded — without saying which it was.
+**`clearsSelection` defaults to keeping the files** and names the four verdicts that discard them. The other way round would take someone's picked files away over a 500 from the create call, or a dropped connection. A verdict clears _all_ of them: `/media` takes four files, processes them in order, and returns no URLs at all once one is rejected — not even for the ones that uploaded — without saying which it was.
 
-**One upload belongs to one piece of content.** Re-sending the same `mediaUrls` or `coverImageKey` gets `MediaNotOwnedError` (400). Safe to retry after a 5xx (nothing was written); not safe after a success. `useArticleEditor` memoises the cover key and drops that memo on this error — without it, a save that timed out *after* the server wrote locks the editor permanently.
+**One upload belongs to one piece of content.** Re-sending the same `mediaUrls` or `coverImageKey` gets `MediaNotOwnedError` (400). Safe to retry after a 5xx (nothing was written); not safe after a success. `useArticleEditor` memoises the cover key and drops that memo on this error — without it, a save that timed out _after_ the server wrote locks the editor permanently.
 
 **The six messages are ours, keyed by `title`** — a deliberate exception to `getErrorMessage`'s rule of showing a 4xx `detail` verbatim, and the only one. The lookup sits above the generic-5xx branch so the 503 is not answered with "the server could not complete the request".
 
 `isSensitive` and `mediaPending` are **content-level, not per-media**, on `Post`, `Comment` and `QuotedPost` (`ArticleSummary` gets `isSensitive` only — a cover is always an image, so it never waits). Wrap media in `SensitiveMedia`, which takes the flag rather than assuming it; `QuotedPostCard` must pass the quoted post's own, or quoting becomes the way round the filter. `mediaPending` means `mediaUrls` is `[]` — indistinguishable from a post with no media, which is why `PendingMedia` exists. **Do not try to show "media was removed"**: after a rejection the payload is identical to a post that never had any, and reconstructing the difference from session memory shows two readers different things. That is a product decision, not an oversight.
 
 `usePendingMedia` polls **the one post**, never the feed — the list is cached 60 s server-side. It stops when `mediaPending` clears, after five minutes, and while the tab is hidden.
+
+### Direct messaging
+
+One-to-one threads, in `src/features/messages/`. Everything is authenticated — there is no public read path, so nothing here is `isPublic`.
+
+A conversation is identified by the **pair**, not by who opened it, so `POST /conversations` is idempotent: "open", not "create". It starts `ACCEPTED` if the recipient follows the initiator and `PENDING` otherwise, and `DECLINED` is terminal — reopening a declined pair returns it unchanged with `canSend: false`.
+
+**Render from `isRequest` and `canSend`, never from `status`.** The server resolves both per reader, and they answer different questions: the _initiator_ of a `PENDING` thread may write to it and has nothing to accept, so `status === "PENDING"` alone tells you neither. Re-deriving the lifecycle from a follow check gets the request flow backwards, because the follow that matters is the recipient's and the profile page can only see its own side.
+
+**Listings are cursor-paginated** — see `api.getPage` above. A conversation list reorders whenever a message arrives, which is why there are no page numbers and no total.
+
+**The unread badge counts `ACCEPTED` only.** `/conversations/unread-count` excludes requests by design, so an unanswered request cannot raise it — that is what stops an open inbox being usable as a broadcast channel. The request-tab badge has no endpoint and is the length of the `?status=PENDING` listing, capped at the page size and hidden behind "9+".
+
+**The socket is shared.** `useRealtimeSocket` (`src/core/realtime/`) carries notifications _and_ the five message events; the API asks clients not to open a second connection. It dispatches into stores and decides nothing itself. `conversation:request` is deliberately distinct from `message:new`.
+
+**A realtime payload is not a `Message`.** It carries a truncated `preview` and no `content`, so it can update a list row and cannot become a bubble. `message.store` bumps `threadRevision` / `conversationsRevision` / `requestsRevision` instead, and the hook that owns the request re-reads — which is what leaves every reducer a pure function testable through `getState()`.
+
+`focusedConversationId` means the reader is looking at the thread **now**, cleared when the tab is hidden as well as on unmount. A message arriving into a focused thread is read on arrival and must not raise the badge; the same message behind a hidden tab has been read by nobody and must. `markConversationRead` zeroes the row but leaves the global count alone — a thread reached from a profile was never in a loaded page, so there is nothing to subtract and the caller re-reads the server.
+
+**Message media is a separate channel.** `POST /messages/media` (4 files, 5 MB each) — a file uploaded there cannot be attached to a post and one from `POST /media` cannot be attached to a message; crossing them is `MediaNotOwnedError`. `MediaLimitExceededError` and `NoMediaProvidedError` are in `MEDIA_ERROR_TITLES` but **not** in `VERDICT_TITLES`: they are answers about the request, not verdicts on the files, and taking four picked files away to say "you picked five" loses four that were never in question.
+
+**`mediaRejected` on a message renders "media removed", and this is a deliberate exception** to the rule stated above for posts. That rule exists because a post whose media was refused is byte-for-byte a post that never had any, so the difference could only come from session memory and would show two readers different things. A message carries the fact in a field: nothing is reconstructed, and both sides read what the server sent. Do not "correct" `MessageBubble` to match `PostCard`.
+
+`isDeleted` is a tombstone that **keeps its place** — the other participant may have replied to it. Read state is per conversation, not per message: `otherLastReadAt` is one watermark, and a sent message is "seen" when its `createdAt` precedes it.
+
+**Writes are limited to five a minute.** Low enough that an ordinary exchange reaches it, which is why `TooManyRequestsError` is the second — and last — title `getErrorMessage` answers in its own words rather than showing the server English.
+
+Not supported by the API, and so not by the client: group threads, block lists (declining is the mechanism), editing, typing indicators.
 
 Feature API modules (`*.api.ts`) are plain object literals of typed thunks that build query strings and call `api` — see `src/features/feed/api/feed.api.ts` for the canonical shape.
 
@@ -89,13 +119,13 @@ Zustand 5 only — no Context API, Redux, React Query, or SWR. Local ephemeral s
 
 - `useAuthStore` (`src/core/auth/auth.store.ts`) — `persist` under key `tdn-auth-storage`, `partialize`d to `{ user, isAuthenticated }`. The JWT itself lives in `localStorage.access_token`, written by `setAuth`/refresh and read directly by the API client on every request.
 - `useAuthModalStore` — step machine: `identifier → login | register → verify-email`, plus `forgot-password → reset-password` and `account-recovery`. `openModal(step?)` **sets** `step`, defaulting to `"initial"`, so calling `setStep(...)` beforehand has no effect — pass the step as the argument instead. Guards want the default: `LoginView` only renders a password field and reads `identifier` from the store, so it cannot be opened cold; `"initial"` renders `IdentifierView`, which collects the identifier and routes on to login or register.
-- `useNotificationStore`, `useToastStore` (4 s auto-dismiss), `useLanguageStore` (persisted as `tdn-language`).
+- `useNotificationStore`, `useMessageStore`, `useToastStore` (4 s auto-dismiss), `useLanguageStore` (persisted as `tdn-language`).
 - `useThemeStore` — persisted as `tdn-theme`, holding `"dark" | "light" | "system"`. It defaults to **dark**, not `"system"`: the app shipped dark-only, so following the OS would have repainted it white for every account whose laptop is set light, which none of them asked for. `useTheme()` (mounted once in `AppInit`) resolves it and stamps `data-theme` on `<html>`, and listens to `prefers-color-scheme` only while the choice is `"system"`. **`index.html` carries an inline script that stamps the same attribute before the bundle loads** — `persist` cannot read `localStorage` until React has mounted, so without it a light-theme reader gets a black flash on every cold load. Its four lines duplicate `resolveTheme` on purpose, and `e2e/theme.spec.ts` blocks every module to prove they still agree.
 - `useOnboardingStore` — persisted as `tdn-onboarding`, holding `completedUserIds` (a list, not a boolean, so a shared browser does not let a second account skip the flow) and the fields picked at sign-up.
 
 Every route except `/onboarding` sits under a pathless layout route rendering `OnboardingGate` (`src/app/OnboardingGate.tsx`), which sends an account following fewer than `MIN_FOLLOWS` (5) people to `/onboarding` to pick its fields and follow the rest. Three rules are load-bearing: it stands down while the auth modal is open (redirecting mid `verify-email` would unmount the modal with the page); it passes rather than redirects when the profile request fails, warning to the console so a dead endpoint does not silently disable the flow; and finishing once settles it for good, because a `< 5` check would otherwise drag the account back the moment it unfollowed someone. **`e2e/fixtures.ts` seeds `tdn-onboarding`**; without it every authenticated spec would land on `/onboarding`.
 
-`useNotificationSocket` (mounted in `AppInit`) holds a WebSocket to `/realtime/ws`, authenticating with a post-open `{ event: "auth", token }` frame and reconnecting with exponential backoff (max 5 retries, paused while `navigator.onLine` is false).
+`useRealtimeSocket` (`src/core/realtime/`, mounted in `AppInit`) holds the one WebSocket to `/realtime/ws`, authenticating with a post-open `{ event: "auth", token }` frame and reconnecting with exponential backoff (max 5 retries, paused while `navigator.onLine` is false). It lives in `core/` rather than in a feature because it feeds both notifications and direct messages.
 
 ### i18n
 

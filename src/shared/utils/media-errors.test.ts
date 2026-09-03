@@ -40,6 +40,19 @@ describe("clearsSelection", () => {
         ).toBe(false);
     });
 
+    /*
+     * The two the message upload adds. Both are answers about the *request*,
+     * not verdicts on the files: "you picked five" is fixed by putting one
+     * back, and taking all five away to say so loses four files that were
+     * never in question.
+     */
+    it.each([
+        [MEDIA_ERROR_TITLES.limitExceeded],
+        [MEDIA_ERROR_TITLES.noneProvided],
+    ])("keeps the selection on %s", (title) => {
+        expect(clearsSelection(problem(title, 400))).toBe(false);
+    });
+
     it("keeps the selection for anything that is not a verdict", () => {
         // A failure from the *create* call that follows the upload, a dropped
         // connection, a 500. None of these say anything about the files.

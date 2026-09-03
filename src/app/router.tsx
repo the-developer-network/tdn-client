@@ -15,6 +15,8 @@ import ContactPage from "../pages/ContactPage";
 import SettingsPage from "../pages/SettingsPage";
 import FollowsPage from "../pages/FollowsPage";
 import NotificationsPage from "../pages/NotificationsPage";
+import MessagesPage from "../pages/MessagesPage";
+import ConversationPage from "../pages/ConversationPage";
 import SocialsPage from "../pages/SocialsPage";
 import OnboardingPage from "../pages/OnboardingPage";
 import { OnboardingGate } from "./OnboardingGate";
@@ -101,6 +103,14 @@ export const router = createBrowserRouter([
             {
                 path: "/notifications",
                 element: <NotificationsPage />,
+            },
+            {
+                path: "/messages",
+                element: <MessagesPage />,
+            },
+            {
+                path: "/messages/:id",
+                element: <ConversationPage />,
             },
             {
                 path: "/socials",

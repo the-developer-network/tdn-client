@@ -18,8 +18,18 @@ export const MEDIA_ERROR_TITLES = {
     /** 415 from the cover, avatar and banner endpoints, which take images. */
     invalidFileType: "InvalidFileTypeError",
     tooLarge: "PayloadTooLargeError",
-    /** 400 from post/comment creation: an upload belongs to one content. */
+    /**
+     * 400 from post/comment creation, and from a message: an upload belongs to
+     * one piece of content, and to one channel. A file uploaded through
+     * `POST /media` cannot be attached to a message, and one uploaded through
+     * `POST /messages/media` cannot be attached to a post — the channel is
+     * fixed when the bytes arrive.
+     */
     notOwned: "MediaNotOwnedError",
+    /** 400: more than four files in one request. */
+    limitExceeded: "MediaLimitExceededError",
+    /** 400: an upload request carrying no files at all. */
+    noneProvided: "NoMediaProvidedError",
 } as const;
 
 /**
@@ -27,10 +37,10 @@ export const MEDIA_ERROR_TITLES = {
  * `detail` verbatim on a 4xx.
  *
  * The rule holds everywhere else, and for a good reason — the API writes
- * messages the client cannot infer from a status. These six are the opposite
- * case: the wording is fixed, the API says it in English only, and it is
- * shown to someone in the middle of posting. So the `title` is the contract
- * and the sentence is ours.
+ * messages the client cannot infer from a status. These are the opposite case:
+ * the wording is fixed, the API says it in English only, and it is shown to
+ * someone in the middle of posting or writing a message. So the `title` is the
+ * contract and the sentence is ours.
  */
 export const MEDIA_ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
     [MEDIA_ERROR_TITLES.rejected]: "error.mediaRejected",
@@ -39,6 +49,8 @@ export const MEDIA_ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
     [MEDIA_ERROR_TITLES.invalidFileType]: "error.invalidFileType",
     [MEDIA_ERROR_TITLES.tooLarge]: "error.payloadTooLarge",
     [MEDIA_ERROR_TITLES.notOwned]: "error.mediaNotOwned",
+    [MEDIA_ERROR_TITLES.limitExceeded]: "error.mediaLimitExceeded",
+    [MEDIA_ERROR_TITLES.noneProvided]: "error.noMediaProvided",
 };
 
 function titleOf(err: unknown): string | null {
@@ -72,6 +84,11 @@ export function isMediaError(
  * `ModerationUnavailableError` is deliberately absent: it never reached a
  * verdict, so the same files are still fine and dropping them would be the
  * client inventing a rejection the server did not make.
+ *
+ * `MediaLimitExceededError` and `NoMediaProvidedError` are absent for a
+ * different reason: they are not verdicts on the files either, they are
+ * answers about the request. "You picked five" is fixed by putting one back,
+ * and taking all five away to say so is the least useful reading of it.
  */
 const VERDICT_TITLES: string[] = [
     MEDIA_ERROR_TITLES.rejected,

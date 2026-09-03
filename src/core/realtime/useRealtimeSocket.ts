@@ -1,9 +1,15 @@
 import { useEffect, useRef } from "react";
-import { useAuthStore } from "../../../core/auth/auth.store";
-import { useNotificationStore } from "../store/notification.store";
-import { useToastStore } from "../../../shared/store/toast.store";
-import { translate } from "../../../shared/i18n/translate";
-import type { RealtimeNotificationPayload } from "../api/notification.types";
+import { useAuthStore } from "../auth/auth.store";
+import { useNotificationStore } from "../../features/notifications/store/notification.store";
+import { useMessageStore } from "../../features/messages/store/message.store";
+import { useToastStore } from "../../shared/store/toast.store";
+import { translate } from "../../shared/i18n/translate";
+import type {
+    IncomingMessagePayload,
+    MediaRejectedPayload,
+    MessageDeletedPayload,
+    MessageReadPayload,
+} from "../../features/messages/api/message.types";
 
 // The API registers its realtime routes under the same `/api/v1` prefix as
 // every REST endpoint — `register(realtimeRoutes, { prefix: "/api/v1/realtime" })`
@@ -19,11 +25,56 @@ const MAX_RETRIES = 5;
 
 interface WsMessage {
     event: string;
-    // `auth_success` carries no payload, so this cannot be required.
-    payload?: RealtimeNotificationPayload;
+    // `auth_success` carries no payload, so this cannot be required. It is
+    // `unknown` rather than a union because the frame is narrowed by `event`
+    // below and one union would let a notification payload be read as a
+    // message one wherever the two happen to overlap.
+    payload?: unknown;
 }
 
-export function useNotificationSocket() {
+/**
+ * The dispatch table. Direct messages ride the notification socket rather than
+ * opening their own — the API is explicit that a client should hold one
+ * connection — so this hook now serves two features and belongs to neither,
+ * which is why it sits in `core/` beside the API client.
+ *
+ * Every handler is a single store call. Nothing here decides anything: the
+ * reducers in the stores own the rules, so they stay testable without a
+ * socket, and this file stays the connection logic it already was.
+ */
+function dispatch(event: string, payload: unknown): void {
+    const messages = useMessageStore.getState();
+
+    switch (event) {
+        case "new-notification":
+            useNotificationStore.getState().incrementUnread();
+            return;
+        case "message:new":
+            messages.applyIncoming(payload as IncomingMessagePayload);
+            return;
+        // Deliberately not `message:new`: a message that opens a request must
+        // not raise the unread badge, which is the whole reason the API sends
+        // a separate event for it.
+        case "conversation:request":
+            messages.applyRequest(payload as IncomingMessagePayload);
+            return;
+        case "message:read":
+            messages.applyRead(payload as MessageReadPayload);
+            return;
+        case "message:deleted":
+            messages.applyDeleted(payload as MessageDeletedPayload);
+            return;
+        case "message:media_rejected":
+            messages.applyMediaRejected(payload as MediaRejectedPayload);
+            return;
+        default:
+            // An event this build does not know about. Newer servers are
+            // expected to send some.
+            return;
+    }
+}
+
+export function useRealtimeSocket() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     // `auth.store` persists only { user, isAuthenticated }, so after a reload
     // the store's token is null while the JWT is still in localStorage — the
@@ -31,9 +82,6 @@ export function useNotificationSocket() {
     // field as a dependency so a fresh login retriggers the effect, but fall
     // back to storage so a reloaded session still connects.
     const storeToken = useAuthStore((state) => state.token);
-    const incrementUnread = useNotificationStore(
-        (state) => state.incrementUnread,
-    );
     const wsRef = useRef<WebSocket | null>(null);
     const retryCountRef = useRef(0);
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,9 +188,7 @@ export function useNotificationSocket() {
                         retryCountRef.current = 0;
                         return;
                     }
-                    if (message.event === "new-notification") {
-                        incrementUnread();
-                    }
+                    dispatch(message.event, message.payload);
                 } catch {
                     // ignore malformed messages
                 }
@@ -152,5 +198,9 @@ export function useNotificationSocket() {
         connect();
 
         return stop;
-    }, [isAuthenticated, storeToken, incrementUnread]);
+        // `dispatch` reads every store through `getState()`, so the effect
+        // depends on the session alone. Subscribing to a store action here
+        // instead would tear the socket down and redial it on any change that
+        // happened to give the action a new identity.
+    }, [isAuthenticated, storeToken]);
 }

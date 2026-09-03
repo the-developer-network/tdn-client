@@ -233,6 +233,43 @@ describe("getErrorMessage", () => {
         });
     });
 
+    /*
+     * The second and last title the client answers in its own words. The write
+     * budget on direct messaging is five a minute, low enough that an ordinary
+     * exchange reaches it, so this sentence is read often and mid conversation
+     * by someone who did nothing wrong.
+     */
+    describe("rate limiting", () => {
+        it("uses the client sentence rather than the server one", () => {
+            expect(
+                getErrorMessage({
+                    status: 429,
+                    title: "TooManyRequestsError",
+                    detail: "Rate limit exceeded, retry in 1 minute.",
+                }),
+            ).toBe("You are going a little fast. Try again in a minute.");
+        });
+
+        it("still prefers a validation message when the API sends one", () => {
+            expect(
+                getErrorMessage({
+                    status: 429,
+                    title: "TooManyRequestsError",
+                    detail: "ignored",
+                    validation: [
+                        {
+                            instancePath: "/body",
+                            schemaPath: "#/body",
+                            keyword: "type",
+                            params: {},
+                            message: "specific and worth keeping",
+                        },
+                    ],
+                }),
+            ).toBe("specific and worth keeping");
+        });
+    });
+
     describe("unknown / unrecognised input", () => {
         it("returns the fallback message for null", () => {
             expect(getErrorMessage(null)).toBe("An unexpected error occurred.");

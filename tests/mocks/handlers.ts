@@ -34,6 +34,38 @@ const mockPost = {
     quotedPost: null,
 };
 
+const mockConversation = {
+    id: "conversation-1",
+    status: "ACCEPTED",
+    isRequest: false,
+    canSend: true,
+    participant: {
+        id: "user-2",
+        username: "ayse",
+        fullName: "Ayse Y.",
+        avatarUrl: "https://example.com/ayse.png",
+    },
+    unreadCount: 0,
+    lastMessagePreview: "Hello there",
+    lastMessageAt: new Date().toISOString(),
+    otherLastReadAt: null,
+    createdAt: new Date().toISOString(),
+};
+
+const mockMessage = {
+    id: "message-1",
+    conversationId: "conversation-1",
+    senderId: "user-2",
+    content: "Hello there",
+    mediaUrls: [],
+    isSensitive: false,
+    mediaPending: false,
+    mediaRejected: false,
+    isDeleted: false,
+    isMine: false,
+    createdAt: new Date().toISOString(),
+};
+
 const mockComment = {
     id: "comment-1",
     content: "Nice post!",
@@ -466,5 +498,74 @@ export const handlers = [
 
     http.post(`${BASE}/translate`, () =>
         HttpResponse.json({ data: { translatedText: "Translated content" } }),
+    ),
+
+    /*
+     * Direct messaging. Every listing answers the full `{ data, meta }`
+     * envelope rather than `{ data }` alone: `api.getPage` reads the cursor out
+     * of `meta`, so a handler that omits it pages forever from the first row.
+     */
+    http.get(`${BASE}/conversations`, ({ request }) => {
+        const status =
+            new URL(request.url).searchParams.get("status") ?? "ACCEPTED";
+        return HttpResponse.json({
+            data: status === "PENDING" ? [] : [mockConversation],
+            meta: { timestamp: new Date().toISOString(), nextCursor: null },
+        });
+    }),
+
+    http.post(`${BASE}/conversations`, () =>
+        HttpResponse.json({ data: mockConversation }, { status: 201 }),
+    ),
+
+    http.get(`${BASE}/conversations/unread-count`, () =>
+        HttpResponse.json({ data: { count: 0 } }),
+    ),
+
+    http.get(`${BASE}/conversations/:id/messages`, () =>
+        HttpResponse.json({
+            data: { conversation: mockConversation, messages: [mockMessage] },
+            meta: { timestamp: new Date().toISOString(), nextCursor: null },
+        }),
+    ),
+
+    http.post(`${BASE}/conversations/:id/messages`, () =>
+        HttpResponse.json({ data: mockMessage }, { status: 201 }),
+    ),
+
+    http.patch(
+        `${BASE}/conversations/:id/read`,
+        () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.patch(`${BASE}/conversations/:id/accept`, () =>
+        HttpResponse.json({
+            data: {
+                ...mockConversation,
+                status: "ACCEPTED",
+                isRequest: false,
+                canSend: true,
+            },
+        }),
+    ),
+
+    http.patch(`${BASE}/conversations/:id/decline`, () =>
+        HttpResponse.json({
+            data: {
+                ...mockConversation,
+                status: "DECLINED",
+                isRequest: false,
+                canSend: false,
+            },
+        }),
+    ),
+
+    http.post(`${BASE}/messages/media`, () =>
+        HttpResponse.json({ data: { mediaUrls: [] } }),
+    ),
+
+    http.delete(
+        `${BASE}/messages/:id`,
+        () => new HttpResponse(null, { status: 204 }),
     ),
 ];

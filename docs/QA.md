@@ -43,6 +43,8 @@ src/
       client.test.ts
     auth/
       auth.store.test.ts
+    realtime/
+      useRealtimeSocket.test.ts
   features/
     article/
       api/
@@ -97,12 +99,19 @@ src/
         CommentBox.test.tsx
         CommentCard.test.tsx
         CommentList.test.tsx
+    messages/
+      store/
+        message.store.test.ts
+      hooks/
+        useConversations.test.ts
+        useSendMessage.test.ts
+      components/
+        MessageBubble.test.tsx
     notifications/
       store/
         notification.store.test.ts
       hooks/
         useNotifications.test.ts
-        useNotificationSocket.test.ts
         useInitialUnreadCount.test.ts
       components/
         NotificationCard.test.tsx
@@ -147,6 +156,7 @@ src/
     CommentDetailPage.test.tsx
     BookmarksPage.test.tsx
     NotificationsPage.test.tsx
+    MessagesPage.test.tsx
     OnboardingPage.test.tsx
     SettingsPage.test.tsx
   app/
@@ -164,6 +174,7 @@ e2e/
   auth.spec.ts
   explore-tags.spec.ts
   feed.spec.ts
+  messages.spec.ts
   feed-restore.spec.ts
   mobile-zoom.spec.ts
   onboarding.spec.ts
@@ -221,21 +232,21 @@ either, because recounting across an appended page wiped every realtime
 `GET /notifications/unread-count` answers the question directly, so the
 derivation is gone and `setUnreadCount` is authoritative. Restoring the link in
 either branch of `setNotifications` brings back one bug or the other, depending
-on the branch — which is why two tests assert the *absence* of the derivation
+on the branch — which is why two tests assert the _absence_ of the derivation
 rather than its result.
 
-| Scenario                               | Assert                                        |
-| -------------------------------------- | --------------------------------------------- |
-| `setNotifications(list, append=false)` | Replaces list; `unreadCount` **untouched**    |
-| `setNotifications(list, append=true)`  | Appends to existing list; count untouched     |
-| Fresh first page over a server count   | Count survives — no re-derivation             |
-| Append after a realtime increment      | The increment survives                        |
-| `setUnreadCount(n)`                    | Taken verbatim, list need not agree           |
-| `setUnreadCount(0)`                    | Accepted                                      |
-| `setUnreadCount` then `incrementUnread`| The server count is the base the socket adds to |
-| `addNotification` (unread)             | `unreadCount` incremented                     |
-| `addNotification` (read)               | `unreadCount` unchanged                       |
-| `markAllRead()`                        | All `isRead: true`, `unreadCount === 0`       |
+| Scenario                                | Assert                                          |
+| --------------------------------------- | ----------------------------------------------- |
+| `setNotifications(list, append=false)`  | Replaces list; `unreadCount` **untouched**      |
+| `setNotifications(list, append=true)`   | Appends to existing list; count untouched       |
+| Fresh first page over a server count    | Count survives — no re-derivation               |
+| Append after a realtime increment       | The increment survives                          |
+| `setUnreadCount(n)`                     | Taken verbatim, list need not agree             |
+| `setUnreadCount(0)`                     | Accepted                                        |
+| `setUnreadCount` then `incrementUnread` | The server count is the base the socket adds to |
+| `addNotification` (unread)              | `unreadCount` incremented                       |
+| `addNotification` (read)                | `unreadCount` unchanged                         |
+| `markAllRead()`                         | All `isRead: true`, `unreadCount === 0`         |
 
 #### `toast.store`
 
@@ -249,14 +260,14 @@ rather than its result.
 
 9 tests. Persists under `tdn-theme`, so the **`vi.hoisted` localStorage stub is required**.
 
-| Scenario                                  | Assert                                          |
-| ----------------------------------------- | ----------------------------------------------- |
-| Initial state                             | `"dark"` — see below                            |
-| `setTheme(t)`                             | Recorded verbatim                               |
-| `resolveTheme("light" \| "dark")`         | Passed straight through, `matchMedia` never called |
-| `resolveTheme("system")`                  | Resolves against `prefers-color-scheme`         |
-| `systemPrefersDark()` with no `matchMedia`| Falls back to dark rather than throwing         |
-| `watchSystemTheme`                        | Fires on change; the returned unsubscribe detaches |
+| Scenario                                   | Assert                                             |
+| ------------------------------------------ | -------------------------------------------------- |
+| Initial state                              | `"dark"` — see below                               |
+| `setTheme(t)`                              | Recorded verbatim                                  |
+| `resolveTheme("light" \| "dark")`          | Passed straight through, `matchMedia` never called |
+| `resolveTheme("system")`                   | Resolves against `prefers-color-scheme`            |
+| `systemPrefersDark()` with no `matchMedia` | Falls back to dark rather than throwing            |
+| `watchSystemTheme`                         | Fires on change; the returned unsubscribe detaches |
 
 **The default is asserted, not incidental.** `"dark"` rather than `"system"` is the decision that keeps every existing account reading what it has always read — the app shipped dark-only, so resolving against the OS would repaint it white for everyone whose laptop is set light. A change of that default is a product decision, and this test is what makes it a deliberate one.
 
@@ -268,14 +279,49 @@ rather than its result.
 
 Completion is a **list of user ids**, not a boolean: a shared browser would otherwise let a second account skip the flow because the first one finished it. `complete(userId, [])` is the gate's call when the server already reports follows, and it must not wipe interests a real trip through the picker stored.
 
-| Scenario                        | Assert                                              |
-| ------------------------------- | --------------------------------------------------- |
-| Unknown user                    | `isCompleted` false                                  |
-| `complete(id, fields)`          | `isCompleted` true; `interests` stored               |
-| Second user                     | `isCompleted` false for them                         |
-| Same user twice                 | `completedUserIds` holds one entry                   |
-| `complete(id, [])`              | Existing `interests` left alone                      |
-| After `complete`                | `localStorage["tdn-onboarding"]` holds the id        |
+| Scenario               | Assert                                        |
+| ---------------------- | --------------------------------------------- |
+| Unknown user           | `isCompleted` false                           |
+| `complete(id, fields)` | `isCompleted` true; `interests` stored        |
+| Second user            | `isCompleted` false for them                  |
+| Same user twice        | `completedUserIds` holds one entry            |
+| `complete(id, [])`     | Existing `interests` left alone               |
+| After `complete`       | `localStorage["tdn-onboarding"]` holds the id |
+
+#### `message.store` (`src/features/messages/store/message.store.test.ts`)
+
+17 tests. No persistence, so no storage stub — but reset with
+`useMessageStore.setState(useMessageStore.getInitialState())` in `beforeEach`,
+because every reducer here is cumulative.
+
+**The list never defines the badge**, the same rule `notification.store` learned
+the hard way: counting loaded rows caps an account with 35 unread messages at
+the page size, and recounting after an appended page wipes every realtime
+increment. `/conversations/unread-count` answers it directly.
+
+| Scenario                                     | Assert                                                            |
+| -------------------------------------------- | ----------------------------------------------------------------- |
+| `setConversations` with unread rows          | `unreadCount` untouched                                           |
+| `applyIncoming` for an unfocused thread      | Badge +1; the row unread +1; the row moves to the front           |
+| `applyIncoming` for the **focused** thread   | Badge unchanged; `threadRevision` +1                              |
+| `applyIncoming` for a thread not in the page | `conversationsRevision` +1                                        |
+| `applyRequest`                               | `requestCount` +1, `unreadCount` **unchanged**                    |
+| `setRequests` after blind increments         | Count reset to the listing length                                 |
+| `upsertConversation` → `ACCEPTED`            | Leaves the request tab, joins the inbox                           |
+| `upsertConversation` → `DECLINED`            | Leaves both lists — it is never listed again                      |
+| `markConversationRead`                       | Row zeroed; **global count left alone** for the caller to re-read |
+| `applyRead`                                  | `otherLastReadAt` moved on the row and the open thread            |
+| `applyDeleted`                               | Row kept in place, emptied                                        |
+| `applyMediaRejected`                         | `mediaPending` false, `mediaRejected` true, urls cleared          |
+| `setThread(..., append)`                     | Older page appended at the **end** (the array runs newest first)  |
+| `replaceMessage(tempId, sent)`               | The optimistic bubble is swapped, not duplicated                  |
+| `clearThread`                                | Messages, cursor, conversation **and focus** all cleared          |
+
+The two revision counters are the store admitting what it cannot do. A realtime
+payload carries a `preview`, not a `content`, so it can update a list row and
+cannot become a bubble — rather than inventing the missing half, the store bumps
+a counter and the hook that owns the request re-reads. That is what keeps every
+reducer a pure function these tests can drive through `getState()`.
 
 ---
 
@@ -337,13 +383,13 @@ it("unknown input → fallback message", () => {
 - a 401 from `/auth/login` means "wrong password", not "your session ended" — `LoginView.test.tsx` and four other auth specs fail loudly on that mistake
 - `error-handler.plugin.ts` lets a `CustomError` carry its own message at **any** status, 5xx included, so `"Articles are unavailable."` on a 503 must survive — `useArticles.test.ts` and `useMyArticles.test.ts` pin it
 
-| Scenario                                            | Assert                                     |
-| --------------------------------------------------- | ------------------------------------------ |
-| Generic 5xx sentence, `en` then `tr`                | Translated both times                      |
-| 5xx with no detail                                  | Translated                                 |
-| `type: "tdn:unreadable-response"`                   | Translated whatever the status             |
-| 401 / 403 / 404 / 429, and a 503 with a real detail | The server's own words, untouched          |
-| Validation array present                            | Still wins over everything above           |
+| Scenario                                            | Assert                            |
+| --------------------------------------------------- | --------------------------------- |
+| Generic 5xx sentence, `en` then `tr`                | Translated both times             |
+| 5xx with no detail                                  | Translated                        |
+| `type: "tdn:unreadable-response"`                   | Translated whatever the status    |
+| 401 / 403 / 404 / 429, and a 503 with a real detail | The server's own words, untouched |
+| Validation array present                            | Still wins over everything above  |
 
 #### `translate` / `translateWith` (`src/shared/i18n/translate.ts`)
 
@@ -442,6 +488,24 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 > Any spec that mocks a follower list must slice on `limit`/`offset`. A handler returning a fixed array answers a paginated and an unpaginated request identically, which is exactly the bug these tests were written for.
 
+#### `api.getPage` — the cursor escape hatch
+
+4 tests in `client.test.ts`. `api.get` unwraps `ApiResponse.data` and drops
+`meta` with it, which is right for everything paged by `page`/`limit` and fatal
+for a cursor-paginated listing: the cursor that reaches the next page lives in
+`meta`, so unwrapping leaves no way to walk a conversation backwards at all.
+
+| Scenario               | Assert                                          |
+| ---------------------- | ----------------------------------------------- |
+| A listing              | `data` **and** `meta.nextCursor` both returned  |
+| End of a listing       | `nextCursor` is `null`                          |
+| A `404`                | The problem document still reaches the caller   |
+| `api.get` alongside it | Still unwraps — the option changed nothing else |
+
+The last row is the point of testing it at all: `_envelope` is one branch inside
+the shared client, so the 401 refresh, the queue and the 15 s budget are the same
+code either way rather than a second implementation that can drift.
+
 ---
 
 ### Layer 3a — Cloudflare Worker (`worker/index.ts`)
@@ -452,26 +516,26 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 The `ASSETS` stub **records the paths it was asked for**. Every routing bug in this file is a request reaching the asset store when it should have reached the SPA shell, or the reverse — asserting on the response body alone cannot tell those apart, because a 404 body and a missing asset look identical.
 
-| Scenario                                     | Assert                                                       |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| `/profile/john.smith`, `.dev`, `.io`         | App shell served; only `/index.html` requested               |
-| `/profile/john.smith` with a profile in API  | OG title and description built from the profile              |
-| `/assets/…js`, `/favicon.svg`, `/robots.txt` | Passed straight to the asset store                           |
-| `/`                                          | Placeholder `og:` and `description` replaced, not duplicated |
-| Post content containing markup               | Escaped — no live `<script>` in the head                     |
-| `/sitemap.xml`                               | Generated XML; asset store never consulted                   |
-| `env.API_BASE` set                           | Profile, post and sitemap all read from it, not production   |
-| `env.API_BASE` unset                         | Production API used — deployment needs no setting            |
-| Any injected page                            | Exactly one `<title>` and one `<link rel="canonical">`       |
+| Scenario                                     | Assert                                                          |
+| -------------------------------------------- | --------------------------------------------------------------- |
+| `/profile/john.smith`, `.dev`, `.io`         | App shell served; only `/index.html` requested                  |
+| `/profile/john.smith` with a profile in API  | OG title and description built from the profile                 |
+| `/assets/…js`, `/favicon.svg`, `/robots.txt` | Passed straight to the asset store                              |
+| `/`                                          | Placeholder `og:` and `description` replaced, not duplicated    |
+| Post content containing markup               | Escaped — no live `<script>` in the head                        |
+| `/sitemap.xml`                               | Generated XML; asset store never consulted                      |
+| `env.API_BASE` set                           | Profile, post and sitemap all read from it, not production      |
+| `env.API_BASE` unset                         | Production API used — deployment needs no setting               |
+| Any injected page                            | Exactly one `<title>` and one `<link rel="canonical">`          |
 | An article title                             | Branded `… · TDN`; a title already carrying "TDN" is left alone |
-| `/sitemap.xml` against a 50-capped `/posts`  | Posts and profiles still advertised                          |
-| Every route                                  | The `google-site-verification` tag survives the head rewrite  |
+| `/sitemap.xml` against a 50-capped `/posts`  | Posts and profiles still advertised                             |
+| Every route                                  | The `google-site-verification` tag survives the head rewrite    |
 
 > **`index.html` carries the Search Console ownership tag, and the Worker must not strip it.** Verification is re-checked periodically rather than once, so losing the tag un-verifies the property and drops the sitemap reporting with it — silently, on every route, with nothing else visibly different. `injectIntoHead` only removes `og:`, `twitter:` and `description`; widening that to "every `<meta name=…>`" would look like tidying and would break this. Held down at both layers: parameterised over four routes in the unit tests, and against the real built shell in the `worker` e2e project.
 
 > **The shell's own `<title>` must be removed, not appended past.** A second `<title>` does not override the first, and the first is the one search engines read. Injecting without stripping left every article, post and profile on the site titled "TDN - The Developer Network" — invisible when sharing a link, because the OG tags were correct all along, and fatal when searching for one. The e2e `worker` project asserts this against the **real built shell**, where the tag is indented inside `<head>`; the unit fixture cannot prove that on its own.
 
-> **Both list endpoints cap `limit` at 50 — 100 is a 400, not a truncation.** `fetchPostPage` swallows a failed page into `[]`, so asking for 100 cost the live sitemap every post *and* every profile (profiles are derived from post authors) while still returning 200 and looking healthy. The handler in the regression test enforces the cap the real API enforces; the old one ignored the query string entirely, which is why nothing caught it.
+> **Both list endpoints cap `limit` at 50 — 100 is a 400, not a truncation.** `fetchPostPage` swallows a failed page into `[]`, so asking for 100 cost the live sitemap every post _and_ every profile (profiles are derived from post authors) while still returning 200 and looking healthy. The handler in the regression test enforces the cap the real API enforces; the old one ignored the query string entirely, which is why nothing caught it.
 
 > The `API_BASE` tests register a handler for **both** origins and assert the recorded request URLs, rather than only asserting the tags — a request to the wrong origin then fails an assertion naming the origin it reached. Requests are collected with `server.events.on("request:start", …)` and released with `server.events.removeAllListeners()` in `afterEach`.
 
@@ -498,11 +562,11 @@ Use `renderHook` + `act` from `@testing-library/react`. Override MSW handlers pe
 
 Three hooks, each cloned from an existing model rather than invented:
 
-| Hook                | Modelled on      | What its tests pin down                                                                                                                                                                       |
-| ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hook                | Modelled on      | What its tests pin down                                                                                                                                                                                                                                               |
+| ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `useArticles`       | `useFeed`        | `hasMore` inferred from a full page; page 2 repeats page 1's filters; a failed page 2 keeps page 1 on screen; a stale response from an abandoned filter never overwrites the current list; a body that is not a list fails as this request rather than becoming state |
-| `useArticle`        | `useProfile`     | Loading is derived from the slug, so the previous article never shows while the next loads; `retry` returns to loading rather than leaving the stale error; a 404 reads as ordinary not-found |
-| `useArticleActions` | `usePostActions` | Optimistic like/bookmark with rollback plus an error toast; guest interactions open the auth modal; share uses the article's own URL                                                          |
+| `useArticle`        | `useProfile`     | Loading is derived from the slug, so the previous article never shows while the next loads; `retry` returns to loading rather than leaving the stale error; a 404 reads as ordinary not-found                                                                         |
+| `useArticleActions` | `usePostActions` | Optimistic like/bookmark with rollback plus an error toast; guest interactions open the auth modal; share uses the article's own URL                                                                                                                                  |
 
 **All three require the `vi.hoisted` localStorage stub** — their module graphs reach `apiClient` or `useAuthStore`.
 
@@ -561,11 +625,11 @@ expect(result.current.likeCount).toBe(5); // rolled back
 | `handleDelete` — unauthenticated | Returns `false`; auth modal opened                                 |
 | `handleShare` — copy succeeds    | `writeText` called with `/post/:id`; info toast                    |
 | `handleShare` — copy rejected    | Error toast — the button must not fail silently                    |
-| `registerQuote`                  | `quoteCount` +1 locally **and** in the feed snapshot                |
+| `registerQuote`                  | `quoteCount` +1 locally **and** in the feed snapshot               |
 | `handleShare` — sheet dismissed  | No toast at all (`AbortError` is a cancel, not a failure)          |
-| Like with a snapshot holding it  | `isLiked`/`likeCount` written into the stored feed as well          |
+| Like with a snapshot holding it  | `isLiked`/`likeCount` written into the stored feed as well         |
 | That like fails                  | Taken back out of the stored feed too                              |
-| Bookmark with a snapshot         | `isBookmarked` written into the stored feed                         |
+| Bookmark with a snapshot         | `isBookmarked` written into the stored feed                        |
 | Snapshot without the post        | Stored list untouched **by identity** — a miss must not rebuild it |
 | No snapshot at all               | No-op; the local optimistic update still applies                   |
 
@@ -607,19 +671,19 @@ await waitFor(() => expect(result.current.isLoading).toBe(false));
 expect(result.current.posts).toHaveLength(1);
 ```
 
-| Scenario                                    | Assert                                                 |
-| ------------------------------------------- | ------------------------------------------------------ |
-| Mount (default handler)                     | `posts` and `articles` populated, `isLoading=false`, `error=null` |
-| Connection dropped on mount                 | `error.network` message; `posts=[]`; `isLoading=false` |
-| 429 with a `detail`                         | The API's `detail` rendered, not a fixed string        |
-| `retry()` after error with restored handler | `error=null`; `posts` populated                        |
-| `removePost(id)`                            | Removes post from local state; no API call             |
-| API returns empty list                      | `posts=[]`; `articles=[]`; `error=null`                |
-| 25 bookmarks, then `loadMore()`             | 20 then 25; `hasMore` true then false                  |
-| 3 bookmarks                                 | `hasMore` false without a second request               |
-| `retry()` after `loadMore()`                | Back to 20 — the list is replaced, not appended to     |
-| Response with no `articles` field           | `articles=[]`; `posts` still populated; `error=null`   |
-| 25 saved articles, no posts, then `loadMore()` | 20 then 25 articles; `hasMore` true then false      |
+| Scenario                                       | Assert                                                            |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| Mount (default handler)                        | `posts` and `articles` populated, `isLoading=false`, `error=null` |
+| Connection dropped on mount                    | `error.network` message; `posts=[]`; `isLoading=false`            |
+| 429 with a `detail`                            | The API's `detail` rendered, not a fixed string                   |
+| `retry()` after error with restored handler    | `error=null`; `posts` populated                                   |
+| `removePost(id)`                               | Removes post from local state; no API call                        |
+| API returns empty list                         | `posts=[]`; `articles=[]`; `error=null`                           |
+| 25 bookmarks, then `loadMore()`                | 20 then 25; `hasMore` true then false                             |
+| 3 bookmarks                                    | `hasMore` false without a second request                          |
+| `retry()` after `loadMore()`                   | Back to 20 — the list is replaced, not appended to                |
+| Response with no `articles` field              | `articles=[]`; `posts` still populated; `error=null`              |
+| 25 saved articles, no posts, then `loadMore()` | 20 then 25 articles; `hasMore` true then false                    |
 
 #### `useComments` (`src/features/comment/hooks/useComments.test.ts`)
 
@@ -688,15 +752,15 @@ await act(async () => {
 expect(useNotificationStore.getState().notifications).toHaveLength(21);
 ```
 
-| Scenario                          | Assert                                                    |
-| --------------------------------- | --------------------------------------------------------- |
+| Scenario                          | Assert                                                      |
+| --------------------------------- | ----------------------------------------------------------- |
 | `fetch()` — success               | Store populated; `isLoading=false`; `unreadCount` untouched |
-| `fetch()` — API error             | `error` truthy; store empty                               |
-| Server returns < 20 items         | `hasMore=false`                                           |
-| `loadMore()` when `hasMore=false` | Store unchanged; `isLoadingMore=false`                    |
-| `loadMore()` when `hasMore=true`  | Page 2 fetched and appended; `hasMore` updated            |
-| `loadMore()` fails, then retried  | Pages requested are `[1, 2, 2]` — page 2 is not skipped   |
-| `loadMore()` fails                | Loaded notifications kept; `hasMore` still true           |
+| `fetch()` — API error             | `error` truthy; store empty                                 |
+| Server returns < 20 items         | `hasMore=false`                                             |
+| `loadMore()` when `hasMore=false` | Store unchanged; `isLoadingMore=false`                      |
+| `loadMore()` when `hasMore=true`  | Page 2 fetched and appended; `hasMore` updated              |
+| `loadMore()` fails, then retried  | Pages requested are `[1, 2, 2]` — page 2 is not skipped     |
+| `loadMore()` fails                | Loaded notifications kept; `hasMore` still true             |
 
 #### `useInitialUnreadCount` (`src/features/notifications/hooks/useInitialUnreadCount.test.ts`)
 
@@ -720,17 +784,17 @@ The logout branch now resets the count **explicitly**. That used to fall out of
 `setNotifications([])` recounting an empty list; with the derivation gone, the
 previous account's badge would otherwise survive the sign-out.
 
-| Scenario                          | Assert                                                |
-| --------------------------------- | ----------------------------------------------------- |
-| Authenticated                     | List and count both populated                         |
-| 20-item page, server says 35      | Badge reads **35**, list holds 20                     |
-| All-read page, server says 7      | Badge reads 7                                         |
-| Authenticated                     | Both endpoints hit in the same pass                   |
-| Not authenticated                 | Neither endpoint called; store stays empty            |
-| `isAuthenticated` → false         | List cleared **and** count reset to 0                 |
-| Both requests fail                | Nothing thrown; store untouched                       |
-| Only the count fails              | The list still lands                                  |
-| Only the list fails               | The count still lands                                 |
+| Scenario                     | Assert                                     |
+| ---------------------------- | ------------------------------------------ |
+| Authenticated                | List and count both populated              |
+| 20-item page, server says 35 | Badge reads **35**, list holds 20          |
+| All-read page, server says 7 | Badge reads 7                              |
+| Authenticated                | Both endpoints hit in the same pass        |
+| Not authenticated            | Neither endpoint called; store stays empty |
+| `isAuthenticated` → false    | List cleared **and** count reset to 0      |
+| Both requests fail           | Nothing thrown; store untouched            |
+| Only the count fails         | The list still lands                       |
+| Only the list fails          | The count still lands                      |
 
 #### `useNotificationSocket` (`src/features/notifications/hooks/useNotificationSocket.test.ts`)
 
@@ -812,14 +876,14 @@ The row is a `role="button"` `<div>` rather than a `<button>` because a button c
 
 `onFollowChange` is reported from an effect watching the hook's `isFollowing`, not from the click handler, so a rolled-back request reports its reversal too — `ProfilePage` feeds its own `followingCount` from it and would otherwise drift.
 
-| Scenario                          | Assert                                                                       |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| Click "Following"                 | `DELETE /follows` with `{ targetId }`; label flips to "Follow"; row still present; `onFollowChange(-1)` |
-| Click the follow button           | `navigate` not called, `onClose` not called                                  |
-| Click the row itself              | `onClose` + `navigate("/profile/bob")`                                       |
-| `DELETE /follows` fails           | Label back to "Following"; `onFollowChange` called `-1` then `1`             |
-| Signed-out click                  | `onClose` called and auth modal `isOpen=true` — both modals share `z-[100]`, so the list must close first |
-| `isMe` row                        | No follow button rendered                                                    |
+| Scenario                | Assert                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| Click "Following"       | `DELETE /follows` with `{ targetId }`; label flips to "Follow"; row still present; `onFollowChange(-1)`   |
+| Click the follow button | `navigate` not called, `onClose` not called                                                               |
+| Click the row itself    | `onClose` + `navigate("/profile/bob")`                                                                    |
+| `DELETE /follows` fails | Label back to "Following"; `onFollowChange` called `-1` then `1`                                          |
+| Signed-out click        | `onClose` called and auth modal `isOpen=true` — both modals share `z-[100]`, so the list must close first |
+| `isMe` row              | No follow button rendered                                                                                 |
 
 #### `useTheme` (`src/shared/hooks/useTheme.test.ts`)
 
@@ -827,14 +891,14 @@ The row is a `role="button"` `<div>` rather than a `<button>` because a button c
 
 Asserts against `document.documentElement.dataset.theme`, because that attribute is the entire contract — it is what the token overrides in `index.css` key off, and nothing else the hook does is observable.
 
-| Scenario                        | Assert                                      |
-| ------------------------------- | ------------------------------------------- |
-| Mount                           | `data-theme` stamped                        |
-| `setTheme("light")`             | Restamped, and the store agrees             |
-| `"system"` on a light desktop   | Resolves to `light`                         |
-| OS flips while on `"system"`    | Restamped without a rerender                |
-| OS flips after an explicit pick | **No listener attached at all**             |
-| Unmount                         | Listener detached                           |
+| Scenario                        | Assert                          |
+| ------------------------------- | ------------------------------- |
+| Mount                           | `data-theme` stamped            |
+| `setTheme("light")`             | Restamped, and the store agrees |
+| `"system"` on a light desktop   | Resolves to `light`             |
+| OS flips while on `"system"`    | Restamped without a rerender    |
+| OS flips after an explicit pick | **No listener attached at all** |
+| Unmount                         | Listener detached               |
 
 The fifth is the one worth keeping. A reader who picked light picked it for a reason, and a listener left attached would hand their theme back to the laptop at sunset. Asserting the listener count is zero says that in a way that asserting the colour cannot — the colour is right either way until the OS actually changes.
 
@@ -844,16 +908,16 @@ The fifth is the one worth keeping. A reader who picked light picked it for a re
 
 12 tests over the moderation contract. No DOM and no localStorage stub — it is pure predicates plus one retry.
 
-| Scenario | Assert |
-| --- | --- |
-| 422 / two 415s / 413 | `clearsSelection` is true |
-| 503 `ModerationUnavailableError` | `clearsSelection` is **false** |
-| A 500, an `Error`, `null`, a bare string | `clearsSelection` is false |
-| `isMediaError` on the two 415s | Does not confuse them |
-| `withModerationRetry` on success | Called once |
-| 503 then success | Called twice |
-| 503 twice | Throws the second on, called twice |
-| 422 | Not retried |
+| Scenario                                 | Assert                             |
+| ---------------------------------------- | ---------------------------------- |
+| 422 / two 415s / 413                     | `clearsSelection` is true          |
+| 503 `ModerationUnavailableError`         | `clearsSelection` is **false**     |
+| A 500, an `Error`, `null`, a bare string | `clearsSelection` is false         |
+| `isMediaError` on the two 415s           | Does not confuse them              |
+| `withModerationRetry` on success         | Called once                        |
+| 503 then success                         | Called twice                       |
+| 503 twice                                | Throws the second on, called twice |
+| 422                                      | Not retried                        |
 
 **The polarity is the test.** `clearsSelection` defaulting the other way — clear unless told otherwise — would take four picked files away over a 500 from the create call that follows the upload, or over a dropped connection, neither of which says anything about the files. The "not a verdict" case is what pins that down.
 
@@ -863,14 +927,14 @@ The fifth is the one worth keeping. A reader who picked light picked it for a re
 
 6 tests. Fake timers with `shouldAdvanceTime`, and MSW counts the reads so "only this post" is an assertion rather than a claim.
 
-| Scenario | Assert |
-| --- | --- |
-| Manual refresh | Reads `/posts/post-1` once, hands the post back |
-| `mediaPending: true` | Reads again every 20 s |
-| `mediaPending: false` | Never polls, even after two minutes |
-| Past five minutes | Stops; the count stops moving |
-| Unmount | Stops |
-| A failing poll | No throw, no callback, `isRefreshing` back to false |
+| Scenario              | Assert                                              |
+| --------------------- | --------------------------------------------------- |
+| Manual refresh        | Reads `/posts/post-1` once, hands the post back     |
+| `mediaPending: true`  | Reads again every 20 s                              |
+| `mediaPending: false` | Never polls, even after two minutes                 |
+| Past five minutes     | Stops; the count stops moving                       |
+| Unmount               | Stops                                               |
+| A failing poll        | No throw, no callback, `isRefreshing` back to false |
 
 The five-minute cap and the unmount case are both about a page left open: a video that has not been judged in five minutes is not about to be, and something is wrong further back.
 
@@ -985,18 +1049,18 @@ server.use(
 );
 ```
 
-| Scenario                            | Assert                                                |
-| ----------------------------------- | ----------------------------------------------------- |
-| `fetchPosts("COMMUNITY")` — success | `posts` populated; `isLoading=false`; `error=null`    |
-| `fetchPosts()` — API error          | `error` set to message; `posts=[]`; `isLoading=false` |
-| Server returns < 20 items           | `hasMore=false`                                       |
-| `loadMore()` when `hasMore=true`    | Page 2 fetched; posts appended; `hasMore` updated     |
-| A fetch for another type            | Replaces the list rather than appending it            |
-| A body that is not a list           | `posts` stays `[]` and the error shows; page 2 likewise keeps page 1 on screen |
-| Mounted with a `restore`            | Starts from the given list and pages on from its page rather than page 1 |
-| A superseded slow response          | Never overwrites the list a newer fetch produced      |
-| `loadMore()` after a filtered page 1 | Repeats the original params instead of rebuilding them |
-| `addPost()` then `removePost()`     | List mutated immediately; no API call                 |
+| Scenario                             | Assert                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| `fetchPosts("COMMUNITY")` — success  | `posts` populated; `isLoading=false`; `error=null`                             |
+| `fetchPosts()` — API error           | `error` set to message; `posts=[]`; `isLoading=false`                          |
+| Server returns < 20 items            | `hasMore=false`                                                                |
+| `loadMore()` when `hasMore=true`     | Page 2 fetched; posts appended; `hasMore` updated                              |
+| A fetch for another type             | Replaces the list rather than appending it                                     |
+| A body that is not a list            | `posts` stays `[]` and the error shows; page 2 likewise keeps page 1 on screen |
+| Mounted with a `restore`             | Starts from the given list and pages on from its page rather than page 1       |
+| A superseded slow response           | Never overwrites the list a newer fetch produced                               |
+| `loadMore()` after a filtered page 1 | Repeats the original params instead of rebuilding them                         |
+| `addPost()` then `removePost()`      | List mutated immediately; no API call                                          |
 
 #### `useDeleteAccount` (`src/features/settings/hooks/useDeleteAccount.test.ts`)
 
@@ -1033,30 +1097,30 @@ The hook used to infer an account's field from the categories of the posts and a
 
 Four properties of that request are asserted because getting any of them wrong is invisible until it is expensive:
 
-- **One comma-joined request, not one per field.** A bot matches on *any* of its categories, so a request per field refetches the same bots and spends the 100/minute budget doing it.
+- **One comma-joined request, not one per field.** A bot matches on _any_ of its categories, so a request per field refetches the same bots and spends the 100/minute budget doing it.
 - **No `categories` parameter at all when nothing was picked**, which is a different request from an empty one — it means every categorised bot.
 - **`limit=50`**, the endpoint's ceiling. One page is the whole flow for almost everyone: the thinnest field carries 25 bots, well past `MIN_FOLLOWS`.
 - **The token goes with it.** `getBots` is neither `isPublic` nor `isAnonymous`; auth is optional on the endpoint, but the token is what fills `isFollowing`, and without it a returning account is handed back the bots it already follows as fresh suggestions.
 
-Paging is a "show more" button over `offset`, not infinite scroll. The append **deduplicates by `userId`** even though the endpoint promises a deterministic order — following a bot raises its follower count, which *is* the ranking key, so a bot can slide across the page boundary mid-flow and arrive twice. A failed second page toasts and keeps the list; raising it into `error` would swap out a screen of bots the user may already have followed.
+Paging is a "show more" button over `offset`, not infinite scroll. The append **deduplicates by `userId`** even though the endpoint promises a deterministic order — following a bot raises its follower count, which _is_ the ranking key, so a bot can slide across the page boundary mid-flow and arrive twice. A failed second page toasts and keeps the list; raising it into `error` would swap out a screen of bots the user may already have followed.
 
 `load` sets no state synchronously because it runs from an effect (`react-hooks/set-state-in-effect`); `retry` is an event handler and does, or the button looks dead until the request returns.
 
-| Scenario                                 | Assert                                                            |
-| ---------------------------------------- | ----------------------------------------------------------------- |
-| Endpoint returns bots                    | Listed in the order given; `error` null                           |
-| A bot with bio, fields, follow state     | All mapped through, `isFollowing` included                        |
-| Two fields picked                        | One request, `categories=BACKEND,AI`                              |
-| No field picked                          | No `categories` parameter at all                                  |
-| Any request                              | `limit=50`                                                        |
-| First page short                         | `hasMore` false                                                   |
-| First page full, `loadMore()`            | Next page appended; `hasMore` false once short                    |
-| Next page repeats a bot                  | Listed once; the new bots still appended                          |
-| Next page fails (429)                    | List kept, `error` null, error toast with the API's `detail`      |
-| First page fails (429)                   | The API's `detail` surfaced; `accounts` empty; `hasMore` false    |
-| `retry()` after a failure                | `error` cleared; the list arrives                                 |
-| Fields change                            | Refetched with the new `categories`                               |
-| Same fields, new array identity          | Not refetched                                                     |
+| Scenario                             | Assert                                                         |
+| ------------------------------------ | -------------------------------------------------------------- |
+| Endpoint returns bots                | Listed in the order given; `error` null                        |
+| A bot with bio, fields, follow state | All mapped through, `isFollowing` included                     |
+| Two fields picked                    | One request, `categories=BACKEND,AI`                           |
+| No field picked                      | No `categories` parameter at all                               |
+| Any request                          | `limit=50`                                                     |
+| First page short                     | `hasMore` false                                                |
+| First page full, `loadMore()`        | Next page appended; `hasMore` false once short                 |
+| Next page repeats a bot              | Listed once; the new bots still appended                       |
+| Next page fails (429)                | List kept, `error` null, error toast with the API's `detail`   |
+| First page fails (429)               | The API's `detail` surfaced; `accounts` empty; `hasMore` false |
+| `retry()` after a failure            | `error` cleared; the list arrives                              |
+| Fields change                        | Refetched with the new `categories`                            |
+| Same fields, new array identity      | Not refetched                                                  |
 
 #### `useOnboardingFollows` (`src/features/onboarding/hooks/useOnboardingFollows.test.ts`)
 
@@ -1068,23 +1132,58 @@ The hook keeps **two** sets, because they answer different questions. `followedI
 
 A `seenIds` ref records every bot the seeding has already ruled on. Without it, appending a second page re-runs the seeding over the first one and quietly restores a bot the user had just unfollowed.
 
-| Scenario                              | Assert                                                     |
-| ------------------------------------- | ----------------------------------------------------------- |
-| Initial                               | Nothing followed; `netFollowChange` 0                        |
-| `toggle(id)`                          | Optimistically followed; net 1                               |
-| `toggle(id)` twice                    | Unfollowed; net 0                                            |
-| A bot arrives with `isFollowing`      | Rendered as followed; the others are not                     |
-| A seeded bot                          | Net stays 0; it is in `serverFollowedIds`                     |
-| Unfollowing a seeded bot              | Net −1                                                       |
-| Second page re-lists an unfollowed bot| Stays unfollowed; net still −1                               |
-| Follow rejected (429)                 | Net back to 0; error toast carrying the API's `detail`       |
-| Unfollow rejected                     | The follow is restored                                       |
-| Any follow                            | Body is `{ targetId }` with the **id**, never the username   |
-| Request in flight                     | `isPending(id)` true for that id only; a second toggle sends no second request |
+| Scenario                               | Assert                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| Initial                                | Nothing followed; `netFollowChange` 0                                          |
+| `toggle(id)`                           | Optimistically followed; net 1                                                 |
+| `toggle(id)` twice                     | Unfollowed; net 0                                                              |
+| A bot arrives with `isFollowing`       | Rendered as followed; the others are not                                       |
+| A seeded bot                           | Net stays 0; it is in `serverFollowedIds`                                      |
+| Unfollowing a seeded bot               | Net −1                                                                         |
+| Second page re-lists an unfollowed bot | Stays unfollowed; net still −1                                                 |
+| Follow rejected (429)                  | Net back to 0; error toast carrying the API's `detail`                         |
+| Unfollow rejected                      | The follow is restored                                                         |
+| Any follow                             | Body is `{ targetId }` with the **id**, never the username                     |
+| Request in flight                      | `isPending(id)` true for that id only; a second toggle sends no second request |
 
 #### `useFollowingCount` (`src/features/onboarding/hooks/useFollowingCount.ts`)
 
 Reads `followingCount` off the signed-in account's own profile so the page can credit follows already on the books. Read here rather than handed over from the gate so the page is still right on a reload or a direct visit to `/onboarding`, where no gate ran. A failure counts as zero — the same fail-open the gate takes, and it can only ever ask for more, never fewer.
+
+#### `useConversations` (`src/features/messages/hooks/useConversations.test.ts`)
+
+6 tests. The first cursor-paginated listing in the client, and the assertions are
+about the cursor rather than the rows.
+
+| Scenario                     | Assert                                                      |
+| ---------------------------- | ----------------------------------------------------------- |
+| Mount                        | First page loaded; `hasMore` follows `meta.nextCursor`      |
+| `loadMore`                   | The cursor goes back **verbatim** — never parsed or built   |
+| `loadMore` with no cursor    | No request; the listing is at its end, not at its start     |
+| `PENDING` tab                | `status=PENDING` sent; `requestCount` is the listing length |
+| Failure then `fetch()`       | Error surfaced, then cleared on the retry                   |
+| `conversationsRevision` bump | The listing re-reads                                        |
+
+The third row is the one that matters: treating a missing cursor as "start
+again" restarts from the top and appends every row already on screen a second
+time.
+
+#### `useSendMessage` (`src/features/messages/hooks/useSendMessage.test.ts`)
+
+5 tests. Optimistic, and rolled back loudly rather than quietly — a message that
+vanishes without a word is indistinguishable from one that was sent.
+
+| Scenario       | Assert                                                      |
+| -------------- | ----------------------------------------------------------- |
+| Success        | The `temp-` bubble is swapped for the server copy; no toast |
+| `403`          | Bubble removed; the server `detail` toasted                 |
+| `429`          | The **client** sentence toasted, not the server English     |
+| In flight      | `isPendingMessage(id)` true — nothing to withdraw yet       |
+| Media attached | Body carries `content` **and** `mediaUrls`                  |
+
+The `429` case is deliberate coverage of the second (and last) title
+`getErrorMessage` answers in its own words. Five writes a minute is low enough
+that an ordinary exchange reaches it.
 
 ---
 
@@ -1131,7 +1230,7 @@ Three payload facts drive the assertions:
   buttons, so an action added there fails loudly rather than rendering a
   control with nothing behind it.
 - It carries **no `quotedPost` of its own**. The card can never nest, and the
-  composer therefore always quotes the *outer* post.
+  composer therefore always quotes the _outer_ post.
 - `content` may be `""` when `quotedPostId` is set. That is a plain repost, and
   both the card spec and `e2e/quotes.spec.ts` pin the repost rendering.
 
@@ -1142,17 +1241,17 @@ deleted original cascades to the posts that quoted it, so this endpoint can 404
 on a post the reader was just looking at. That surfaces as a list error with a
 retry, never as a "this post was removed" tombstone.
 
-| Scenario                              | Assert                                                    |
-| ------------------------------------- | --------------------------------------------------------- |
-| First page                            | Quotes populated, `isLoading` false, no error             |
-| Request shape                         | `GET /posts/<id>/quotes?page=1&limit=20`                  |
-| Short page                            | `hasMore` false                                           |
-| Full page then a short one            | Appended; `hasMore` flips false                           |
-| 404 (original deleted)                | `error` set, list stays empty, nothing throws             |
-| `data: null`                          | `assertList` rejects it before it becomes state           |
-| `loadMore` fails                      | Page counter does not advance — page 2 is retried, not 3  |
-| `addQuote` / `removeQuote`            | Prepend / filter                                          |
-| No post id                            | No request fired                                          |
+| Scenario                   | Assert                                                   |
+| -------------------------- | -------------------------------------------------------- |
+| First page                 | Quotes populated, `isLoading` false, no error            |
+| Request shape              | `GET /posts/<id>/quotes?page=1&limit=20`                 |
+| Short page                 | `hasMore` false                                          |
+| Full page then a short one | Appended; `hasMore` flips false                          |
+| 404 (original deleted)     | `error` set, list stays empty, nothing throws            |
+| `data: null`               | `assertList` rejects it before it becomes state          |
+| `loadMore` fails           | Page counter does not advance — page 2 is retried, not 3 |
+| `addQuote` / `removeQuote` | Prepend / filter                                         |
+| No post id                 | No request fired                                         |
 
 `QuoteComposerModal` (6 tests) covers the preview, the body it posts
 (`content` + `quotedPostId`), the empty body that makes a repost, the created
@@ -1198,16 +1297,16 @@ Tags must match `^[a-z0-9-]{1,30}$`, and a tag that fails comes back as a bare 4
 `vi.hoisted` localStorage stub like every other file whose module graph touches
 `persist`.
 
-| Scenario                              | Assert                                                    |
-| ------------------------------------- | --------------------------------------------------------- |
-| `quotedPost` present                  | Embedded card renders the quoted author and text          |
-| `quotedPost` null                     | No embedded card                                          |
-| `quoteCount` 0                        | No quote badge                                            |
-| Quote badge clicked                   | `navigate("/posts/<id>/quotes")`                          |
-| Empty `content` + `quotedPost`        | "reposted" marker, no empty text bubble                   |
-| Non-empty `content` + `quotedPost`    | The post's own text, no repost marker                     |
-| Quote button, signed in               | Composer opens                                            |
-| Quote button, signed out              | Auth modal opens; composer does not                       |
+| Scenario                           | Assert                                           |
+| ---------------------------------- | ------------------------------------------------ |
+| `quotedPost` present               | Embedded card renders the quoted author and text |
+| `quotedPost` null                  | No embedded card                                 |
+| `quoteCount` 0                     | No quote badge                                   |
+| Quote badge clicked                | `navigate("/posts/<id>/quotes")`                 |
+| Empty `content` + `quotedPost`     | "reposted" marker, no empty text bubble          |
+| Non-empty `content` + `quotedPost` | The post's own text, no repost marker            |
+| Quote button, signed in            | Composer opens                                   |
+| Quote button, signed out           | Auth modal opens; composer does not              |
 
 > **The author fields here need no client-side guards, and adding them is a mistake worth naming.** `username` reads as optional in `PostAuthorSchema` / `CommentAuthorSchema`, but `User.username` is `NOT NULL`, the `author` relation on `Post` and `Comment` is required with `onDelete: Cascade`, and every repository query selects it. `avatarUrl` is `NOT NULL` with a database default, is absent from `UpdateProfileBodySchema` (which sets `additionalProperties: false`, so no client can write it), and `toFeedResponse` substitutes a CDN default and CDN-prefixes anything not starting with `http`. So neither a `?? fallback` nor a `getSafeImageSrc` call can ever do anything on these two cards. The slack is in the TypeBox schemas, not the data — tracked in tdn-api#182. Fixtures use a realistic CDN url rather than `""` so they match what the API actually sends.
 >
@@ -1219,7 +1318,7 @@ Tags must match `^[a-z0-9-]{1,30}$`, and a tag that fails comes back as a bare 4
 
 `NotificationType` must mirror the API's enum exactly, and `COMMENT_REPLY`
 showed what it costs when it does not. `MESSAGE_KEYS` is a
-`Record<NotificationType, TranslationKey>`, so a value missing from the *union*
+`Record<NotificationType, TranslationKey>`, so a value missing from the _union_
 is missing from the map too — and a `Record` cannot flag a member its key type
 does not have, so TypeScript saw nothing wrong. The card then called
 `t(undefined)`, which throws inside `{{var}}` interpolation rather than
@@ -1229,24 +1328,24 @@ whole notification list.
 The API owns that enum and can grow it after any build ships, so the union is
 no longer the only defence: an unrecognised type falls back to a generic
 message and to the issuer's profile, which is always a valid destination. Two
-tests cover the unknown-type path specifically, because the *next* enum value
+tests cover the unknown-type path specifically, because the _next_ enum value
 will arrive the same way this one did.
 
-| Scenario                   | Assert                                        |
-| -------------------------- | --------------------------------------------- |
-| `FOLLOW` type click        | `navigate("/profile/<username>")` called      |
-| `LIKE` type click          | `navigate("/post/<referenceId>")` called      |
-| `NEW_POST` type click      | `navigate("/post/<referenceId>")` called      |
-| `NEW_POST`, no reference   | Falls back to `/profile/<username>`           |
-| `COMMENT` type click       | `navigate("/comments/<referenceId>")` called  |
-| `COMMENT_REPLY` render     | Its own message, not a crash                  |
-| `COMMENT_REPLY` click      | `navigate("/comments/<referenceId>")` called  |
-| `QUOTE` render             | "@user quoted your post", not a crash         |
-| `QUOTE` click              | `navigate("/post/<referenceId>")` — the *quote*, not the original |
-| `QUOTE`, no reference      | Falls back to `/profile/<username>`           |
-| An unknown type            | Renders a generic message; does not throw     |
-| An unknown type, clicked   | Falls back to `/profile/<username>`           |
-| `isRead: false`            | Element has `border-l-blue-500` class         |
+| Scenario                 | Assert                                                            |
+| ------------------------ | ----------------------------------------------------------------- |
+| `FOLLOW` type click      | `navigate("/profile/<username>")` called                          |
+| `LIKE` type click        | `navigate("/post/<referenceId>")` called                          |
+| `NEW_POST` type click    | `navigate("/post/<referenceId>")` called                          |
+| `NEW_POST`, no reference | Falls back to `/profile/<username>`                               |
+| `COMMENT` type click     | `navigate("/comments/<referenceId>")` called                      |
+| `COMMENT_REPLY` render   | Its own message, not a crash                                      |
+| `COMMENT_REPLY` click    | `navigate("/comments/<referenceId>")` called                      |
+| `QUOTE` render           | "@user quoted your post", not a crash                             |
+| `QUOTE` click            | `navigate("/post/<referenceId>")` — the _quote_, not the original |
+| `QUOTE`, no reference    | Falls back to `/profile/<username>`                               |
+| An unknown type          | Renders a generic message; does not throw                         |
+| An unknown type, clicked | Falls back to `/profile/<username>`                               |
+| `isRead: false`          | Element has `border-l-blue-500` class                             |
 
 #### `AuthModal`
 
@@ -1370,6 +1469,29 @@ One test renders inside `<StrictMode>` to reproduce the double-invoked mount eff
 | Enter in the code field       | Verifies                                                    |
 | Good code                     | `isEmailVerified` true; modal closed                        |
 
+#### `MessageBubble` (`src/features/messages/components/MessageBubble.test.tsx`)
+
+14 tests. Four server flags that are independent of each other, plus the delete
+affordance and the read watermark.
+
+| Flag            | Renders                                |
+| --------------- | -------------------------------------- |
+| `isDeleted`     | Tombstone; the row **keeps its place** |
+| `mediaPending`  | `PendingMedia` with a working refresh  |
+| `mediaRejected` | "Media removed"                        |
+| `isSensitive`   | `SensitiveMedia` cover                 |
+
+**"Media removed" is the deliberate exception to the rule posts follow.** A post
+whose media was refused is byte-for-byte a post that never had any, so saying
+otherwise means reconstructing the difference from session memory and showing two
+readers different things. A message states it in a field, so nothing is
+reconstructed. Do not "fix" this to match `PostCard`.
+
+The delete control is withheld from someone else's message (only the sender may
+withdraw) and from a `temp-` bubble (nothing to withdraw yet), and it confirms
+before firing. The watermark is per conversation, not per message: a sent message
+reads "Seen" once its `createdAt` precedes `otherLastReadAt`.
+
 ---
 
 ### Layer 6 — Page Integration Tests
@@ -1394,14 +1516,14 @@ The strip is **Posts, Comments, Articles**, and exactly one list is mounted at a
 
 The illustrated empty state belongs to the page and covers all three collections at once; a tab that is empty on its own falls through to its list's own empty state.
 
-| Scenario                          | Assert                                                    |
-| --------------------------------- | --------------------------------------------------------- |
-| Unauthenticated                   | Renders nothing; `navigate("/", { replace: true })`       |
-| `isLoading`                       | `.animate-spin` present                                    |
-| Nothing saved at all              | "Save posts for later" rendered                            |
-| Default tab                       | `post-list` present; `article-list` absent                 |
-| Click **Articles**                | `article-list` present; `post-list` gone                   |
-| Only articles saved               | Illustrated empty state **not** rendered                   |
+| Scenario             | Assert                                              |
+| -------------------- | --------------------------------------------------- |
+| Unauthenticated      | Renders nothing; `navigate("/", { replace: true })` |
+| `isLoading`          | `.animate-spin` present                             |
+| Nothing saved at all | "Save posts for later" rendered                     |
+| Default tab          | `post-list` present; `article-list` absent          |
+| Click **Articles**   | `article-list` present; `post-list` gone            |
+| Only articles saved  | Illustrated empty state **not** rendered            |
 
 **`FeedPage`:**
 
@@ -1421,7 +1543,7 @@ The tests therefore drive the strip by **clicking** and assert on the resulting 
 | Articles → Community                 | Post list returns and refetches                                                            |
 | "Following" toggle — unauthenticated | Auth modal opened                                                                          |
 | "Following" toggle — authenticated   | `followedOnly=true` appended to request                                                    |
-| Tab clicked                          | `?tab=news` written to the URL, replacing the history entry                               |
+| Tab clicked                          | `?tab=news` written to the URL, replacing the history entry                                |
 | Mounted at `?tab=updates`            | Updates opens; an unknown slug falls back to Community rather than an empty page           |
 | Chips and "Following" toggled        | Both land in the URL, and are read back out of it on the next mount                        |
 | Three chip taps                      | One history entry, not three                                                               |
@@ -1436,12 +1558,12 @@ Three rules the tests hold down:
 - **The snapshot is read once, in a state initialiser.** One arriving mid-render would swap the list out from under the reader.
 - **Scroll is captured on every scroll event, not at unmount.** Leaving swaps in a shorter page and the browser clamps `window.scrollY` before any cleanup runs, so by then the number is already gone.
 
-| Scenario                             | Assert                                                                                     |
-| ------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Back onto a matching entry           | The stored list renders; `fetchPosts` **not** called again                                 |
-| Back onto a matching entry           | `window.scrollTo` called with the offset the reader left from                              |
-| Left before the first page arrived   | Nothing saved — restoring an empty feed would strand the reader on a list that never refetches |
-| Tab changed after a restore          | Fetches again; the restore is spent, not sticky                                            |
+| Scenario                           | Assert                                                                                         |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Back onto a matching entry         | The stored list renders; `fetchPosts` **not** called again                                     |
+| Back onto a matching entry         | `window.scrollTo` called with the offset the reader left from                                  |
+| Left before the first page arrived | Nothing saved — restoring an empty feed would strand the reader on a list that never refetches |
+| Tab changed after a restore        | Fetches again; the restore is spent, not sticky                                                |
 
 Restoring means **not** refetching, so a like or bookmark made on the post's own page has to be written back by hand. `usePostActions` calls `patchPost` alongside its own optimistic update and again on rollback; `feed-snapshot.store.test.ts` pins the misses down by **identity** — no snapshot, or a post the snapshot does not hold, must not rebuild the stored list, because every like anywhere in the app comes through that call.
 
@@ -1528,7 +1650,7 @@ The theme pair asserts the store, the `data-theme` attribute, and `aria-pressed`
 
 15 tests. All three onboarding hooks are mocked wholesale; the page's own job is the two-step machine and the gate on the finish button. Step one is walked by **clicking** ("Backend", then "Continue") rather than by seeding state, because the picked fields have to reach `useOnboardingSuggestions` for step two to mean anything — one test asserts exactly that hand-off.
 
-The gate opens at five follows *in total*, which makes the arithmetic worth spelling out:
+The gate opens at five follows _in total_, which makes the arithmetic worth spelling out:
 
 - `stillNeeded = MIN_FOLLOWS − alreadyFollowing`, from the profile's own `followingCount`. Asking someone who follows four for five more is a different requirement than the one that sent them here.
 - Progress is `netFollowChange`, **not** the size of the followed set. Bots that arrived already followed are inside `alreadyFollowing` already; counting the marked cards again would open the finish button for a returning user who followed nobody this time. Unfollowing one has to move the number back down, too.
@@ -1538,22 +1660,22 @@ The escape hatch is narrow by design: only a final, empty list (a failed request
 
 Step one writes the picked fields to `useOnboardingStore` as they are picked rather than at the end. The API has nowhere to keep them — a profile carries no interests and `/profiles/bots` only takes them as a query parameter — so the store is the whole record, and writing late means a reload on step two comes back to an empty picker.
 
-| Scenario                             | Assert                                                     |
-| ------------------------------------ | ----------------------------------------------------------- |
-| Initial                              | Field picker rendered                                        |
-| No field picked                      | "Continue" disabled; enabled after a pick                    |
-| After "Continue"                     | `useOnboardingSuggestions` called with `["BACKEND"]`; `interests` stored |
-| 2 of 6 followed                      | "Go to my feed" disabled; "2 of 5 followed"                  |
-| 5 of 6 followed                      | "Go to my feed" enabled                                      |
-| Only 2 accounts exist, both followed | Requirement drops — "2 of 2 followed", finish enabled        |
-| Suggestions errored                  | Finish enabled; "Try again" offered                          |
-| Already following 3, 2 more done     | "2 of 2 followed"; finish enabled                            |
-| Already following 3, all 3 seeded    | "0 of 2 followed"; finish **disabled**                       |
-| List still loading                   | Finish disabled — an empty list and a late one look alike    |
-| `hasMore`                            | "Show more" calls `loadMore`                                 |
-| List complete                        | No "Show more"                                               |
+| Scenario                             | Assert                                                                     |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| Initial                              | Field picker rendered                                                      |
+| No field picked                      | "Continue" disabled; enabled after a pick                                  |
+| After "Continue"                     | `useOnboardingSuggestions` called with `["BACKEND"]`; `interests` stored   |
+| 2 of 6 followed                      | "Go to my feed" disabled; "2 of 5 followed"                                |
+| 5 of 6 followed                      | "Go to my feed" enabled                                                    |
+| Only 2 accounts exist, both followed | Requirement drops — "2 of 2 followed", finish enabled                      |
+| Suggestions errored                  | Finish enabled; "Try again" offered                                        |
+| Already following 3, 2 more done     | "2 of 2 followed"; finish enabled                                          |
+| Already following 3, all 3 seeded    | "0 of 2 followed"; finish **disabled**                                     |
+| List still loading                   | Finish disabled — an empty list and a late one look alike                  |
+| `hasMore`                            | "Show more" calls `loadMore`                                               |
+| List complete                        | No "Show more"                                                             |
 | Finish                               | `isCompleted` true, `interests` stored, `navigate("/", { replace: true })` |
-| "Back"                               | Field picker again                                           |
+| "Back"                               | Field picker again                                                         |
 
 **`OnboardingGate` (`src/app/OnboardingGate.test.tsx`):**
 
@@ -1565,19 +1687,35 @@ The threshold is `followingCount < MIN_FOLLOWS`, not `=== 0` — an account that
 - **A failed profile request passes rather than redirects**, and warns to the console. Passing is deliberate — the gate is a requirement, not a trap — but silence made the whole feature look like it was never built: a profile endpoint that is down disables onboarding with no trace at all.
 - **Finishing once settles it for good.** With a `< 5` check and no local completion flag, the account would be dragged back the moment it unfollowed someone, which is nagging rather than onboarding.
 
-| Scenario                       | Assert                                              |
-| ------------------------------ | ---------------------------------------------------- |
-| Signed out                     | Passes; no profile request                           |
-| Auth modal open                | Passes; no profile request                           |
-| Already completed locally      | Passes; no profile request                           |
-| `followingCount === 0`         | Redirects to `/onboarding`                           |
-| `followingCount === 3`         | Redirects; completion **not** recorded               |
-| `followingCount === 5`         | Passes and records completion so it stops asking     |
-| Completed locally, count 1     | Passes; no profile request — finishing is final      |
-| Profile request rejects        | Passes                                               |
-| Request in flight              | Spinner; the child is not rendered                   |
+| Scenario                   | Assert                                           |
+| -------------------------- | ------------------------------------------------ |
+| Signed out                 | Passes; no profile request                       |
+| Auth modal open            | Passes; no profile request                       |
+| Already completed locally  | Passes; no profile request                       |
+| `followingCount === 0`     | Redirects to `/onboarding`                       |
+| `followingCount === 3`     | Redirects; completion **not** recorded           |
+| `followingCount === 5`     | Passes and records completion so it stops asking |
+| Completed locally, count 1 | Passes; no profile request — finishing is final  |
+| Profile request rejects    | Passes                                           |
+| Request in flight          | Spinner; the child is not rendered               |
 
 **Sitemap routes (`src/app/sitemap-routes.test.ts`):** the path collector walks `children`, not just the top level — since the gate landed, nearly every route sits under a pathless layout route and a flat read would pass vacuously.
+
+#### `MessagesPage` (`src/pages/MessagesPage.test.tsx`)
+
+5 tests. MSW-backed, so the listing goes through `api.getPage` for real — a
+handler that answers `{ data }` without `meta` fails here, which is the point.
+
+| Scenario         | Assert                                                      |
+| ---------------- | ----------------------------------------------------------- |
+| Accepted listing | Rows rendered with their previews                           |
+| Empty            | The empty state, not a blank column                         |
+| Requests tab     | `status=PENDING` requested; the pending rows render         |
+| Signed out       | `navigate("/", { replace: true })` and the auth modal opens |
+| Listing fails    | Retry offered, and it works                                 |
+
+The tab switch remounts the listing (`key={tab}`) so one tab's cursor is never
+appended onto the other's.
 
 ---
 
@@ -1600,11 +1738,11 @@ The **`chromium` project never touches the Cloudflare Worker** — Vite serves i
 
 > ⚠️ **`reuseExistingServer` will lie to you when comparing two versions of the Worker.** It is `!process.env.CI`, so locally Playwright reuses a Wrangler already on the port — serving a build from before your edit. A run that "passes on the broken version" almost certainly reused the fixed one. Kill the Wrangler process between comparison runs.
 
-**`onboarding.spec.ts`** — the one spec that opts *out* of the shared fixture. `injectAuth` writes `tdn-onboarding` with the mock user's id alongside the auth state, because without it `OnboardingGate` would send **every authenticated spec** to `/onboarding` (the mocked profile reports `followingCount: 0`) and the whole suite would fail on a page it never meant to visit. This spec signs in by hand without that key so the gate actually runs, then drives both steps and asserts the redirect out to `/`. Its follow loop uses `getByRole("button", { name: "Follow", exact: true })`: without `exact`, "Following" also matches and the loop keeps clicking the button it just toggled.
+**`onboarding.spec.ts`** — the one spec that opts _out_ of the shared fixture. `injectAuth` writes `tdn-onboarding` with the mock user's id alongside the auth state, because without it `OnboardingGate` would send **every authenticated spec** to `/onboarding` (the mocked profile reports `followingCount: 0`) and the whole suite would fail on a page it never meant to visit. This spec signs in by hand without that key so the gate actually runs, then drives both steps and asserts the redirect out to `/`. Its follow loop uses `getByRole("button", { name: "Follow", exact: true })`: without `exact`, "Following" also matches and the loop keeps clicking the button it just toggled.
 
 The route handler matches `/profiles/bots` **before** the generic `/profiles/` arm — that one matches the bot URL too, and would answer the list with a profile object.
 
-Five tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; a returning account whose bots come back `isFollowing: true` (three cards read "Following", the counter still says "0 of 2", and the finish button stays shut until two *new* follows land — the double-count bug, end to end); an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
+Five tests: the full flow out to `/`; an account at 4 follows still gated and asked for one more; a returning account whose bots come back `isFollowing: true` (three cards read "Following", the counter still says "0 of 2", and the finish button stays shut until two _new_ follows land — the double-count bug, end to end); an account at 5 left alone; and **a real registration** — identifier → register form → "Skip for now" → `/onboarding`. That last one exists because every other spec injects auth into `localStorage` and so never exercises the modal at all: a brand-new account is never email-verified, so `RegisterView` parks it on `verify-email` with the modal open, and the gate deliberately stands down until that modal closes. Nothing else covers the hand-off between the two.
 
 **`quotes.spec.ts`** — five tests over the quote flow end to end: the embedded card in the feed, a textless quote drawn as a repost, the badge routing to `/posts/:id/quotes`, that page's own empty state, and composing a quote. The last one is the one worth keeping: it asserts both the request body (`content` + `quotedPostId`) and that the new row appears **without a refetch**. The feed is cached for 60 s server-side, so a quote that only showed up after reloading would look, to the person who wrote it, exactly like one that failed to post.
 
@@ -1666,36 +1804,47 @@ await page.route("**/api/v1/**", async (route, request) => {
 
 > `api` client unwraps `ApiResponse<T>.data`, so all mock responses must wrap the payload in `{ data: ... }`.
 
-| Spec                  | Scenario                                                                       |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `auth.spec`           | Clicking "Sign In" opens the identifier input                                  |
-| `auth.spec`           | `check: true` response → login step (password field visible)                   |
-| `auth.spec`           | `check: false` response → register step ("Create your account")                |
-| `feed.spec`           | Mocked posts render as `<article>` elements                                    |
-| `feed.spec`           | Clicking "News" tab sends `type=TECH_NEWS` query param                         |
-| `feed.spec`           | Clicking like triggers optimistic count increment                              |
-| `feed-restore.spec`   | Back from a post keeps the News tab instead of resetting to Community          |
-| `feed-restore.spec`   | Back does not refetch the feed it already had (request count unchanged)        |
-| `feed-restore.spec`   | The Home link is a PUSH, so it fetches a current, unfiltered feed              |
-| `feed-restore.spec`   | Back returns to the offset the post was clicked from, not to the top           |
-| `feed-restore.spec`   | A like made on the post page shows on the feed the reader comes back to        |
-| `explore-tags.spec`   | The Articles tab under a tag requests `/articles?tag=` and lists what it returns |
-| `explore-tags.spec`   | `?tab=articles` opens on articles without fetching posts at all                |
-| `explore-tags.spec`   | Switching tabs replaces the entry, so Back leaves the tag                      |
-| `profile.spec`        | Visit `/profile/:username` → full name heading visible                         |
-| `profile.spec`        | `isMe: true` response → "Edit Profile" button visible                          |
+| Spec                  | Scenario                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| `auth.spec`           | Clicking "Sign In" opens the identifier input                                                           |
+| `auth.spec`           | `check: true` response → login step (password field visible)                                            |
+| `auth.spec`           | `check: false` response → register step ("Create your account")                                         |
+| `feed.spec`           | Mocked posts render as `<article>` elements                                                             |
+| `feed.spec`           | Clicking "News" tab sends `type=TECH_NEWS` query param                                                  |
+| `feed.spec`           | Clicking like triggers optimistic count increment                                                       |
+| `feed-restore.spec`   | Back from a post keeps the News tab instead of resetting to Community                                   |
+| `feed-restore.spec`   | Back does not refetch the feed it already had (request count unchanged)                                 |
+| `feed-restore.spec`   | The Home link is a PUSH, so it fetches a current, unfiltered feed                                       |
+| `feed-restore.spec`   | Back returns to the offset the post was clicked from, not to the top                                    |
+| `feed-restore.spec`   | A like made on the post page shows on the feed the reader comes back to                                 |
+| `explore-tags.spec`   | The Articles tab under a tag requests `/articles?tag=` and lists what it returns                        |
+| `explore-tags.spec`   | `?tab=articles` opens on articles without fetching posts at all                                         |
+| `explore-tags.spec`   | Switching tabs replaces the entry, so Back leaves the tag                                               |
+| `profile.spec`        | Visit `/profile/:username` → full name heading visible                                                  |
+| `profile.spec`        | `isMe: true` response → "Edit Profile" button visible                                                   |
 | `profile.spec`        | Following-list follow button is ≥44px tall at 390px wide, and unfollows rather than opening the profile |
-| `articles.spec`       | The Articles tab lists the returned articles as `<article>` elements           |
-| `articles.spec`       | No "Jobs" tab; the strip reads Community, News, Updates, Articles in DOM order |
-| `articles.spec`       | Category chip sends `categories=BACKEND`                                       |
-| `articles.spec`       | Opening an article renders its markdown as elements, not literal `#`/`**`      |
-| `articles.spec`       | A body carrying raw HTML is neither rendered nor executed                      |
-| `articles.spec`       | Liking increments the count before the request settles                         |
-| `articles.spec`       | A 404 shows not-found and never hints at a draft                               |
-| `article-editor.spec` | Write, preview, publish — created **once**, then published                     |
-| `article-editor.spec` | Publish stays disabled until there is a title and a body                       |
-| `article-editor.spec` | A tag is normalised to what the server pattern accepts                         |
-| `article-editor.spec` | A guest is redirected home rather than into the editor                         |
+| `articles.spec`       | The Articles tab lists the returned articles as `<article>` elements                                    |
+| `articles.spec`       | No "Jobs" tab; the strip reads Community, News, Updates, Articles in DOM order                          |
+| `articles.spec`       | Category chip sends `categories=BACKEND`                                                                |
+| `articles.spec`       | Opening an article renders its markdown as elements, not literal `#`/`**`                               |
+| `articles.spec`       | A body carrying raw HTML is neither rendered nor executed                                               |
+| `articles.spec`       | Liking increments the count before the request settles                                                  |
+| `articles.spec`       | A 404 shows not-found and never hints at a draft                                                        |
+| `article-editor.spec` | Write, preview, publish — created **once**, then published                                              |
+| `article-editor.spec` | Publish stays disabled until there is a title and a body                                                |
+| `article-editor.spec` | A tag is normalised to what the server pattern accepts                                                  |
+| `article-editor.spec` | A guest is redirected home rather than into the editor                                                  |
+| `messages.spec`       | The inbox lists conversations and opens one                                                             |
+| `messages.spec`       | A sent message appears before the request settles; body carries `mediaUrls`                             |
+| `messages.spec`       | A request sits in its own tab, offers accept/decline, and gains a composer                              |
+| `messages.spec`       | A thread that is not yours reads "not found", never "forbidden"                                         |
+| `messages.spec`       | The four message states render — tombstone, removed, pending, sensitive                                 |
+
+**`messages.spec.ts`** — its route helper answers the full `{ data, meta }`
+envelope on every listing. A `route.fulfill` that returns `{ data }` alone leaves
+`meta.nextCursor` undefined, which the client reads as "there is always another
+page" — so the shape of the mock is load-bearing here in a way it is not for the
+page-numbered endpoints.
 
 ---
 
