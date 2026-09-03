@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { LogIn, Mail } from "lucide-react";
 import { useAuthStore } from "../../core/auth/auth.store";
 import { Button } from "../components/ui/Button";
 import logo from "../assets/images/logo.png";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
 import { useNotificationStore } from "../../features/notifications/store/notification.store";
+import { useMessageStore } from "../../features/messages/store/message.store";
 import { useI18n } from "../hooks/useI18n";
 
 export function Sidebar() {
@@ -12,6 +13,7 @@ export function Sidebar() {
     const navigate = useNavigate();
     const { openModal } = useAuthModalStore();
     const unreadCount = useNotificationStore((state) => state.unreadCount);
+    const unreadMessages = useMessageStore((state) => state.unreadCount);
     const { t } = useI18n();
 
     function handleProfileClick() {
@@ -65,6 +67,17 @@ export function Sidebar() {
                         label={t("nav.notifications")}
                         icon={<BellIcon />}
                         badge={unreadCount}
+                    />
+                    {/*
+                     * Above Follows rather than at the end: the inbox is
+                     * checked far more often than a follow list, and it is the
+                     * only nav item that can be waiting on a reply.
+                     */}
+                    <NavItem
+                        to="/messages"
+                        label={t("nav.messages")}
+                        icon={<Mail className="h-6 w-6" />}
+                        badge={unreadMessages}
                     />
                     <NavItem
                         to="/follows"

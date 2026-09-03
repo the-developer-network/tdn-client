@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Calendar, LinkIcon, Settings } from "lucide-react";
+import {
+    ArrowLeft,
+    MapPin,
+    Calendar,
+    LinkIcon,
+    Settings,
+    Mail,
+} from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
 import { TrendingTopicsWidget } from "../shared/components/TrendingTopicsWidget";
 import { PostList } from "../features/feed/components/PostList";
@@ -13,6 +20,7 @@ import { useArticles } from "../features/article/hooks/useArticles";
 import { useMyArticles } from "../features/article/hooks/useMyArticles";
 import type { ArticleStatus } from "../features/article/api/article.types";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
+import { useOpenConversation } from "../features/messages/hooks/useOpenConversation";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
 import type { Profile } from "../features/profile/api/profile.types";
@@ -115,6 +123,8 @@ export default function ProfilePage() {
         [localProfile, profile],
     );
     const isOwnProfile = displayProfile?.isMe === true;
+    const { open: openConversation, isOpening: isOpeningConversation } =
+        useOpenConversation();
 
     // Unfollowing from your own Following list moves a number this page is
     // already showing. Nobody else's `followingCount` changes when you follow
@@ -303,21 +313,45 @@ export default function ProfilePage() {
                                 {t("profile.editProfile")}
                             </button>
                         ) : (
-                            <button
-                                onClick={handleFollow}
-                                disabled={followLoading}
-                                className={`mt-8 sm:mt-12 rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
-                                    isFollowing
-                                        ? "border-ink/20 text-ink/70 bg-transparent hover:border-red-500/50 hover:text-red-400"
-                                        : "border-ink bg-ink text-ground hover:bg-ink/90"
-                                }`}
-                            >
-                                {followLoading
-                                    ? "..."
-                                    : isFollowing
-                                      ? t("profile.following")
-                                      : t("profile.follow")}
-                            </button>
+                            <div className="mt-8 flex items-center gap-2 sm:mt-12">
+                                {/*
+                                 * Offered to everyone, not only to people this
+                                 * account follows. Whether the thread opens
+                                 * accepted or as a request is the server to
+                                 * decide from the *recipient* follow list,
+                                 * which this page cannot see — hiding the
+                                 * button on `isFollowing` would guess it from
+                                 * the wrong side and hide it from exactly the
+                                 * people the request flow exists for.
+                                 */}
+                                <button
+                                    onClick={() =>
+                                        void openConversation(
+                                            displayProfile.userId,
+                                        )
+                                    }
+                                    disabled={isOpeningConversation}
+                                    aria-label={t("messages.newMessage")}
+                                    className="rounded-full border border-ink/20 p-2 text-ink transition-colors hover:bg-ink/5 disabled:opacity-60"
+                                >
+                                    <Mail size={16} aria-hidden="true" />
+                                </button>
+                                <button
+                                    onClick={handleFollow}
+                                    disabled={followLoading}
+                                    className={`rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                                        isFollowing
+                                            ? "border-ink/20 text-ink/70 bg-transparent hover:border-red-500/50 hover:text-red-400"
+                                            : "border-ink bg-ink text-ground hover:bg-ink/90"
+                                    }`}
+                                >
+                                    {followLoading
+                                        ? "..."
+                                        : isFollowing
+                                          ? t("profile.following")
+                                          : t("profile.follow")}
+                                </button>
+                            </div>
                         )}
                     </div>
 

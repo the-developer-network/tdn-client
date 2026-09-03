@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useNotificationStore } from "../../features/notifications/store/notification.store";
 import { useAuthStore } from "../../core/auth/auth.store";
 import { useAuthModalStore } from "../../features/auth/store/auth-modal.store";
+import { useMessageStore } from "../../features/messages/store/message.store";
 import { BottomNav } from "./BottomNav";
 import "@testing-library/jest-dom";
 
@@ -43,6 +44,9 @@ function setupMocks(unreadCount: number) {
 
 beforeEach(() => {
     mockNavigate.mockClear();
+    // Not mocked: the message store is real here, so the inbox badge is driven
+    // by setting it rather than by a selector stub.
+    useMessageStore.setState(useMessageStore.getInitialState());
 });
 
 function renderBottomNav() {
@@ -83,5 +87,38 @@ describe("BottomNav — notification badge", () => {
         renderBottomNav();
         expect(screen.getByText("9")).toBeInTheDocument();
         expect(screen.queryByText("9+")).not.toBeInTheDocument();
+    });
+});
+
+/*
+ * Messages took the slot Saved used to hold rather than becoming a sixth tab.
+ * Six tabs leave 60px each on a 360px phone, and Saved is still reachable from
+ * the sidebar above `md` and from the profile page below it — while the inbox
+ * had no way in on a phone at all.
+ */
+describe("BottomNav — the tabs", () => {
+    it("carries Messages and not Saved", () => {
+        setupMocks(0);
+        renderBottomNav();
+
+        expect(screen.getByText("Chat")).toBeInTheDocument();
+        expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+    });
+
+    it("keeps five tabs", () => {
+        setupMocks(0);
+        const { container } = renderBottomNav();
+
+        expect(
+            container.querySelectorAll('[data-testid="bottom-nav"] > *'),
+        ).toHaveLength(5);
+    });
+
+    it("badges the inbox from the message store, not the notification one", () => {
+        setupMocks(0);
+        useMessageStore.setState({ unreadCount: 3 });
+        renderBottomNav();
+
+        expect(screen.getByText("3")).toBeInTheDocument();
     });
 });
