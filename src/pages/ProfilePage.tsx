@@ -61,13 +61,25 @@ export default function ProfilePage() {
         }
     }, [profileError, openModal]);
 
+    /**
+     * This account, as the id every write about it has to carry.
+     *
+     * `GET /profiles/:username` answers with `id`; `userId` is the older name
+     * and is not sent any more. Derived once and shared, because the follow
+     * button and the message button reading it differently is exactly how the
+     * message button shipped sending `{}` — `JSON.stringify` drops a key whose
+     * value is `undefined`, so the request went out with no `recipientId` at
+     * all and the server could only answer that it was missing.
+     */
+    const targetId = profile?.id ?? profile?.userId ?? "";
+
     const {
         isFollowing,
         followersCount,
         isLoading: followLoading,
         handleFollow,
     } = useFollowAction(
-        profile?.id ?? profile?.userId ?? "",
+        targetId,
         profile?.isFollowing ?? false,
         profile?.followersCount ?? 0,
     );
@@ -326,11 +338,11 @@ export default function ProfilePage() {
                                  */}
                                 <button
                                     onClick={() =>
-                                        void openConversation(
-                                            displayProfile.userId,
-                                        )
+                                        void openConversation(targetId)
                                     }
-                                    disabled={isOpeningConversation}
+                                    disabled={
+                                        isOpeningConversation || !targetId
+                                    }
                                     aria-label={t("messages.newMessage")}
                                     className="rounded-full border border-ink/20 p-2 text-ink transition-colors hover:bg-ink/5 disabled:opacity-60"
                                 >

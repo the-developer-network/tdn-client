@@ -36,6 +36,17 @@ export function useOpenConversation() {
                 return;
             }
 
+            /*
+             * Never send the request without one. `JSON.stringify` drops a key
+             * whose value is `undefined`, so a caller passing one that is not
+             * there produces `{}` — and the server can only answer that
+             * `recipientId` is missing, which reads as a client bug in the
+             * message body rather than as a profile that never had an id.
+             * That is exactly how this shipped, so it is caught here as well
+             * as at the call site.
+             */
+            if (!recipientId) return;
+
             setIsOpening(true);
             try {
                 const conversation =
