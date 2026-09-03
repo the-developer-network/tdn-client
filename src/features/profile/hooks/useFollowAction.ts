@@ -35,6 +35,21 @@ export function useFollowAction(
             return;
         }
         if (isLoading) return;
+        /*
+         * An empty id reaches the server as `{ targetId: "" }` — a string is
+         * not dropped from a body the way `undefined` is, so the request goes
+         * out, fails validation, and the rollback below undoes the flip with
+         * no toast. The button appears to work and then silently un-presses
+         * itself, which is the least debuggable shape this can take.
+         *
+         * Warned rather than swallowed, on the same reasoning as
+         * `OnboardingGate`: a caller that is passing nothing has a bug, and
+         * silence is how it stays one.
+         */
+        if (!targetId) {
+            console.warn("Follow skipped — no target id was given.");
+            return;
+        }
 
         // Optimistic update
         const prevFollowing = isFollowing;

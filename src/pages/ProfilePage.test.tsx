@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useProfile } from "../features/profile/hooks/useProfile";
 import { useUserPosts } from "../features/profile/hooks/useUserPosts";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
+import { useOpenConversation } from "../features/messages/hooks/useOpenConversation";
 import { useArticles } from "../features/article/hooks/useArticles";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
@@ -62,6 +63,9 @@ vi.mock("../features/profile/hooks/useUserPosts", () => ({
 vi.mock("../features/profile/hooks/useFollowAction", () => ({
     useFollowAction: vi.fn(),
 }));
+vi.mock("../features/messages/hooks/useOpenConversation", () => ({
+    useOpenConversation: vi.fn(),
+}));
 vi.mock("../core/auth/auth.store", () => ({ useAuthStore: vi.fn() }));
 vi.mock("../features/auth/store/auth-modal.store", () => ({
     useAuthModalStore: vi.fn(),
@@ -70,6 +74,8 @@ vi.mock("../features/auth/store/auth-modal.store", () => ({
 const NETWORK_ERROR =
     "Unable to connect. Please check your internet connection.";
 
+const openConversation = vi.fn();
+const handleFollow = vi.fn();
 const retryProfile = vi.fn();
 const retryPosts = vi.fn();
 const fetchArticles = vi.fn();
@@ -115,11 +121,17 @@ beforeEach(() => {
             ? (selector as (s: typeof state) => unknown)(state)
             : state;
     });
+    openConversation.mockClear();
+    handleFollow.mockClear();
+    vi.mocked(useOpenConversation).mockReturnValue({
+        open: openConversation,
+        isOpening: false,
+    });
     vi.mocked(useFollowAction).mockReturnValue({
         isFollowing: false,
         followersCount: 0,
         isLoading: false,
-        handleFollow: vi.fn(),
+        handleFollow,
     } as unknown as ReturnType<typeof useFollowAction>);
 
     vi.mocked(useArticles).mockReturnValue({
@@ -248,5 +260,73 @@ describe("ProfilePage error states", () => {
         render(<ProfilePage />);
 
         expect(screen.queryByText(/session expired/i)).not.toBeInTheDocument();
+    });
+});
+
+/**
+ * The regression from #158, locked at the call site.
+ *
+ * `GET /profiles/:username` sends `id` and no `userId`. Reading the field the
+ * API does not send made the value `undefined`, `JSON.stringify` dropped the
+ * key, and the request went out as `{}` — so the server could only report a
+ * missing `recipientId`, which reads as a malformed body rather than as a
+ * profile with no id.
+ *
+ * These fixtures carry `id` alone on purpose. A fixture that also sets
+ * `userId` passes either way and proves nothing.
+ */
+describe("ProfilePage — the id every write carries", () => {
+    const someoneElse = {
+        id: "user-2",
+        username: "bob",
+        fullName: "Bob Builder",
+        isMe: false,
+        isFollowing: false,
+        followersCount: 0,
+    };
+
+    it("opens the conversation with the id the API actually sent", async () => {
+        mockProfile({ profile: someoneElse as never });
+
+        render(<ProfilePage />);
+        await userEvent.click(screen.getByRole("button", { name: "Message" }));
+
+        expect(openConversation).toHaveBeenCalledWith("user-2");
+    });
+
+    /*
+     * Both buttons, because they share one derived id now. Guarding only the
+     * message button left Follow live on an empty id, where it would post
+     * `{ targetId: "" }` — an empty string is not dropped from a body the way
+     * `undefined` is, so the request goes out, fails, and rolls back with no
+     * toast at all.
+     */
+    it("offers neither write when the profile carries no id", () => {
+        mockProfile({
+            profile: { ...someoneElse, id: undefined } as never,
+        });
+
+        render(<ProfilePage />);
+
+        expect(screen.getByRole("button", { name: "Message" })).toBeDisabled();
+        // A string `name` matches the whole accessible name, which is what is
+        // wanted here: `/follow/i` would also match the followers and
+        // following count buttons, the same trap `onboarding.spec` documents.
+        expect(screen.getByRole("button", { name: "Follow" })).toBeDisabled();
+    });
+
+    it("still uses the legacy userId if that is all a response carries", async () => {
+        mockProfile({
+            profile: {
+                ...someoneElse,
+                id: undefined,
+                userId: "legacy-2",
+            } as never,
+        });
+
+        render(<ProfilePage />);
+        await userEvent.click(screen.getByRole("button", { name: "Message" }));
+
+        expect(openConversation).toHaveBeenCalledWith("legacy-2");
     });
 });

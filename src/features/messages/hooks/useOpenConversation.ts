@@ -45,7 +45,16 @@ export function useOpenConversation() {
              * That is exactly how this shipped, so it is caught here as well
              * as at the call site.
              */
-            if (!recipientId) return;
+            if (!recipientId) {
+                // Warned, not swallowed. With the button disabled as well, a
+                // future rename of the id field would leave Message greyed out
+                // and nothing anywhere saying why — which is how the field it
+                // used to read went unnoticed in the first place.
+                console.warn(
+                    "Conversation not opened — no recipient id was given.",
+                );
+                return;
+            }
 
             setIsOpening(true);
             try {

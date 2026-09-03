@@ -104,6 +104,7 @@ src/
         message.store.test.ts
       hooks/
         useConversations.test.ts
+        useOpenConversation.test.ts
         useSendMessage.test.ts
       components/
         MessageBubble.test.tsx
@@ -1185,6 +1186,24 @@ The `429` case is deliberate coverage of the second (and last) title
 `getErrorMessage` answers in its own words. Five writes a minute is low enough
 that an ordinary exchange reaches it.
 
+#### `useOpenConversation` (`src/features/messages/hooks/useOpenConversation.test.ts`)
+
+4 tests, written after the message button shipped sending `{}`.
+
+| Scenario                | Assert                                             |
+| ----------------------- | -------------------------------------------------- |
+| A recipient             | Body is `{ recipientId }`; navigates to the thread |
+| **No recipient**        | **No request at all**, and nothing navigated       |
+| Signed out              | The auth modal opens; no request                   |
+| `InvalidRecipientError` | The server `detail` toasted; no navigation         |
+
+The second row is the regression. `JSON.stringify` drops a key whose value is
+`undefined`, so a caller reading an id off a field the API does not send
+produced an empty body — and the only thing the server could answer was that
+`recipientId` was missing, which reads as a malformed request rather than as a
+profile with no id. No request beats one that cannot succeed and misreports
+why.
+
 ---
 
 ### Layer 5 — Components
@@ -1700,6 +1719,35 @@ The threshold is `followingCount < MIN_FOLLOWS`, not `=== 0` — an account that
 | Request in flight          | Spinner; the child is not rendered               |
 
 **Sitemap routes (`src/app/sitemap-routes.test.ts`):** the path collector walks `children`, not just the top level — since the gate landed, nearly every route sits under a pathless layout route and a flat read would pass vacuously.
+
+#### `ProfilePage` — the id every write carries
+
+3 tests. `GET /profiles/:username` sends `id` and **no** `userId`; the type
+declared the opposite, which is what let the message button read a field that
+is never sent.
+
+| Scenario              | Assert                               |
+| --------------------- | ------------------------------------ |
+| Profile with `id`     | `open` called with that id           |
+| Profile with neither  | **Both** Message and Follow disabled |
+| Profile with `userId` | The legacy fallback still resolves   |
+
+**The fixtures carry `id` alone on purpose.** One that also sets `userId`
+passes either way and proves nothing — which is exactly what the MSW mock in
+`tests/mocks/handlers.ts` used to do, leaving every profile test exercising
+only the `?? userId` fallback and none of them the shape the API returns. That
+mock now sends `id`.
+
+The second row covers both buttons because they share one derived id. Guarding
+only the message button left Follow live on an empty id, where it posts
+`{ targetId: "" }` — an empty string is **not** dropped from a body the way
+`undefined` is, so the request goes out, fails validation, and the optimistic
+flip rolls back with no toast by convention. The button appears to work and
+then silently un-presses itself.
+
+Use `{ name: "Follow" }` — a string matches the whole accessible name, whereas
+`/follow/i` also matches the followers and following count buttons. (`getByRole`
+has no `exact` option; that one belongs to `getByText`.)
 
 #### `MessagesPage` (`src/pages/MessagesPage.test.tsx`)
 
