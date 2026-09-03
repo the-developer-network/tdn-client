@@ -84,15 +84,49 @@ describe("PageShell", () => {
         // 275 + 720 + 320 is 1315, so the feed's 1250 container would squeeze
         // the reading column below its own cap and crowd out the right rail.
         it("widens the container along with the reading column", () => {
-            renderShell({ width: "reading" });
+            renderShell({
+                width: "reading",
+                rightRail: <div data-testid="rail" />,
+            });
 
             expect(container().className).toContain("max-w-[1320px]");
         });
 
         it("keeps the narrower container for the feed", () => {
-            renderShell();
+            renderShell({ rightRail: <div data-testid="rail" /> });
 
             expect(container().className).toContain("max-w-[1250px]");
+        });
+
+        /*
+         * The container is centred as a block, so its width has to match what
+         * is in it. Keeping the 1250 with no rail left the column sitting to
+         * the left of a 375px void — the page read as misaligned against every
+         * other page rather than as one that simply has no rail, which is
+         * exactly how it was reported.
+         */
+        describe("without a right rail", () => {
+            it("drops the space the rail would have filled", () => {
+                renderShell();
+
+                expect(container().className).toContain("xl:max-w-[875px]");
+                expect(container().className).not.toContain("max-w-[1250px]");
+            });
+
+            it("does the same for the reading column", () => {
+                renderShell({ width: "reading" });
+
+                expect(container().className).toContain("xl:max-w-[995px]");
+                expect(container().className).not.toContain("max-w-[1320px]");
+            });
+
+            // Below lg the column fills the room the icon rail leaves, so a
+            // cap there would put back the dead space this removes.
+            it("caps nothing below lg", () => {
+                renderShell();
+
+                expect(container().className).not.toMatch(/\b(sm|md):max-w-\[/);
+            });
         });
 
         // Centring the wider column in the space the sidebar leaves opened a
@@ -111,6 +145,49 @@ describe("PageShell", () => {
 
             expect(screen.getByTestId("rail")).toBeInTheDocument();
             expect(main().className).toContain("xl:max-w-[720px]");
+        });
+    });
+
+    /*
+     * A thread pins its header and its composer and scrolls only what is
+     * between them. Doing that from inside the page did not work: `main` is
+     * `min-h-screen` with `pb-16` for the bottom bar, so a child setting its
+     * own `h-[100dvh]` and its own bottom padding made the document 64px
+     * taller than the screen. The height belongs here, with the rest of the
+     * ladder — and `pb-16` stays inside it, which is what keeps a composer
+     * clear of `BottomNav` without the page knowing that bar's height.
+     */
+    describe("fill", () => {
+        it("grows the document by default", () => {
+            renderShell();
+
+            expect(main().className).toContain("min-h-screen");
+            expect(main().className).not.toContain("h-full");
+        });
+
+        it("hands the viewport to the page instead", () => {
+            renderShell({ fill: true });
+
+            expect(main().className).toContain("h-full");
+            expect(main().className).toContain("overflow-hidden");
+            expect(main().className).not.toContain("min-h-screen");
+        });
+
+        // `100dvh`, not `100vh`: on a phone `vh` is the large viewport, so it
+        // stays taller than the screen while the URL bar shows — the same
+        // overflow one layer up.
+        it("measures the outer height in dvh", () => {
+            renderShell({ fill: true });
+
+            const outer = container().parentElement!;
+            expect(outer.className).toContain("h-[100dvh]");
+            expect(outer.className).not.toContain("min-h-screen");
+        });
+
+        it("still leaves room for the bottom nav below md", () => {
+            renderShell({ fill: true });
+
+            expect(main().className).toContain("pb-16 md:pb-0");
         });
     });
 

@@ -91,6 +91,40 @@ const article: Article = {
         "```\n",
 };
 
+const conversation = {
+    id: "c1",
+    status: "ACCEPTED",
+    isRequest: false,
+    canSend: true,
+    participant: {
+        id: "user-2",
+        username: "bob",
+        fullName: "Bob Builder",
+        avatarUrl: "",
+    },
+    unreadCount: 0,
+    lastMessagePreview: "the last thing said",
+    lastMessageAt: new Date().toISOString(),
+    otherLastReadAt: null,
+    createdAt: new Date().toISOString(),
+};
+
+/** Enough of them to overflow the list, which is the point of the thread. */
+const threadMessages = Array.from({ length: 20 }).map((_, i) => ({
+    id: `m${i}`,
+    conversationId: "c1",
+    senderId: i % 2 ? "user-1" : "user-2",
+    content:
+        "A message long enough to wrap, so the bubble is measured at its widest rather than at a word.",
+    mediaUrls: [] as string[],
+    isSensitive: false,
+    mediaPending: false,
+    mediaRejected: false,
+    isDeleted: false,
+    isMine: i % 2 === 1,
+    createdAt: new Date().toISOString(),
+}));
+
 async function stubApi(page: Page) {
     await page.route("**/api/v1/**", async (route, request) => {
         const url = request.url();
@@ -122,6 +156,34 @@ async function stubApi(page: Page) {
         // "/articles".
         if (/\/articles\/[^/?]+(\?|$)/.test(url)) {
             await route.fulfill({ json: { data: article } });
+            return;
+        }
+        /*
+         * Direct messaging. `meta` is not optional here the way it is for the
+         * page-numbered endpoints: the listings go through `api.getPage`,
+         * which reads `nextCursor` out of it.
+         */
+        if (url.includes("/conversations/unread-count")) {
+            await route.fulfill({ json: { data: { count: 0 }, meta: {} } });
+            return;
+        }
+        // Before the listing arm: a thread URL contains "/conversations" too.
+        if (url.includes("/messages")) {
+            await route.fulfill({
+                json: {
+                    data: { conversation, messages: threadMessages },
+                    meta: { nextCursor: null },
+                },
+            });
+            return;
+        }
+        if (url.includes("/conversations")) {
+            await route.fulfill({
+                json: {
+                    data: url.includes("PENDING") ? [] : [conversation],
+                    meta: { nextCursor: null },
+                },
+            });
             return;
         }
         if (url.includes("/posts") || url.includes("/articles")) {
@@ -229,4 +291,89 @@ test.describe("the sidebar / bottom-nav changeover", () => {
             await expect(page).toHaveURL(/\/settings$/);
         });
     });
+});
+
+/**
+ * The conversation screen is the one page that owns the viewport instead of
+ * growing the document: its header and composer are pinned and only the
+ * messages between them scroll.
+ *
+ * It shipped without that working. `PageShell` gives `main` `min-h-screen`
+ * and `pb-16` for the bottom bar, and the page set its own `h-[100dvh]` and
+ * its own bottom padding on top — so at 390 the document came out 64px taller
+ * than the screen, the header could be dragged away and a dead strip opened
+ * under `BottomNav`. Measured rather than eyeballed, because that is a
+ * difference no unit test can see.
+ */
+test.describe("the conversation screen", () => {
+    test.describe("on a phone", () => {
+        test.use({ viewport: { width: 390, height: 844 } });
+
+        test("fills the viewport without scrolling the document", async ({
+            authenticatedPage: page,
+        }) => {
+            await stubApi(page);
+            await page.goto("/messages/c1");
+            await expect(
+                page.getByPlaceholder("Write a message"),
+            ).toBeVisible();
+
+            const scroll = await page.evaluate(() => ({
+                doc: document.documentElement.scrollHeight,
+                view: window.innerHeight,
+            }));
+            expect(scroll.doc).toBe(scroll.view);
+            expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+        });
+
+        test("keeps the composer above the bottom bar", async ({
+            authenticatedPage: page,
+        }) => {
+            await stubApi(page);
+            await page.goto("/messages/c1");
+
+            const composer = await page
+                .getByPlaceholder("Write a message")
+                .boundingBox();
+            const nav = await page.getByTestId("bottom-nav").boundingBox();
+
+            expect(composer).not.toBeNull();
+            expect(nav).not.toBeNull();
+            expect(composer!.y + composer!.height).toBeLessThanOrEqual(nav!.y);
+        });
+    });
+
+    /*
+     * The rail is not decoration here. `PageShell` centres a fixed-width
+     * block, so a page that leaves it out sits to the left of the space it
+     * would have filled — which reads as a broken page rather than as an
+     * uncluttered one, and is what made the missing rail worth reporting.
+     */
+    test.describe("on a desktop", () => {
+        test.use({ viewport: { width: 1440, height: 900 } });
+
+        test("keeps the trends rail, like every other page", async ({
+            authenticatedPage: page,
+        }) => {
+            await stubApi(page);
+            await page.goto("/messages/c1");
+
+            await expect(page.getByText("Trending Topics")).toBeVisible();
+            expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+        });
+    });
+
+    for (const [viewportName, viewport] of VIEWPORTS) {
+        test.describe(`the inbox on ${viewportName}`, () => {
+            test.use({ viewport });
+
+            test("fits the screen", async ({ authenticatedPage: page }) => {
+                await stubApi(page);
+                await page.goto("/messages");
+                await expect(page.getByText("Bob Builder")).toBeVisible();
+
+                expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+            });
+        });
+    }
 });

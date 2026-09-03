@@ -21,6 +21,14 @@ interface MessageBubbleProps {
      * message — a sent message counts as seen when it predates it.
      */
     otherLastReadAt?: string | null;
+    /**
+     * Whether this is the newest message the reader sent.
+     *
+     * Read state is per conversation — one watermark, not a receipt each — so
+     * repeating "Seen" under every outgoing bubble states the same fact six
+     * times down a screen and reads as six separate events.
+     */
+    isLatestMine?: boolean;
 }
 
 function isVideo(url: string): boolean {
@@ -47,6 +55,7 @@ export function MessageBubble({
     isRefreshing,
     onDelete,
     otherLastReadAt,
+    isLatestMine = false,
 }: MessageBubbleProps) {
     const { t } = useI18n();
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -55,7 +64,7 @@ export function MessageBubble({
     if (message.isDeleted) {
         return (
             <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                <p className="max-w-[75%] rounded-2xl border border-dashed border-ink/20 px-4 py-2 text-sm italic text-ink/40">
+                <p className="max-w-[min(75%,32rem)] rounded-2xl border border-dashed border-ink/20 px-4 py-2 text-sm italic text-ink/40">
                     {t("messages.deleted")}
                 </p>
             </div>
@@ -75,8 +84,14 @@ export function MessageBubble({
         <div
             className={`group flex flex-col ${isMine ? "items-end" : "items-start"}`}
         >
+            {/*
+             * A ratio alone is not enough. Between `md` and `lg` the column is
+             * uncapped, so 75% runs to about 520px — a fine width for a post
+             * and far too long to scan as a chat line. The cap holds the line
+             * where it is readable and the ratio still governs a phone.
+             */}
             <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                className={`max-w-[min(75%,32rem)] rounded-2xl px-4 py-2 ${
                     isMine
                         ? "bg-blue-500 text-on-fill"
                         : "bg-surface-1 text-ink"
@@ -141,7 +156,7 @@ export function MessageBubble({
             </div>
 
             <div className="mt-0.5 flex items-center gap-2 px-1">
-                {isMine && (
+                {isMine && isLatestMine && (
                     <span className="text-[11px] text-ink/40">
                         {isSeen ? t("messages.seen") : t("messages.sent")}
                     </span>
