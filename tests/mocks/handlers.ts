@@ -128,8 +128,14 @@ const mockArticleComment = {
     articleId: "article-1",
 };
 
+/*
+ * `id`, as `GET /profiles/:username` sends it — there is no `userId` on that
+ * response. This said `userId` for as long as the type did, which meant every
+ * profile test exercised only the `?? userId` fallback and none of them touched
+ * the shape the API actually returns.
+ */
 const mockProfile = {
-    userId: "user-1",
+    id: "user-1",
     username: "testuser",
     fullName: "Test User",
     bio: "I write code.",

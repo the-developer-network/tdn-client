@@ -350,7 +350,7 @@ export default function ProfilePage() {
                                 </button>
                                 <button
                                     onClick={handleFollow}
-                                    disabled={followLoading}
+                                    disabled={followLoading || !targetId}
                                     className={`rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
                                         isFollowing
                                             ? "border-ink/20 text-ink/70 bg-transparent hover:border-red-500/50 hover:text-red-400"

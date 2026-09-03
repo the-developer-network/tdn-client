@@ -1,8 +1,14 @@
 import { test, expect, mockUser } from "./fixtures";
 import type { Profile } from "../src/features/profile/api/profile.types";
 
+/*
+ * `id` is what the endpoint sends. The `Profile` annotation here cannot catch a
+ * mistake on its own — no tsconfig project includes `e2e/`, so it is never
+ * checked — which is exactly why this fixture kept declaring a shape the API
+ * does not return long after the type was corrected.
+ */
 const mockProfile: Profile = {
-    userId: "user-2",
+    id: "user-2",
     username: "bob",
     fullName: "Bob Builder",
     bio: "Software developer",
@@ -46,7 +52,7 @@ test.describe("Profile page", () => {
     }) => {
         const ownProfile: Profile = {
             ...mockProfile,
-            userId: mockUser.id,
+            id: mockUser.id,
             username: mockUser.username,
             fullName: mockUser.fullName,
             isMe: true,
@@ -81,7 +87,7 @@ test.describe("Profile page", () => {
     }) => {
         const ownProfile: Profile = {
             ...mockProfile,
-            userId: mockUser.id,
+            id: mockUser.id,
             username: mockUser.username,
             fullName: mockUser.fullName,
             isMe: true,
