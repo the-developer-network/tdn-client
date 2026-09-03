@@ -83,20 +83,34 @@ export function PageShell({
     const isReading = width === "reading";
 
     /*
-     * The container is centred as a block, so its width has to account for
-     * what is actually in it. With a rail it holds 275 + 600 + 320; without
-     * one it holds 875, and keeping the 1250 left the column sitting to the
-     * left of a 375px void — the page looked misaligned against every other
-     * page rather than simply missing its rail.
+     * The container is centred as a block, so its width is the **sum of the
+     * columns in it** — never a round number above them.
      *
-     * Only from `lg`, because that is where the column stops growing. Below
-     * it the column fills whatever room the rail leaves, and the viewport is
-     * narrower than any of these caps anyway.
+     * Every column here is fixed from `lg` up: the sidebar is 72 then 275, the
+     * reading column stays at the feed's 600 until `xl`, and the rail is 320.
+     * So anything the container is given beyond their sum cannot be absorbed
+     * by `flex-1` — `main` is capped — and lands as dead space at the right
+     * end, with the whole layout packed against the left.
+     *
+     * The old 1250 did exactly that through the entire `lg` band: 72 + 600 +
+     * 320 is 992, so a 1200px tablet showed 208px of nothing to the right of
+     * the trends rail and every column sat left of centre. It grew with the
+     * viewport, reaching 273px just before `xl`.
+     *
+     *              lg (72 + 600 + 320)   xl (275 + col + 320)
+     *   feed              992                    1195
+     *   reading           992                    1315
+     *   feed, no rail     672                     875
+     *   reading, no rail  672                     995
+     *
+     * Only from `lg`, because that is where the columns stop growing. Below it
+     * `main` is uncapped and absorbs the width itself, so there is nothing to
+     * centre and no cap to apply.
      */
     const containerClasses = rightRail
         ? isReading
-            ? "max-w-[1320px]"
-            : "max-w-[1250px]"
+            ? "lg:max-w-[992px] xl:max-w-[1315px]"
+            : "lg:max-w-[992px] xl:max-w-[1195px]"
         : isReading
           ? "lg:max-w-[672px] xl:max-w-[995px]"
           : "lg:max-w-[672px] xl:max-w-[875px]";

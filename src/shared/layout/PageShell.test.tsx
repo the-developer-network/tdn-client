@@ -81,21 +81,38 @@ describe("PageShell", () => {
             expect(main().className).not.toMatch(/\b(sm|md):max-w-\[/);
         });
 
-        // 275 + 720 + 320 is 1315, so the feed's 1250 container would squeeze
-        // the reading column below its own cap and crowd out the right rail.
+        /*
+         * The container is the sum of its columns, never a round number above
+         * them. Anything extra cannot be absorbed — `main` is capped from `lg`
+         * — so it lands as dead space at the right end with the layout packed
+         * left. A 1250 container did that through the whole `lg` band: 72 +
+         * 600 + 320 is 992, so a 1200px tablet showed 208px of nothing beside
+         * the rail, which is how it was reported.
+         */
+        it("sizes the container to the columns at lg", () => {
+            renderShell({ rightRail: <div data-testid="rail" /> });
+
+            expect(container().className).toContain("lg:max-w-[992px]");
+        });
+
+        // 275 + 720 + 320.
         it("widens the container along with the reading column", () => {
             renderShell({
                 width: "reading",
                 rightRail: <div data-testid="rail" />,
             });
 
-            expect(container().className).toContain("max-w-[1320px]");
+            expect(container().className).toContain("xl:max-w-[1315px]");
+            // The reading column is held at the feed's 600 below xl, so the
+            // container is the feed's there too.
+            expect(container().className).toContain("lg:max-w-[992px]");
         });
 
+        // 275 + 600 + 320.
         it("keeps the narrower container for the feed", () => {
             renderShell({ rightRail: <div data-testid="rail" /> });
 
-            expect(container().className).toContain("max-w-[1250px]");
+            expect(container().className).toContain("xl:max-w-[1195px]");
         });
 
         /*
