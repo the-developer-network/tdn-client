@@ -13,6 +13,8 @@ const en = {
     "nav.saved": "Saved",
     "nav.contact": "Contact",
     "nav.social": "Social",
+    "nav.messages": "Messages",
+    "nav.msgs": "Chat",
 
     "feed.community": "Community",
     "feed.news": "News",
@@ -456,6 +458,54 @@ const en = {
     "media.sensitiveReveal": "Tap to view",
     "media.processing": "This video is being checked",
     "media.refresh": "Refresh",
+    "media.removed": "Media removed",
+    // Said plainly, because the alternative is a blank space where an
+    // attachment was and a reader wondering whether it failed to load.
+    "media.removedHint": "The attachments broke the community rules.",
+
+    "messages.title": "Messages",
+    "messages.tabInbox": "Messages",
+    "messages.tabRequests": "Requests",
+    "messages.empty": "No conversations yet",
+    "messages.emptyHint": "Open a profile and send the first message.",
+    "messages.emptyRequests": "No message requests",
+    "messages.emptyRequestsHint":
+        "A message from someone you do not follow lands here first.",
+    "messages.retry": "Try again",
+    "messages.loadMore": "Load more",
+    "messages.loadOlder": "Load older messages",
+    "messages.notFound": "Conversation not found",
+    "messages.notFoundHint":
+        "It may have been removed, or it is not yours to read.",
+    "messages.startHint": "Say hello.",
+    "messages.newMessage": "Message",
+    "messages.back": "Back",
+    "messages.seen": "Seen",
+    "messages.sent": "Sent",
+    "messages.deleted": "This message was deleted",
+    // The control on the bubble names its object; the confirm button inside
+    // the dialogue does not need to repeat it.
+    "messages.delete": "Delete message",
+    "messages.deleteAction": "Delete",
+    "messages.deleteConfirm": "Delete this message?",
+    "messages.deleteConfirmBody":
+        "It disappears for both of you. The place it held stays, so replies to it still make sense.",
+    "messages.cancel": "Cancel",
+    "messages.placeholder": "Write a message",
+    "messages.send": "Send",
+    "messages.attach": "Add media",
+    "messages.removeAttachment": "Remove attachment",
+    "messages.requestNotice":
+        "{{name}} wants to send you messages. They cannot see whether you have read this.",
+    "messages.accept": "Accept",
+    "messages.decline": "Decline",
+    "messages.declineConfirm": "Decline this request?",
+    "messages.declineConfirmBody":
+        "This cannot be undone. Neither of you will be able to write here again.",
+    "messages.declined": "This conversation was declined.",
+    "messages.cannotSend": "You cannot write here.",
+    "messages.awaitingAccept":
+        "They will see your messages once they accept the request.",
 
     "ad.promotion": "Promotion",
     "ad.label": "Ad",
@@ -641,6 +691,8 @@ const tr: Record<TranslationKey, string> = {
     "nav.saved": "Kayıtlar",
     "nav.contact": "İletişim",
     "nav.social": "Sosyal",
+    "nav.messages": "Mesajlar",
+    "nav.msgs": "Mesaj",
 
     "feed.community": "Topluluk",
     "feed.news": "Haberler",
@@ -1072,6 +1124,49 @@ const tr: Record<TranslationKey, string> = {
     "media.sensitiveReveal": "Görmek için dokunun",
     "media.processing": "Bu video kontrol ediliyor",
     "media.refresh": "Yenile",
+    "media.removed": "Medya kaldırıldı",
+    "media.removedHint": "Ekler topluluk kurallarına aykırıydı.",
+
+    "messages.title": "Mesajlar",
+    "messages.tabInbox": "Mesajlar",
+    "messages.tabRequests": "İstekler",
+    "messages.empty": "Henüz sohbet yok",
+    "messages.emptyHint": "Birinin profilini açıp ilk mesajı gönderin.",
+    "messages.emptyRequests": "Mesaj isteği yok",
+    "messages.emptyRequestsHint":
+        "Takip etmediğiniz birinden gelen mesaj önce buraya düşer.",
+    "messages.retry": "Tekrar dene",
+    "messages.loadMore": "Daha fazla yükle",
+    "messages.loadOlder": "Daha eski mesajlar",
+    "messages.notFound": "Sohbet bulunamadı",
+    "messages.notFoundHint":
+        "Kaldırılmış olabilir ya da bu sohbet size ait değil.",
+    "messages.startHint": "Bir merhaba deyin.",
+    "messages.newMessage": "Mesaj",
+    "messages.back": "Geri",
+    "messages.seen": "Görüldü",
+    "messages.sent": "Gönderildi",
+    "messages.deleted": "Bu mesaj silindi",
+    "messages.delete": "Mesajı sil",
+    "messages.deleteAction": "Sil",
+    "messages.deleteConfirm": "Bu mesaj silinsin mi?",
+    "messages.deleteConfirmBody":
+        "İkinizden de kaybolur. Durduğu yer kalır, böylece ona verilen yanıtlar anlamını korur.",
+    "messages.cancel": "Vazgeç",
+    "messages.placeholder": "Bir mesaj yazın",
+    "messages.send": "Gönder",
+    "messages.attach": "Medya ekle",
+    "messages.removeAttachment": "Eki kaldır",
+    "messages.requestNotice":
+        "{{name}} size mesaj göndermek istiyor. Bunu okuduğunuzu göremez.",
+    "messages.accept": "Kabul et",
+    "messages.decline": "Reddet",
+    "messages.declineConfirm": "Bu istek reddedilsin mi?",
+    "messages.declineConfirmBody":
+        "Bu geri alınamaz. İkiniz de burada bir daha yazamazsınız.",
+    "messages.declined": "Bu sohbet reddedildi.",
+    "messages.cannotSend": "Buraya yazamazsınız.",
+    "messages.awaitingAccept": "İsteği kabul ettiğinde mesajlarınızı görecek.",
 
     "ad.promotion": "Tanıtım",
     "ad.label": "Reklam",
