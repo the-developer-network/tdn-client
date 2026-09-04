@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { PageShell } from "../shared/layout/PageShell";
@@ -16,6 +16,8 @@ import { ARTICLE_LIMITS } from "../features/article/api/article.types";
 import type { Article } from "../features/article/api/article.types";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useToastStore } from "../shared/store/toast.store";
+import { useMentionAutocomplete } from "../shared/hooks/useMentionAutocomplete";
+import { MentionSuggestions } from "../shared/components/ui/MentionSuggestions";
 import { useI18n } from "../shared/hooks/useI18n";
 
 export default function ArticleEditorPage() {
@@ -110,6 +112,13 @@ function Editor({ initial }: { initial: Article | null }) {
         archive,
         remove,
     } = useArticleEditor(initial);
+
+    const bodyRef = useRef<HTMLTextAreaElement>(null);
+    const mention = useMentionAutocomplete({
+        value: draft.body,
+        onChange: (next) => update("body", next),
+        inputRef: bodyRef,
+    });
 
     // The browser's own prompt is the only thing that can interrupt a tab
     // close, and it only appears when there is genuinely something to lose.
@@ -267,14 +276,28 @@ function Editor({ initial }: { initial: Article | null }) {
                         onRemoveExisting={removeExistingCover}
                     />
 
-                    <div>
+                    <div className="relative">
                         <textarea
+                            ref={bodyRef}
                             value={draft.body}
-                            onChange={(e) => update("body", e.target.value)}
+                            onChange={(e) => {
+                                update("body", e.target.value);
+                                mention.sync();
+                            }}
+                            onKeyDown={(e) => mention.onKeyDown(e)}
+                            onBlur={mention.close}
                             placeholder={t("editor.bodyPlaceholder")}
                             aria-label={t("editor.bodyPlaceholder")}
                             rows={18}
                             className="w-full resize-y bg-transparent text-[18px] leading-[1.75] text-ink/80 outline-none placeholder:text-ink/20"
+                        />
+                        <MentionSuggestions
+                            isOpen={mention.isOpen}
+                            isLoading={mention.isLoading}
+                            results={mention.results}
+                            highlighted={mention.highlighted}
+                            onHighlight={mention.setHighlighted}
+                            onSelect={mention.select}
                         />
                     </div>
 
@@ -329,6 +352,12 @@ function Editor({ initial }: { initial: Article | null }) {
                     )}
                     {/* The same renderer the reading page uses, so the preview
                         cannot drift from what readers will actually get. */}
+                    {/*
+                     * No `mentions`: the draft has not been written, so the
+                     * API has resolved nothing yet. A preview that linked
+                     * every handle would promise links the published article
+                     * may not have — a handle nobody owns is dropped silently.
+                     */}
                     <MarkdownBody body={draft.body} />
                 </div>
             )}

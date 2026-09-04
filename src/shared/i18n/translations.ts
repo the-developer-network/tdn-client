@@ -460,6 +460,9 @@ const en = {
     // wording is ours because the limit is a rule, not a failure.
     "error.mentionLimit": "You can mention up to {{max}} people.",
 
+    "mention.suggestions": "People matching what you typed",
+    "mention.searching": "Searching…",
+
     "media.sensitive": "Sensitive content",
     "media.sensitiveReveal": "Tap to view",
     "media.processing": "This video is being checked",
@@ -1127,6 +1130,9 @@ const tr: Record<TranslationKey, string> = {
     "error.noMediaProvided": "Önce bir dosya seçin.",
     "error.rateLimited": "Biraz hızlı gidiyorsunuz. Bir dakika sonra deneyin.",
     "error.mentionLimit": "En fazla {{max}} kişiden bahsedebilirsiniz.",
+
+    "mention.suggestions": "Yazdığınla eşleşen kişiler",
+    "mention.searching": "Aranıyor…",
 
     "media.sensitive": "Hassas içerik",
     "media.sensitiveReveal": "Görmek için dokunun",

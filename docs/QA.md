@@ -1213,6 +1213,17 @@ The `429` case is deliberate coverage of the second (and last) title
 `getErrorMessage` answers in its own words. Five writes a minute is low enough
 that an ordinary exchange reaches it.
 
+#### `readActiveHandle` (`src/shared/hooks/useMentionAutocomplete.test.ts`)
+
+13 tests over the caret reader, which decides whether a suggestion list opens.
+Pure on purpose: the rest of the hook is a textarea and a debounce, and neither
+is where this goes wrong.
+
+It has to agree with the rendering grammar about what an `@` starts — a list
+that offers accounts inside an email address is promising a link that can never
+exist. It reads only the text **before** the caret, or moving back into a
+finished handle reopens the list on every keystroke elsewhere in the body.
+
 #### `checkDraft` (`src/features/article/hooks/checkDraft.test.ts`)
 
 11 tests over the pure validator behind the editor's `canSave`: empty, title and
@@ -1526,6 +1537,24 @@ One test renders inside `<StrictMode>` to reproduce the double-invoked mount eff
 | Mounted in `StrictMode`       | Exactly one send request                                    |
 | Enter in the code field       | Verifies                                                    |
 | Good code                     | `isEmailVerified` true; modal closed                        |
+
+#### `MarkdownBody` — mentions (`src/features/article/components/MarkdownBody.test.tsx`)
+
+8 tests appended to the existing sanitisation and typography ones. An article
+body is markdown, so mentions are linked by a remark plugin over the tree
+rather than a pass over rendered output: afterwards a handle in a code span
+looks exactly like one in a sentence.
+
+| Left alone                    | Why                                        |
+| ----------------------------- | ------------------------------------------ |
+| inline code, fenced blocks    | an `@` in a snippet is part of the snippet |
+| the label of an existing link | a link inside a link is invalid HTML       |
+| an autolinked email           | `remark-gfm` already made it a link node   |
+
+A mention link renders through `Link` with no `target` or `rel`; an author's own
+link keeps both. The email case asserts that no `/profile/` link appears rather
+than that no link appears at all — `remark-gfm` autolinks bare emails, so there
+is one either way.
 
 #### `RichText` (`src/shared/components/ui/RichText.test.tsx`)
 
@@ -1952,6 +1981,9 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `mentions.spec`       | A handle nobody owns stays plain text                                                                   |
 | `mentions.spec`       | An email address is not turned into a mention                                                           |
 | `mentions.spec`       | The composer refuses an eleventh distinct handle                                                        |
+| `mentions.spec`       | Typing `@ad` suggests accounts, and picking one completes the handle                                    |
+| `mentions.spec`       | Enter belongs to the open list rather than to the newline                                               |
+| `mentions.spec`       | No suggestions inside an email address                                                                  |
 | `responsive.spec`     | The shell stays centred at 1024–1600 — the columns, not the container                                   |
 
 **The centring row measures the columns, not the container, and that distinction

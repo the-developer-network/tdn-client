@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { feedApi } from "../api/feed.api";
 import type { Post, QuotedPost } from "../api/feed.types";
 import { QuotedPostCard } from "./QuotedPostCard";
@@ -7,6 +7,8 @@ import { useAuthStore } from "../../../core/auth/auth.store";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
 import { useMentionLimit } from "../../../shared/hooks/useMentionLimit";
+import { useMentionAutocomplete } from "../../../shared/hooks/useMentionAutocomplete";
+import { MentionSuggestions } from "../../../shared/components/ui/MentionSuggestions";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 /** The server's own ceiling on `content`. Enforced here so a 400 is not the
@@ -37,6 +39,12 @@ export function QuoteComposerModal({
     // Mirrors the server's ten-handle cap so its 400 stays unreachable.
     const { isOverLimit: isOverMentionLimit, max: maxMentions } =
         useMentionLimit(content);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const mention = useMentionAutocomplete({
+        value: content,
+        onChange: setContent,
+        inputRef: textareaRef,
+    });
 
     const handleClose = () => {
         if (isSubmitting) return;
@@ -84,14 +92,28 @@ export function QuoteComposerModal({
                         alt={user?.username ?? ""}
                         className="h-10 w-10 shrink-0 rounded-full border border-ink/5 object-cover"
                     />
-                    <div className="min-w-0 flex-1">
+                    <div className="relative min-w-0 flex-1">
                         <textarea
+                            ref={textareaRef}
                             value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            onChange={(e) => {
+                                setContent(e.target.value);
+                                mention.sync();
+                            }}
+                            onKeyDown={(e) => mention.onKeyDown(e)}
+                            onBlur={mention.close}
                             placeholder={t("quote.placeholder")}
                             rows={3}
                             autoFocus
                             className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-ink outline-none placeholder-ink/30"
+                        />
+                        <MentionSuggestions
+                            isOpen={mention.isOpen}
+                            isLoading={mention.isLoading}
+                            results={mention.results}
+                            highlighted={mention.highlighted}
+                            onHighlight={mention.setHighlighted}
+                            onSelect={mention.select}
                         />
                         <QuotedPostCard post={quoted} isPreview />
                     </div>

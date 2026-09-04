@@ -60,6 +60,10 @@ const profile = {
 async function stub(page: Page, posts: Post[]) {
     await page.route("**/api/v1/**", async (route, request) => {
         const url = request.url();
+        if (url.includes("/profiles/search")) {
+            await route.fulfill({ json: { data: [profile] } });
+            return;
+        }
         if (url.includes("/profiles/ada")) {
             await route.fulfill({ json: { data: profile } });
             return;
@@ -146,5 +150,60 @@ test.describe("Mentions", () => {
 
         await expect(page.getByText(/up to 10 people/i)).toBeVisible();
         await expect(page.getByRole("button", { name: "Post" })).toBeDisabled();
+    });
+
+    /*
+     * The write side. There is no mention-search endpoint — the API doc says
+     * to use profile search — so this is that list, driven from the caret.
+     */
+    test("suggests accounts while an @handle is typed", async ({
+        authenticatedPage: page,
+    }) => {
+        await stub(page, []);
+        await page.goto("/");
+
+        const box = page.getByPlaceholder(/building/i);
+        await box.click();
+        await box.type("hey @ad");
+
+        const option = page.getByRole("option", { name: /Ada L\./ });
+        await expect(option).toBeVisible();
+        await option.click();
+
+        // The handle is completed and a space follows it, so the next word
+        // does not reopen the list on the character meant to end it.
+        await expect(box).toHaveValue("hey @ada ");
+    });
+
+    test("completes the highlighted account with the keyboard", async ({
+        authenticatedPage: page,
+    }) => {
+        await stub(page, []);
+        await page.goto("/");
+
+        const box = page.getByPlaceholder(/building/i);
+        await box.click();
+        await box.type("hey @ad");
+        await expect(page.getByRole("option")).toBeVisible();
+
+        // Enter belongs to the list while it is open, not to the newline.
+        await box.press("Enter");
+
+        await expect(box).toHaveValue("hey @ada ");
+    });
+
+    // Suggesting accounts inside an email address would offer a link that can
+    // never exist — the same rule the renderer applies.
+    test("does not suggest inside an email address", async ({
+        authenticatedPage: page,
+    }) => {
+        await stub(page, []);
+        await page.goto("/");
+
+        const box = page.getByPlaceholder(/building/i);
+        await box.click();
+        await box.type("write to ada@exa");
+
+        await expect(page.getByRole("option")).toHaveCount(0);
     });
 });

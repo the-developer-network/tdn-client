@@ -5,6 +5,8 @@ import { feedApi } from "../../feed/api/feed.api";
 import type { Comment, CommentTarget } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
 import { useMentionLimit } from "../../../shared/hooks/useMentionLimit";
+import { useMentionAutocomplete } from "../../../shared/hooks/useMentionAutocomplete";
+import { MentionSuggestions } from "../../../shared/components/ui/MentionSuggestions";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
@@ -31,9 +33,15 @@ export function CommentBox({
 }: CommentBoxProps) {
     const { t } = useI18n();
     const [content, setContent] = useState("");
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     // Mirrors the server's ten-handle cap so its 400 stays unreachable.
     const { isOverLimit: isOverMentionLimit, max: maxMentions } =
         useMentionLimit(content);
+    const mention = useMentionAutocomplete({
+        value: content,
+        onChange: setContent,
+        inputRef: textareaRef,
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
@@ -136,13 +144,27 @@ export function CommentBox({
                     }
                     className="h-9 w-9 rounded-full border border-ink/5 object-cover shrink-0"
                 />
-                <div className="flex-1 flex flex-col gap-3">
+                <div className="relative flex-1 flex flex-col gap-3">
                     <textarea
+                        ref={textareaRef}
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={(e) => {
+                            setContent(e.target.value);
+                            mention.sync();
+                        }}
+                        onKeyDown={(e) => mention.onKeyDown(e)}
+                        onBlur={mention.close}
                         placeholder={placeholder ?? t("commentBox.placeholder")}
                         rows={2}
                         className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed"
+                    />
+                    <MentionSuggestions
+                        isOpen={mention.isOpen}
+                        isLoading={mention.isLoading}
+                        results={mention.results}
+                        highlighted={mention.highlighted}
+                        onHighlight={mention.setHighlighted}
+                        onSelect={mention.select}
                     />
 
                     {previews.length > 0 && (

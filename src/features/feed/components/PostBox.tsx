@@ -10,6 +10,8 @@ import {
     withModerationRetry,
 } from "../../../shared/utils/media-errors";
 import { useMentionLimit } from "../../../shared/hooks/useMentionLimit";
+import { useMentionAutocomplete } from "../../../shared/hooks/useMentionAutocomplete";
+import { MentionSuggestions } from "../../../shared/components/ui/MentionSuggestions";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
 
@@ -36,6 +38,11 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     // Mirrors the server's ten-handle cap so its 400 stays unreachable.
     const { isOverLimit: isOverMentionLimit, max: maxMentions } =
         useMentionLimit(content);
+    const mention = useMentionAutocomplete({
+        value: content,
+        onChange: setContent,
+        inputRef: textareaRef,
+    });
 
     const autoResize = () => {
         const el = textareaRef.current;
@@ -148,14 +155,17 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                     className="h-10 w-10 rounded-full border border-ink/5 object-cover shrink-0"
                     alt="User avatar"
                 />
-                <div className="flex-1 flex flex-col gap-3">
+                <div className="relative flex-1 flex flex-col gap-3">
                     <textarea
                         ref={textareaRef}
                         value={content}
                         onChange={(e) => {
                             setContent(e.target.value);
                             autoResize();
+                            mention.sync();
                         }}
+                        onKeyDown={(e) => mention.onKeyDown(e)}
+                        onBlur={mention.close}
                         placeholder={
                             isAuthenticated
                                 ? t("postBox.placeholder")
@@ -163,6 +173,20 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                         }
                         rows={3}
                         className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
+                    />
+                    {/*
+                     * Anchored to the column rather than the caret: a textarea
+                     * gives no caret coordinates without measuring a mirror
+                     * element, and under the field is where the list is looked
+                     * for anyway.
+                     */}
+                    <MentionSuggestions
+                        isOpen={mention.isOpen}
+                        isLoading={mention.isLoading}
+                        results={mention.results}
+                        highlighted={mention.highlighted}
+                        onHighlight={mention.setHighlighted}
+                        onSelect={mention.select}
                     />
 
                     {/* Preview */}
