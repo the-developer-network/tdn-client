@@ -192,6 +192,27 @@ test.describe("Mentions", () => {
         await expect(box).toHaveValue("hey @ada ");
     });
 
+    /*
+     * One character, not the two the profile search box uses. Completing a
+     * handle is the opposite problem from looking someone up: the author
+     * usually knows who they mean, and waiting for a second character reads as
+     * the feature not working — which is how it was reported.
+     */
+    test("suggests from the first character after the @", async ({
+        authenticatedPage: page,
+    }) => {
+        await stub(page, []);
+        await page.goto("/");
+
+        const box = page.getByPlaceholder(/building/i);
+        await box.click();
+        await box.type("hey @a");
+
+        await expect(
+            page.getByRole("option", { name: /Ada L\./ }),
+        ).toBeVisible();
+    });
+
     // Suggesting accounts inside an email address would offer a link that can
     // never exist — the same rule the renderer applies.
     test("does not suggest inside an email address", async ({

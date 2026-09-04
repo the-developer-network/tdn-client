@@ -41,7 +41,19 @@ interface Options {
     value: string;
     onChange: (next: string) => void;
     inputRef: React.RefObject<HTMLTextAreaElement | null>;
-    /** Matches `useProfileSearch`'s own threshold. */
+    /**
+     * How many characters after the `@` before the search runs.
+     *
+     * One, not the two `useProfileSearch` defaults to. That threshold is set
+     * for the profile search box, where someone is looking something up and a
+     * single letter matches most of the site. Completing a handle is the
+     * opposite: the author usually knows who they mean, and waiting for a
+     * second character reads as the feature not working — which is exactly how
+     * it was reported.
+     *
+     * The extra requests are affordable: the search is debounced 300 ms, so a
+     * burst of typing sends one, and reads are allowed 60 a minute.
+     */
     minChars?: number;
 }
 
@@ -60,7 +72,7 @@ export function useMentionAutocomplete({
     value,
     onChange,
     inputRef,
-    minChars = 2,
+    minChars = 1,
 }: Options) {
     const { query, setQuery, results, isLoading } = useProfileSearch(minChars);
     const [active, setActive] = useState<ActiveHandle | null>(null);
