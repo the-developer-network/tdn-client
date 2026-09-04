@@ -217,7 +217,7 @@ function ArticleView({ article, slug }: ArticleViewProps) {
                 )}
             </header>
 
-            <MarkdownBody body={article.body} />
+            <MarkdownBody body={article.body} mentions={article.mentions} />
 
             <div className="flex items-center gap-6 border-y border-ink/10 px-4 py-3 text-ink/30">
                 <button

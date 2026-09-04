@@ -1,8 +1,17 @@
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { remarkMentions } from "../utils/remark-mentions";
+import type { Mention } from "../../../shared/utils/mentions";
 
 interface MarkdownBodyProps {
     body: string;
+    /**
+     * The accounts the API resolved out of this body. Only a handle with an
+     * entry becomes a link — see `remark-mentions.ts`.
+     */
+    mentions?: Mention[];
 }
 
 /**
@@ -19,12 +28,16 @@ interface MarkdownBodyProps {
  * plugin; unstyled markdown renders as run-together browser defaults against
  * the dark theme.
  */
-export function MarkdownBody({ body }: MarkdownBodyProps) {
+export function MarkdownBody({ body, mentions }: MarkdownBodyProps) {
+    // Rebuilt only when the list changes: remark plugins are compared by
+    // identity, and a new function every render re-parses the whole body.
+    const mentionPlugin = useMemo(() => remarkMentions(mentions), [mentions]);
+
     return (
         <div className="px-4 py-8 text-[18px] leading-[1.75] text-ink/80">
             <Markdown
                 skipHtml
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, mentionPlugin]}
                 components={{
                     h1: ({ children }) => (
                         <h1 className="mt-10 mb-4 text-[28px] font-bold leading-snug tracking-tight text-ink first:mt-0">
@@ -44,16 +57,30 @@ export function MarkdownBody({ body }: MarkdownBodyProps) {
                     p: ({ children }) => (
                         <p className="my-6 first:mt-0">{children}</p>
                     ),
-                    a: ({ href, children }) => (
-                        <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer nofollow"
-                            className="text-blue-400 hover:underline break-words"
-                        >
-                            {children}
-                        </a>
-                    ),
+                    /*
+                     * An internal href is a mention this file produced, and it
+                     * stays inside the app: opening a profile in a new tab
+                     * with `nofollow` would treat it as somebody else's site.
+                     * Anything the author wrote is external and keeps both.
+                     */
+                    a: ({ href, children }) =>
+                        href?.startsWith("/") ? (
+                            <Link
+                                to={href}
+                                className="text-blue-400 hover:underline break-words"
+                            >
+                                {children}
+                            </Link>
+                        ) : (
+                            <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer nofollow"
+                                className="text-blue-400 hover:underline break-words"
+                            >
+                                {children}
+                            </a>
+                        ),
                     ul: ({ children }) => (
                         <ul className="my-6 list-disc pl-6 space-y-2">
                             {children}

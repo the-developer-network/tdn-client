@@ -97,6 +97,10 @@ The **ten-handle cap** is mirrored in the composers so the API's `400 MentionLim
 
 `MENTION` is the first notification type that reads `articleSlug` — being named in an article body has nowhere else to go.
 
+**Writing.** `useMentionAutocomplete` reads the handle at the caret and suggests through `useProfileSearch` — there is no mention-search endpoint and the API doc says to use profile search. Its `readActiveHandle` applies the same "not glued to a preceding word" rule as the renderer, so the list never offers accounts for something that could not become a link. Selection is bound to `onMouseDown` in `MentionSuggestions`: a textarea blurs before a click lands, and the composers close the list on blur.
+
+An article body is markdown, so its mentions are linked by a remark plugin (`article/utils/remark-mentions.ts`) rather than a pass over rendered output — after rendering, a handle in a code span looks exactly like one in a sentence, and the tree already knows the difference. Code, existing links and images are left alone. `MarkdownBody` routes an internal `/profile/...` href through `Link`; only an author's own link keeps `target="_blank"` and `nofollow`. The **editor preview passes no `mentions`**, because the draft has not been written and the API has resolved nothing yet — linking every handle there would promise links the published article may not have.
+
 ### Direct messaging
 
 One-to-one threads, in `src/features/messages/`. Everything is authenticated — there is no public read path, so nothing here is `isPublic`.
