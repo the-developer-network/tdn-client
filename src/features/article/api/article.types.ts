@@ -1,3 +1,4 @@
+import type { Mention } from "../../../shared/utils/mentions";
 /**
  * Mirrors `PostCategory` — the API uses one category enum for posts and
  * articles alike. Kept as its own union so the article module does not depend
@@ -52,6 +53,11 @@ export interface ArticleSummary {
     createdAt: string;
     author: ArticleAuthor;
     tags: ArticleTag[];
+    /**
+     * The accounts the API resolved out of the body. Always present; `[]` when
+     * it names nobody.
+     */
+    mentions: Mention[];
     categories: ArticleCategory[];
 }
 

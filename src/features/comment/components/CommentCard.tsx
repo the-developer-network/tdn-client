@@ -129,6 +129,7 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
 
                         <RichText
                             text={displayContent}
+                            mentions={comment.mentions}
                             className="mt-1.5 text-[15px] text-ink/90 leading-relaxed whitespace-pre-wrap"
                         />
                         {(showTranslate || isTranslated || translateError) && (

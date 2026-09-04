@@ -99,6 +99,10 @@ export function MessageBubble({
             >
                 {message.content && (
                     <div className="whitespace-pre-wrap break-words text-[15px]">
+                        {/*
+                         * No `mentions`: direct messages do not resolve them,
+                         * so an `@handle` here is text and nothing more.
+                         */}
                         <RichText text={message.content} />
                     </div>
                 )}

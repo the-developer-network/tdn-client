@@ -14,6 +14,7 @@ vi.mock("./ArticleCard", () => ({
 }));
 
 const makeArticle = (id: string): ArticleSummary => ({
+    mentions: [],
     isSensitive: false,
     id,
     slug: `slug-${id}`,

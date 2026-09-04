@@ -42,6 +42,7 @@ vi.mock("../shared/components/TrendingTopicsWidget", () => ({
 }));
 
 const mockPost: Post = {
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id: "post-123",

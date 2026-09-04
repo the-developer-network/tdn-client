@@ -31,6 +31,7 @@ import { useQuotes } from "./useQuotes";
 const BASE = "http://localhost:8080/api/v1";
 
 const makeQuote = (id: string): Post => ({
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id,

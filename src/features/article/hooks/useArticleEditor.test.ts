@@ -48,6 +48,7 @@ const article = (overrides: Partial<Article> = {}): Article => ({
     author: { id: "user-1", username: "testuser", avatarUrl: "" },
     tags: [],
     categories: [],
+    mentions: [],
     ...overrides,
 });
 

@@ -292,4 +292,89 @@ describe("NotificationCard", () => {
 
         expect(mockNavigate).toHaveBeenCalledWith("/profile/alice");
     });
+
+    /*
+     * The API fills a mention's deep-link fields the way a COMMENT fills them,
+     * and there are four shapes. `referenceId` alone cannot serve them — it is
+     * the post for a mention in a post and the comment for one in a comment —
+     * so the routing reads the specific fields instead, most specific first.
+     */
+    describe("MENTION", () => {
+        const mention = (fields: Partial<Notification>): Notification => ({
+            ...base,
+            type: "MENTION",
+            ...fields,
+        });
+
+        it("in a post: goes to the post", () => {
+            render(
+                <NotificationCard
+                    notification={mention({
+                        postId: "p1",
+                        referenceId: "p1",
+                    })}
+                />,
+            );
+            fireEvent.click(screen.getByText(/@alice mentioned you/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/post/p1");
+        });
+
+        it("in a comment on a post: goes to the comment, not the post", () => {
+            render(
+                <NotificationCard
+                    notification={mention({
+                        postId: "p1",
+                        commentId: "c1",
+                        referenceId: "c1",
+                    })}
+                />,
+            );
+            fireEvent.click(screen.getByText(/@alice mentioned you/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/comments/c1");
+        });
+
+        it("in a comment on an article: still goes to the comment", () => {
+            render(
+                <NotificationCard
+                    notification={mention({
+                        commentId: "c1",
+                        articleId: "a1",
+                        articleSlug: "some-article",
+                        referenceId: "c1",
+                    })}
+                />,
+            );
+            fireEvent.click(screen.getByText(/@alice mentioned you/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/comments/c1");
+        });
+
+        // The one type that reads `articleSlug`: being named in an article
+        // body has nowhere else to go, and `/articles/:slug` is the route.
+        it("in an article: goes to the article by slug", () => {
+            render(
+                <NotificationCard
+                    notification={mention({
+                        articleId: "a1",
+                        articleSlug: "clean-architecture",
+                        referenceId: "a1",
+                    })}
+                />,
+            );
+            fireEvent.click(screen.getByText(/@alice mentioned you/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith(
+                "/articles/clean-architecture",
+            );
+        });
+
+        it("falls back to the issuer when nothing says where", () => {
+            render(<NotificationCard notification={mention({})} />);
+            fireEvent.click(screen.getByText(/@alice mentioned you/i));
+
+            expect(mockNavigate).toHaveBeenCalledWith("/profile/alice");
+        });
+    });
 });

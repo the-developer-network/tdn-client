@@ -67,6 +67,7 @@ beforeEach(() => {
 });
 
 const mockComment: Comment = {
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id: "c1",

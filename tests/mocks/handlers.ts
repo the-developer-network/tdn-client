@@ -14,6 +14,12 @@ const mockAccessToken = "mock-access-token";
 const mockExpiresAt = Date.now() + 3_600_000;
 
 const mockPost = {
+    /*
+     * The API always sends this — `[]` when the body names nobody. A mock that
+     * omits it models a response that does not exist, which is how a type ends
+     * up asserting a field the server never sends.
+     */
+    mentions: [],
     id: "post-1",
     content: "Hello world",
     type: "COMMUNITY",
@@ -67,6 +73,12 @@ const mockMessage = {
 };
 
 const mockComment = {
+    /*
+     * The API always sends this — `[]` when the body names nobody. A mock that
+     * omits it models a response that does not exist, which is how a type ends
+     * up asserting a field the server never sends.
+     */
+    mentions: [],
     id: "comment-1",
     content: "Nice post!",
     mediaUrls: [],
@@ -92,6 +104,12 @@ const mockComment = {
  * card test from passing on a `body` the real list endpoint never sends.
  */
 const mockArticleSummary = {
+    /*
+     * The API always sends this — `[]` when the body names nobody. A mock that
+     * omits it models a response that does not exist, which is how a type ends
+     * up asserting a field the server never sends.
+     */
+    mentions: [],
     id: "article-1",
     slug: "clean-architecture-with-fastify",
     title: "Clean Architecture with Fastify",

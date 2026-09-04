@@ -1,3 +1,4 @@
+import type { Mention } from "../../../shared/utils/mentions";
 import type { Comment } from "../../comment/api/comment.types";
 import type { ArticleSummary } from "../../article/api/article.types";
 
@@ -59,6 +60,12 @@ export interface Post {
     isBookmarked: boolean;
     author: PostAuthor;
     tags?: PostTag[];
+    /**
+     * The accounts the API resolved out of `content`. Always present; `[]` when the
+     * body names nobody.
+     */
+    mentions: Mention[];
+
     /**
      * `null` on an ordinary post. A quote is not a separate entity — it is a
      * post that happens to carry another one — so every list, action and route

@@ -83,6 +83,20 @@ Uploads are scanned. Four endpoints can now refuse one — `POST /media`, `POST 
 
 `usePendingMedia` polls **the one post**, never the feed — the list is cached 60 s server-side. It stops when `mediaPending` clears, after five minutes, and while the tab is hidden.
 
+### Mentions
+
+`@handle` in a post, comment or article body names an account (`docs/mentions.md` in the API repo). The API resolves them **at write time** and stores the relation by id, so a rename never breaks a historical mention — and the response carries the account's **current** handle.
+
+`mentions: [{ id, username }]` sits alongside `tags` on `Post`, `Comment` and `ArticleSummary`, and is **always present** (`[]` when the body names nobody). It is deliberately absent from `QuotedPost` and from a direct message, because the API does not resolve mentions for either; a handle in those renders as plain text and that is correct, not a gap.
+
+**The handle grammar lives once, in `src/shared/utils/mentions.ts`, and mirrors the API's `extract-mentions.ts`.** The API returns the body unchanged and says separately which handles are real, so pairing the two is the client's job — and drift is silent, showing up as a link that never appears. Its tests are the doc's own examples (`ada@example.com`, `docs/@v2`, `@@here`, `@ada.` versus `@ada.b`). The one deliberate difference: the API uses a lookbehind and the client consumes the preceding character instead, because Safari had no lookbehind before 16.4 and Vite does not transpile regex syntax — an unsupported pattern is a blank page, not a missing feature. The two were checked for equivalence over the doc's cases and a randomised sweep.
+
+**A handle only links when it matches an entry in `mentions`, case-insensitively.** A typo, a deleted account and one renamed since the body was written are all unmatchable and all stay plain text. That is the only version that never sends a reader to a stranger's profile — do not "fix" it by pairing leftovers.
+
+The **ten-handle cap** is mirrored in the composers so the API's `400 MentionLimitExceededError` stays unreachable, the same way the message composer mirrors its character cap. For articles it is folded into `checkDraft`, because autosave is gated on the same `canSave` and would otherwise retry a doomed request every two seconds.
+
+`MENTION` is the first notification type that reads `articleSlug` — being named in an article body has nowhere else to go.
+
 ### Direct messaging
 
 One-to-one threads, in `src/features/messages/`. Everything is authenticated — there is no public read path, so nothing here is `isPublic`.

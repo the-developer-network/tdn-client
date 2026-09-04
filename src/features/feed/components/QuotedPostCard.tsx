@@ -73,6 +73,12 @@ export function QuotedPostCard({
                 </span>
             </div>
 
+            {/*
+             * No `mentions` below: `QuotedPostSchema` does not carry them, so
+             * there is nothing to resolve a handle against and one written here
+             * stays plain text. Passing the *quoting* post's list would link the
+             * wrong body's names.
+             */}
             {post.content && (
                 <RichText
                     text={post.content}

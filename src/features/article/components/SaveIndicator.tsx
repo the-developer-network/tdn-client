@@ -1,5 +1,6 @@
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useI18n } from "../../../shared/hooks/useI18n";
+import { MAX_MENTIONS } from "../../../shared/utils/mentions";
 import { ARTICLE_LIMITS } from "../api/article.types";
 import type { DraftProblem, SaveState } from "../hooks/useArticleEditor";
 
@@ -63,7 +64,9 @@ export function SaveIndicator({
                   ? t("editor.titleTooLong", { max: ARTICLE_LIMITS.titleMax })
                   : problem === "bodyTooLong"
                     ? t("editor.bodyTooLong", { max: ARTICLE_LIMITS.bodyMax })
-                    : t("editor.tooLarge");
+                    : problem === "tooManyMentions"
+                      ? t("error.mentionLimit", { max: String(MAX_MENTIONS) })
+                      : t("editor.tooLarge");
 
         return (
             <span
