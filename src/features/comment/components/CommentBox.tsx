@@ -144,28 +144,38 @@ export function CommentBox({
                     }
                     className="h-9 w-9 rounded-full border border-ink/5 object-cover shrink-0"
                 />
-                <div className="relative flex-1 flex flex-col gap-3">
-                    <textarea
-                        ref={textareaRef}
-                        value={content}
-                        onChange={(e) => {
-                            setContent(e.target.value);
-                            mention.sync();
-                        }}
-                        onKeyDown={(e) => mention.onKeyDown(e)}
-                        onBlur={mention.close}
-                        placeholder={placeholder ?? t("commentBox.placeholder")}
-                        rows={2}
-                        className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed"
-                    />
-                    <MentionSuggestions
-                        isOpen={mention.isOpen}
-                        isLoading={mention.isLoading}
-                        results={mention.results}
-                        highlighted={mention.highlighted}
-                        onHighlight={mention.setHighlighted}
-                        onSelect={mention.select}
-                    />
+                <div className="flex-1 flex flex-col gap-3">
+                    {/*
+                     * `relative` wraps the field alone — see `PostBox`: around
+                     * the column the list lands under everything else in it.
+                     */}
+                    <div className="relative">
+                        <textarea
+                            ref={textareaRef}
+                            value={content}
+                            onChange={(e) => {
+                                setContent(e.target.value);
+                                mention.sync();
+                            }}
+                            onKeyDown={(e) => mention.onKeyDown(e)}
+                            onBlur={mention.close}
+                            placeholder={
+                                placeholder ?? t("commentBox.placeholder")
+                            }
+                            rows={2}
+                            className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed"
+                        />
+                        <MentionSuggestions
+                            isOpen={mention.isOpen}
+                            isLoading={mention.isLoading}
+                            results={mention.results}
+                            highlighted={mention.highlighted}
+                            onHighlight={mention.setHighlighted}
+                            onSelect={mention.select}
+                            point={mention.point}
+                            fieldRef={textareaRef}
+                        />
+                    </div>
 
                     {previews.length > 0 && (
                         <div

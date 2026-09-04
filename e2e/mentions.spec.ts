@@ -206,4 +206,113 @@ test.describe("Mentions", () => {
 
         await expect(page.getByRole("option")).toHaveCount(0);
     });
+
+    /**
+     * The list belongs on the caret's line, the way X puts it under the words
+     * being typed rather than under the whole composer.
+     *
+     * It shipped anchored to the column: in the post box that put it 65px and
+     * a toolbar below the field, and in the article editor eighteen rows below
+     * it. Measured rather than eyeballed — a unit test cannot see this, since
+     * jsdom reports every element as 0x0.
+     */
+    test.describe("where the list opens", () => {
+        async function openList(page: Page, placeholder: RegExp) {
+            const box = page.getByPlaceholder(placeholder);
+            await box.click();
+            await box.type("merhaba @ad");
+            await expect(page.getByRole("listbox")).toBeVisible();
+            return box;
+        }
+
+        test("sits on the caret's line in the post box", async ({
+            authenticatedPage: page,
+        }) => {
+            await stub(page, []);
+            await page.goto("/");
+            await openList(page, /building/i);
+
+            const m = await page.evaluate(() => {
+                const field = document.querySelector("textarea")!;
+                const list = document.querySelector('[role="listbox"]')!;
+                const style = window.getComputedStyle(field);
+                return {
+                    fieldTop: field.getBoundingClientRect().top,
+                    listTop: list.getBoundingClientRect().top,
+                    lineHeight: Number.parseFloat(style.lineHeight),
+                    paddingTop: Number.parseFloat(style.paddingTop),
+                };
+            });
+
+            // One line of text is typed, so the caret is on the first line and
+            // the list belongs just under it. Two lines of slack for the
+            // border and the gap; the bug this replaces was 65px out.
+            const offset = m.listTop - m.fieldTop - m.paddingTop;
+            expect(offset).toBeGreaterThanOrEqual(m.lineHeight - 2);
+            expect(offset).toBeLessThan(m.lineHeight * 3);
+        });
+
+        test("follows the caret down a long body in the editor", async ({
+            authenticatedPage: page,
+        }) => {
+            await stub(page, []);
+            await page.goto("/articles/new");
+
+            const body = page.getByPlaceholder(/Markdown/i);
+            await body.click();
+            // Eight lines before the handle: anchored to the field the list
+            // would open at the bottom of an eighteen-row textarea.
+            const lines = Array(8).fill("line").join("\n");
+            await body.type(`${lines}\nmerhaba @ad`);
+            await expect(page.getByRole("listbox")).toBeVisible();
+
+            const m = await page.evaluate(() => {
+                const field = document.querySelector(
+                    'textarea[rows="18"]',
+                ) as HTMLTextAreaElement;
+                const list = document.querySelector('[role="listbox"]')!;
+                const box = field.getBoundingClientRect();
+                return {
+                    fieldTop: box.top,
+                    fieldBottom: box.bottom,
+                    listTop: list.getBoundingClientRect().top,
+                    lineHeight: Number.parseFloat(
+                        window.getComputedStyle(field).lineHeight,
+                    ),
+                };
+            });
+
+            // Nowhere near the bottom of the field: on the ninth line.
+            expect(m.listTop).toBeLessThan(m.fieldTop + m.lineHeight * 12);
+            expect(m.listTop).toBeLessThan(m.fieldBottom);
+        });
+
+        for (const width of [320, 390]) {
+            test(`stays on screen at ${width}px`, async ({
+                authenticatedPage: page,
+            }) => {
+                await stub(page, []);
+                await page.setViewportSize({ width, height: 800 });
+                await page.goto("/");
+                await openList(page, /building/i);
+
+                const overflow = await page.evaluate(() => {
+                    const el = document.documentElement;
+                    const list = document
+                        .querySelector('[role="listbox"]')!
+                        .getBoundingClientRect();
+                    return {
+                        horizontal: el.scrollWidth - el.clientWidth,
+                        right: list.right,
+                        left: list.left,
+                        viewport: el.clientWidth,
+                    };
+                });
+
+                expect(overflow.horizontal).toBeLessThanOrEqual(1);
+                expect(overflow.left).toBeGreaterThanOrEqual(0);
+                expect(overflow.right).toBeLessThanOrEqual(overflow.viewport);
+            });
+        }
+    });
 });

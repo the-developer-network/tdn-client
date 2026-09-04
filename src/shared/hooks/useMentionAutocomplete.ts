@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useProfileSearch } from "../../features/profile/hooks/useProfileSearch";
+import { getCaretPoint } from "../utils/caret-position";
+import type { CaretPoint } from "../utils/caret-position";
 import type { Profile } from "../../features/profile/api/profile.types";
 
 /**
@@ -62,6 +64,13 @@ export function useMentionAutocomplete({
 }: Options) {
     const { query, setQuery, results, isLoading } = useProfileSearch(minChars);
     const [active, setActive] = useState<ActiveHandle | null>(null);
+    /**
+     * Where the caret was when the list opened, so it can sit on that line
+     * rather than under the whole composer — which is where it used to land,
+     * 65px and a toolbar below the text in the post box, and eighteen rows
+     * below it in the article editor.
+     */
+    const [point, setPoint] = useState<CaretPoint | null>(null);
     const [highlighted, setHighlighted] = useState(0);
     const pendingCaret = useRef<number | null>(null);
 
@@ -88,10 +97,15 @@ export function useMentionAutocomplete({
         setActive(found);
         setHighlighted(0);
         setQuery(found?.query ?? "");
+        // Measured only while a handle is being typed. The mirror is built and
+        // torn down each time, and doing that on every keystroke of ordinary
+        // prose would be work nobody asked for.
+        setPoint(found ? getCaretPoint(el) : null);
     }, [inputRef, setQuery]);
 
     const close = useCallback(() => {
         setActive(null);
+        setPoint(null);
         setQuery("");
     }, [setQuery]);
 
@@ -151,6 +165,7 @@ export function useMentionAutocomplete({
 
     return {
         isOpen,
+        point,
         results,
         isLoading: isLoading && active !== null,
         highlighted,
