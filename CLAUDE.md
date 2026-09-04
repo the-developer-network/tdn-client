@@ -125,6 +125,8 @@ A conversation is identified by the **pair**, not by who opened it, so `POST /co
 
 **`mediaRejected` on a message renders "media removed", and this is a deliberate exception** to the rule stated above for posts. That rule exists because a post whose media was refused is byte-for-byte a post that never had any, so the difference could only come from session memory and would show two readers different things. A message carries the fact in a field: nothing is reconstructed, and both sides read what the server sent. Do not "correct" `MessageBubble` to match `PostCard`.
 
+**Both participants see it** — checked against `MessagePrismaMapper.toResponse`, where `viewerId` decides `isMine` and nothing else; `mediaRejected` is `mediaStatus === REJECTED` with no viewer branch. The doc's line about the recipient — "the read path withholds unscanned media, so from their side the file never existed" — is about the realtime `message:media_rejected` event and about media still being _scanned_, which `hasServableMedia` withholds. The rejected flag itself is shared, so the recipient gets the same "media removed" notice as the sender.
+
 The read watermark is shown under the **newest** outgoing message only. It is one fact per conversation, so repeating it under every bubble states it six times down a screen and reads as six separate events.
 
 `isDeleted` is a tombstone that **keeps its place** — the other participant may have replied to it. Read state is per conversation, not per message: `otherLastReadAt` is one watermark, and a sent message is "seen" when its `createdAt` precedes it.
