@@ -148,6 +148,7 @@ src/
       assert-list.test.ts
       error-handler.test.ts
       media-errors.test.ts
+      mentions.test.ts
   pages/
     ArticleDetailPage.test.tsx
     ArticleEditorPage.test.tsx
@@ -175,6 +176,7 @@ e2e/
   auth.spec.ts
   explore-tags.spec.ts
   feed.spec.ts
+  mentions.spec.ts
   messages.spec.ts
   feed-restore.spec.ts
   mobile-zoom.spec.ts
@@ -421,6 +423,31 @@ it("unknown input → fallback message", () => {
 | Interpolation through `t`       | `t("notif.unread", { n: 5 }) === "5 unread"`     |
 
 > `t` identity is asserted because hooks depend on it (`useComments`, `useFeed` list `t` in their `useCallback`/`useEffect` deps); an unstable `t` would refetch on every render.
+
+#### `mentions` — the handle grammar (`src/shared/utils/mentions.test.ts`)
+
+21 tests, and **the cases are the API's contract rather than this file's
+preference**. Every rule and negative example is lifted from `docs/mentions.md`
+in the API repo, because the client re-implements the server's parser and the
+only thing holding the two together is that they agree on the same examples.
+
+| Reads                                 | Ignores                                 |
+| ------------------------------------- | --------------------------------------- |
+| `@ada`, `@ada.b`, `@a_b_c`            | `ada@example.com`, `docs/@v2`, `@@here` |
+| `@Ada` as `Ada`, matched to `ada`     | a handle under 3 or over 30 characters  |
+| `@ada.` as `ada`; `@ada.b` as `ada.b` | a bare `@`                              |
+| `@ada @Ada` as one                    |                                         |
+
+The API expresses the "not glued to a preceding word" rule as a lookbehind; the
+client consumes the character instead, because Safari had none before 16.4 and
+Vite does not transpile regex syntax — an unsupported pattern is a blank page,
+not a missing feature. The two were compared over the doc's cases and 20,000
+random strings with no difference, and the "adjacent handles" block holds that
+reasoning down.
+
+`findMention` covers the three unmatchable cases together — a typo, a deleted
+account, and one renamed since the body was written. All three stay plain text,
+which is the only behaviour that never links a name to a stranger's profile.
 
 ---
 
@@ -1186,6 +1213,18 @@ The `429` case is deliberate coverage of the second (and last) title
 `getErrorMessage` answers in its own words. Five writes a minute is low enough
 that an ordinary exchange reaches it.
 
+#### `checkDraft` (`src/features/article/hooks/checkDraft.test.ts`)
+
+11 tests over the pure validator behind the editor's `canSave`: empty, title and
+body caps, the request byte cap, and the ten-handle mention cap.
+
+**The mention cap is checked here rather than at the publish button**, and the
+placement is the point: autosave is gated on the same `canSave`, so a body
+naming eleven people would otherwise retry a request the server is certain to
+refuse, every two seconds, for as long as the editor stayed open. Distinct
+accounts are counted, not occurrences — a body repeating one name is fine, and
+eleven email addresses name nobody.
+
 #### `useOpenConversation` (`src/features/messages/hooks/useOpenConversation.test.ts`)
 
 4 tests, written after the message button shipped sending `{}`.
@@ -1487,6 +1526,24 @@ One test renders inside `<StrictMode>` to reproduce the double-invoked mount eff
 | Mounted in `StrictMode`       | Exactly one send request                                    |
 | Enter in the code field       | Verifies                                                    |
 | Good code                     | `isEmailVerified` true; modal closed                        |
+
+#### `RichText` (`src/shared/components/ui/RichText.test.tsx`)
+
+15 tests. Urls, `**bold**` and `#tags` were already there and are pinned so the
+mention branch cannot break them; the rest is the pairing rule.
+
+| Given                                              | Renders                                  |
+| -------------------------------------------------- | ---------------------------------------- |
+| `@ada` with a matching entry                       | a link to `/profile/ada`                 |
+| `@Ada` with entry `ada`                            | the typed text, linked to `/profile/ada` |
+| `@nobody`, or no `mentions` at all                 | plain text                               |
+| an entry whose username no longer matches the text | plain text                               |
+| `ada@example.com`, `docs/@ada`                     | plain text                               |
+| `@ada.`                                            | the link stops before the dot            |
+
+Two assertions are structural rather than about mentions: `(@ada)` keeps its
+bracket, and a mixed body round-trips to exactly its input. The parser consumes
+the character before a handle, so losing it is the failure this shape invites.
 
 #### `MessageBubble` (`src/features/messages/components/MessageBubble.test.tsx`)
 
@@ -1891,6 +1948,10 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `responsive.spec`     | The composer sits above `BottomNav` on a phone                                                          |
 | `responsive.spec`     | The trends rail is present on the thread at 1440, like every other page                                 |
 | `responsive.spec`     | The inbox fits every width in the ladder                                                                |
+| `mentions.spec`       | A resolved handle links and opens the profile                                                           |
+| `mentions.spec`       | A handle nobody owns stays plain text                                                                   |
+| `mentions.spec`       | An email address is not turned into a mention                                                           |
+| `mentions.spec`       | The composer refuses an eleventh distinct handle                                                        |
 | `responsive.spec`     | The shell stays centred at 1024–1600 — the columns, not the container                                   |
 
 **The centring row measures the columns, not the container, and that distinction

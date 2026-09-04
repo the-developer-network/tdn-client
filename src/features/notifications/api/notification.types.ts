@@ -12,6 +12,7 @@ export type NotificationType =
     | "COMMENT_LIKE"
     | "COMMENT_REPLY"
     | "QUOTE"
+    | "MENTION"
     | "MEDIA_REJECTED";
 
 export interface Notification {
@@ -34,11 +35,13 @@ export interface Notification {
      * article and slug; or none of them, when a video was uploaded and the
      * post was never sent.
      *
-     * `articleId` and `articleSlug` are not read here: a comment on an article
-     * is still reached through `/comments/:commentId`, and that is the right
-     * place to land — the media was taken off the comment, not off the top of
-     * the article. They arrive for consistency with the other comment
-     * notifications, and are left alone on purpose.
+     * `articleId` and `articleSlug` are not read for a *comment*: a comment on
+     * an article is still reached through `/comments/:commentId`, and that is
+     * the right place to land — the media was taken off the comment, not off
+     * the top of the article.
+     *
+     * `MENTION` is the first type that does read `articleSlug`, because being
+     * named in the body of an article has nowhere else to go.
      */
     postId?: string | null;
     commentId?: string | null;

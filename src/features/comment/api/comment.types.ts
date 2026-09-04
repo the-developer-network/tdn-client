@@ -1,3 +1,4 @@
+import type { Mention } from "../../../shared/utils/mentions";
 export interface CommentAuthor {
     id: string;
     username: string;
@@ -23,6 +24,11 @@ export interface Comment {
      */
     mediaPending: boolean;
     createdAt: string;
+    /**
+     * The accounts the API resolved out of the body. Always present; `[]` when
+     * it names nobody.
+     */
+    mentions: Mention[];
     likeCount: number;
     replyCount: number;
     isLiked: boolean;

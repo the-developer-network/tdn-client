@@ -31,6 +31,7 @@ import type { Post } from "../api/feed.types";
 const BASE = "http://localhost:8080/api/v1";
 
 const resolved: Post = {
+    mentions: [],
     id: "post-1",
     content: "with a video",
     type: "COMMUNITY",

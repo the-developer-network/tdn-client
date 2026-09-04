@@ -55,6 +55,7 @@ function setScrollY(value: number) {
 
 function makePost(id = "post-1"): Post {
     return {
+        mentions: [],
         isSensitive: false,
         mediaPending: false,
         id,

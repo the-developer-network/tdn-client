@@ -32,6 +32,7 @@ import { useComments } from "./useComments";
 const BASE = "http://localhost:8080/api/v1";
 
 const mockComment: Comment = {
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id: "comment-1",

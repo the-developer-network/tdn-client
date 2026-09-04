@@ -43,6 +43,7 @@ export function PostCard({
     id,
     author,
     content,
+    mentions,
     type,
     createdAt,
     mediaUrls,
@@ -232,6 +233,7 @@ export function PostCard({
                         ) : (
                             <RichText
                                 text={displayContent}
+                                mentions={mentions}
                                 className="mt-2 text-[15px] text-ink/90 leading-relaxed whitespace-pre-wrap"
                             />
                         )}

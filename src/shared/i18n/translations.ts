@@ -173,6 +173,9 @@ const en = {
     "notif.commentLike": "@{{username}} liked your comment",
     "notif.commentReply": "@{{username}} replied to your comment",
     "notif.quote": "@{{username}} quoted your post",
+    // Deliberately not "tagged you": the API calls it a mention and so does
+    // the doc, and the word has to survive the reader going to look for it.
+    "notif.mention": "@{{username}} mentioned you",
     "notif.mediaRejected":
         "A media item in your post was removed for breaking the community rules.",
     "notif.generic": "@{{username}} sent you a notification",
@@ -453,6 +456,9 @@ const en = {
     // reaches it, so this sentence lands mid-conversation in front of someone
     // who is not reading English by choice.
     "error.rateLimited": "You are going a little fast. Try again in a minute.",
+    // Mirrored in the composers so the server's 400 is never reached; the
+    // wording is ours because the limit is a rule, not a failure.
+    "error.mentionLimit": "You can mention up to {{max}} people.",
 
     "media.sensitive": "Sensitive content",
     "media.sensitiveReveal": "Tap to view",
@@ -850,6 +856,7 @@ const tr: Record<TranslationKey, string> = {
     "notif.commentLike": "@{{username}} yorumunuzu beğendi",
     "notif.commentReply": "@{{username}} yorumunuza cevap verdi",
     "notif.quote": "@{{username}} gönderini alıntıladı",
+    "notif.mention": "@{{username}} senden bahsetti",
     "notif.mediaRejected":
         "Paylaşımınızdaki bir medya, topluluk kurallarına aykırı olduğu için kaldırıldı.",
     "notif.generic": "@{{username}} size bir bildirim gönderdi",
@@ -1119,6 +1126,7 @@ const tr: Record<TranslationKey, string> = {
     "error.mediaLimitExceeded": "En fazla 4 dosya ekleyebilirsiniz.",
     "error.noMediaProvided": "Önce bir dosya seçin.",
     "error.rateLimited": "Biraz hızlı gidiyorsunuz. Bir dakika sonra deneyin.",
+    "error.mentionLimit": "En fazla {{max}} kişiden bahsedebilirsiniz.",
 
     "media.sensitive": "Hassas içerik",
     "media.sensitiveReveal": "Görmek için dokunun",

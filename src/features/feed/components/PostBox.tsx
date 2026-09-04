@@ -9,6 +9,7 @@ import {
     clearsSelection,
     withModerationRetry,
 } from "../../../shared/utils/media-errors";
+import { useMentionLimit } from "../../../shared/hooks/useMentionLimit";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
 
@@ -32,6 +33,9 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
     const { openModal } = useAuthModalStore();
     const addToast = useToastStore((state) => state.addToast);
     const { t } = useI18n();
+    // Mirrors the server's ten-handle cap so its 400 stays unreachable.
+    const { isOverLimit: isOverMentionLimit, max: maxMentions } =
+        useMentionLimit(content);
 
     const autoResize = () => {
         const el = textareaRef.current;
@@ -241,11 +245,19 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                             </button>
                         </div>
 
+                        {isOverMentionLimit && (
+                            <p className="mt-2 text-xs text-red-400">
+                                {t("error.mentionLimit", {
+                                    max: String(maxMentions),
+                                })}
+                            </p>
+                        )}
                         <button
                             onClick={handleSubmit}
                             disabled={
                                 (!content.trim() && files.length === 0) ||
-                                isSubmitting
+                                isSubmitting ||
+                                isOverMentionLimit
                             }
                             className="bg-ink text-ground text-sm font-semibold px-5 py-2 rounded-full hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >

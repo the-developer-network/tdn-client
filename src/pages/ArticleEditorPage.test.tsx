@@ -36,6 +36,7 @@ import ArticleEditorPage from "./ArticleEditorPage";
 import type { Article } from "../features/article/api/article.types";
 
 const article: Article = {
+    mentions: [],
     isSensitive: false,
     id: "article-1",
     slug: "my-article",

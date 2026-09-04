@@ -31,6 +31,7 @@ import { useFeed } from "./useFeed";
 const BASE = "http://localhost:8080/api/v1";
 
 const mockPost: Post = {
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id: "post-1",

@@ -6,6 +6,7 @@ import {
     withModerationRetry,
 } from "../../../shared/utils/media-errors";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { MAX_MENTIONS, extractHandles } from "../../../shared/utils/mentions";
 import { ARTICLE_LIMITS } from "../api/article.types";
 import type {
     Article,
@@ -26,7 +27,7 @@ export type SaveState = "idle" | "saving" | "saved" | "error";
 
 /** Why a draft cannot be sent, or `null` when it can. */
 export type DraftProblem =
-    "empty" | "titleTooLong" | "bodyTooLong" | "tooLarge";
+    "empty" | "titleTooLong" | "bodyTooLong" | "tooLarge" | "tooManyMentions";
 
 /**
  * The server answers a schema violation with a bare 400 and a 413 with
@@ -44,6 +45,14 @@ export function checkDraft(
     if (draft.title.trim() === "" || draft.body.trim() === "") return "empty";
     if (draft.title.length > ARTICLE_LIMITS.titleMax) return "titleTooLong";
     if (draft.body.length > ARTICLE_LIMITS.bodyMax) return "bodyTooLong";
+    /*
+     * Checked here rather than at the publish button, because autosave is
+     * gated on `canSave` too: a body naming eleven people would otherwise
+     * retry a doomed request every two seconds for as long as it stayed open.
+     */
+    if (extractHandles(draft.body).length > MAX_MENTIONS) {
+        return "tooManyMentions";
+    }
     // Characters are not bytes. A body inside the character limit still
     // breaches the request cap once it carries Turkish letters or emoji, and
     // that arrives as a 413 rather than a validation error.

@@ -38,6 +38,7 @@ vi.mock("../shared/components/TrendingTopicsWidget", () => ({
 }));
 
 const mockComment: Comment = {
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id: "c-123",

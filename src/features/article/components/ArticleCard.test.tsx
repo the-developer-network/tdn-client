@@ -16,6 +16,7 @@ import { ArticleCard } from "./ArticleCard";
 import type { ArticleSummary } from "../api/article.types";
 
 const article: ArticleSummary = {
+    mentions: [],
     isSensitive: false,
     id: "article-1",
     slug: "clean-architecture",

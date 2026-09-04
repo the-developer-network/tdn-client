@@ -6,6 +6,7 @@ import { Modal } from "../../../shared/components/ui/Modal";
 import { useAuthStore } from "../../../core/auth/auth.store";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getErrorMessage } from "../../../shared/utils/error-handler";
+import { useMentionLimit } from "../../../shared/hooks/useMentionLimit";
 import { useI18n } from "../../../shared/hooks/useI18n";
 
 /** The server's own ceiling on `content`. Enforced here so a 400 is not the
@@ -33,6 +34,9 @@ export function QuoteComposerModal({
     const { t } = useI18n();
 
     const isTooLong = content.length > MAX_LENGTH;
+    // Mirrors the server's ten-handle cap so its 400 stays unreachable.
+    const { isOverLimit: isOverMentionLimit, max: maxMentions } =
+        useMentionLimit(content);
 
     const handleClose = () => {
         if (isSubmitting) return;
@@ -98,6 +102,12 @@ export function QuoteComposerModal({
                         <span className="mr-auto text-xs text-red-400">
                             {t("quote.tooLong", { n: MAX_LENGTH })}
                         </span>
+                    ) : isOverMentionLimit ? (
+                        <span className="mr-auto text-xs text-red-400">
+                            {t("error.mentionLimit", {
+                                max: String(maxMentions),
+                            })}
+                        </span>
                     ) : (
                         content.length > 0 && (
                             <span className="mr-auto text-xs text-ink/30">
@@ -116,7 +126,9 @@ export function QuoteComposerModal({
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isSubmitting || isTooLong}
+                        disabled={
+                            isSubmitting || isTooLong || isOverMentionLimit
+                        }
                         className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-ground transition-colors hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {isSubmitting ? t("quote.posting") : t("quote.submit")}

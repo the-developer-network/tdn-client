@@ -16,6 +16,7 @@ const MESSAGE_KEYS: Record<NotificationType, TranslationKey> = {
     COMMENT_LIKE: "notif.commentLike",
     COMMENT_REPLY: "notif.commentReply",
     QUOTE: "notif.quote",
+    MENTION: "notif.mention",
     MEDIA_REJECTED: "notif.mediaRejected",
 };
 
@@ -35,6 +36,27 @@ const MESSAGE_KEYS: Record<NotificationType, TranslationKey> = {
 function mediaRejectedTarget(notification: Notification): string | null {
     if (notification.commentId) return `/comments/${notification.commentId}`;
     if (notification.postId) return `/post/${notification.postId}`;
+    return null;
+}
+
+/**
+ * Where a `MENTION` leads.
+ *
+ * The API fills the deep-link fields the way a `COMMENT` does, and the four
+ * shapes it can take are ordered here from most specific to least: a mention
+ * in a comment lands on the comment whether that comment sits under a post or
+ * an article, a mention in a post lands on the post, and a mention in an
+ * article body has nowhere to go but the article.
+ *
+ * The article arm reads `articleSlug` rather than `articleId`, because
+ * `/articles/:slug` is the route — this is the one notification type that
+ * needs it.
+ */
+function mentionTarget(notification: Notification): string | null {
+    if (notification.commentId) return `/comments/${notification.commentId}`;
+    if (notification.postId) return `/post/${notification.postId}`;
+    if (notification.articleSlug)
+        return `/articles/${notification.articleSlug}`;
     return null;
 }
 
@@ -108,6 +130,14 @@ export function NotificationCard({ notification }: NotificationCardProps) {
                     navigate(`/comments/${notification.referenceId}`);
                 }
                 break;
+            // Not `referenceId`: it is the post for a mention in a post and
+            // the comment for one in a comment, so a single route cannot serve
+            // it. The fields say which of the four shapes this is.
+            case "MENTION": {
+                const target = mentionTarget(notification);
+                navigate(target ?? `/profile/${notification.username}`);
+                break;
+            }
             default:
                 // A type this build has never heard of. The API owns the enum
                 // and can grow it at any time, so the card degrades to the

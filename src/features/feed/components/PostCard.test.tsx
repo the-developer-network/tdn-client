@@ -97,6 +97,7 @@ beforeEach(() => {
 });
 
 const mockPost: Post = {
+    mentions: [],
     isSensitive: false,
     mediaPending: false,
     id: "post-1",

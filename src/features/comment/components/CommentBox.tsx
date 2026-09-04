@@ -4,6 +4,7 @@ import { commentApi } from "../api/comment.api";
 import { feedApi } from "../../feed/api/feed.api";
 import type { Comment, CommentTarget } from "../api/comment.types";
 import { useAuthModalStore } from "../../auth/store/auth-modal.store";
+import { useMentionLimit } from "../../../shared/hooks/useMentionLimit";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { useToastStore } from "../../../shared/store/toast.store";
 import { getSafeImageSrc } from "../../../shared/utils/image-src";
@@ -30,6 +31,9 @@ export function CommentBox({
 }: CommentBoxProps) {
     const { t } = useI18n();
     const [content, setContent] = useState("");
+    // Mirrors the server's ten-handle cap so its 400 stays unreachable.
+    const { isOverLimit: isOverMentionLimit, max: maxMentions } =
+        useMentionLimit(content);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
@@ -239,13 +243,21 @@ export function CommentBox({
                             </button>
                         </div>
 
+                        {isOverMentionLimit && (
+                            <p className="mt-2 text-xs text-red-400">
+                                {t("error.mentionLimit", {
+                                    max: String(maxMentions),
+                                })}
+                            </p>
+                        )}
                         <button
                             onClick={handleSubmit}
                             disabled={
                                 (isAuthenticated &&
                                     !content.trim() &&
                                     files.length === 0) ||
-                                isSubmitting
+                                isSubmitting ||
+                                isOverMentionLimit
                             }
                             className="bg-ink text-ground text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-ink/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >

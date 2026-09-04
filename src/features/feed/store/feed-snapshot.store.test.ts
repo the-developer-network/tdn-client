@@ -8,6 +8,7 @@ import type { Post } from "../api/feed.types";
 
 function makePost(id: string): Post {
     return {
+        mentions: [],
         isSensitive: false,
         mediaPending: false,
         id,
