@@ -298,6 +298,8 @@ function Editor({ initial }: { initial: Article | null }) {
                             highlighted={mention.highlighted}
                             onHighlight={mention.setHighlighted}
                             onSelect={mention.select}
+                            point={mention.point}
+                            fieldRef={bodyRef}
                         />
                     </div>
 

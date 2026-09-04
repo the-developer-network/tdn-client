@@ -92,29 +92,34 @@ export function QuoteComposerModal({
                         alt={user?.username ?? ""}
                         className="h-10 w-10 shrink-0 rounded-full border border-ink/5 object-cover"
                     />
-                    <div className="relative min-w-0 flex-1">
-                        <textarea
-                            ref={textareaRef}
-                            value={content}
-                            onChange={(e) => {
-                                setContent(e.target.value);
-                                mention.sync();
-                            }}
-                            onKeyDown={(e) => mention.onKeyDown(e)}
-                            onBlur={mention.close}
-                            placeholder={t("quote.placeholder")}
-                            rows={3}
-                            autoFocus
-                            className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-ink outline-none placeholder-ink/30"
-                        />
-                        <MentionSuggestions
-                            isOpen={mention.isOpen}
-                            isLoading={mention.isLoading}
-                            results={mention.results}
-                            highlighted={mention.highlighted}
-                            onHighlight={mention.setHighlighted}
-                            onSelect={mention.select}
-                        />
+                    <div className="min-w-0 flex-1">
+                        {/* `relative` wraps the field alone — see `PostBox`. */}
+                        <div className="relative">
+                            <textarea
+                                ref={textareaRef}
+                                value={content}
+                                onChange={(e) => {
+                                    setContent(e.target.value);
+                                    mention.sync();
+                                }}
+                                onKeyDown={(e) => mention.onKeyDown(e)}
+                                onBlur={mention.close}
+                                placeholder={t("quote.placeholder")}
+                                rows={3}
+                                autoFocus
+                                className="w-full resize-none bg-transparent text-[15px] leading-relaxed text-ink outline-none placeholder-ink/30"
+                            />
+                            <MentionSuggestions
+                                isOpen={mention.isOpen}
+                                isLoading={mention.isLoading}
+                                results={mention.results}
+                                highlighted={mention.highlighted}
+                                onHighlight={mention.setHighlighted}
+                                onSelect={mention.select}
+                                point={mention.point}
+                                fieldRef={textareaRef}
+                            />
+                        </div>
                         <QuotedPostCard post={quoted} isPreview />
                     </div>
                 </div>

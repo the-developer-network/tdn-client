@@ -155,39 +155,48 @@ export function PostBox({ onPostCreated, activeCategory }: PostBoxProps) {
                     className="h-10 w-10 rounded-full border border-ink/5 object-cover shrink-0"
                     alt="User avatar"
                 />
-                <div className="relative flex-1 flex flex-col gap-3">
-                    <textarea
-                        ref={textareaRef}
-                        value={content}
-                        onChange={(e) => {
-                            setContent(e.target.value);
-                            autoResize();
-                            mention.sync();
-                        }}
-                        onKeyDown={(e) => mention.onKeyDown(e)}
-                        onBlur={mention.close}
-                        placeholder={
-                            isAuthenticated
-                                ? t("postBox.placeholder")
-                                : t("postBox.placeholderGuest")
-                        }
-                        rows={3}
-                        className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
-                    />
+                <div className="flex-1 flex flex-col gap-3">
                     {/*
-                     * Anchored to the column rather than the caret: a textarea
-                     * gives no caret coordinates without measuring a mirror
-                     * element, and under the field is where the list is looked
-                     * for anyway.
+                     * `relative` wraps the field alone. Wrapping the column
+                     * put the list below the media previews and the toolbar —
+                     * 65px and a whole row away from the text it belonged to.
                      */}
-                    <MentionSuggestions
-                        isOpen={mention.isOpen}
-                        isLoading={mention.isLoading}
-                        results={mention.results}
-                        highlighted={mention.highlighted}
-                        onHighlight={mention.setHighlighted}
-                        onSelect={mention.select}
-                    />
+                    <div className="relative">
+                        <textarea
+                            ref={textareaRef}
+                            value={content}
+                            onChange={(e) => {
+                                setContent(e.target.value);
+                                autoResize();
+                                mention.sync();
+                            }}
+                            onKeyDown={(e) => mention.onKeyDown(e)}
+                            onBlur={mention.close}
+                            placeholder={
+                                isAuthenticated
+                                    ? t("postBox.placeholder")
+                                    : t("postBox.placeholderGuest")
+                            }
+                            rows={3}
+                            className="w-full bg-transparent text-ink placeholder-ink/30 resize-none outline-none text-[15px] leading-relaxed overflow-hidden"
+                        />
+                        {/*
+                         * Anchored to the column rather than the caret: a textarea
+                         * gives no caret coordinates without measuring a mirror
+                         * element, and under the field is where the list is looked
+                         * for anyway.
+                         */}
+                        <MentionSuggestions
+                            isOpen={mention.isOpen}
+                            isLoading={mention.isLoading}
+                            results={mention.results}
+                            highlighted={mention.highlighted}
+                            onHighlight={mention.setHighlighted}
+                            onSelect={mention.select}
+                            point={mention.point}
+                            fieldRef={textareaRef}
+                        />
+                    </div>
 
                     {/* Preview */}
                     {previews.length > 0 && (

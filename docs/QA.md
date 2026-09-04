@@ -147,6 +147,7 @@ src/
     utils/
       assert-list.test.ts
       error-handler.test.ts
+      caret-position.test.ts
       media-errors.test.ts
       mentions.test.ts
   pages/
@@ -1213,6 +1214,20 @@ The `429` case is deliberate coverage of the second (and last) title
 `getErrorMessage` answers in its own words. Five writes a minute is low enough
 that an ordinary exchange reaches it.
 
+#### `placeList` (`src/shared/utils/caret-position.test.ts`)
+
+8 tests over the arithmetic half of the suggestion list's position: the line
+under the caret, clamping inside the field, and flipping above when the
+viewport has no room below.
+
+Only the arithmetic. The other half builds a mirror element and reads its
+geometry, and **jsdom reports every element as 0×0** — that part is measured in
+`e2e/mentions.spec.ts`, where a real browser lays text out.
+
+The flip has two conditions, not one: there must be no room below **and** room
+above. Near the top of a short viewport neither holds, and the cramped view
+below still beats one that runs off the top.
+
 #### `readActiveHandle` (`src/shared/hooks/useMentionAutocomplete.test.ts`)
 
 13 tests over the caret reader, which decides whether a suggestion list opens.
@@ -1984,7 +1999,16 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `mentions.spec`       | Typing `@ad` suggests accounts, and picking one completes the handle                                    |
 | `mentions.spec`       | Enter belongs to the open list rather than to the newline                                               |
 | `mentions.spec`       | No suggestions inside an email address                                                                  |
+| `mentions.spec`       | The list opens on the caret's line, not under the composer                                              |
+| `mentions.spec`       | It follows the caret down a long article body                                                           |
+| `mentions.spec`       | It stays on screen at 320 and 390px                                                                     |
 | `responsive.spec`     | The shell stays centred at 1024–1600 — the columns, not the container                                   |
+
+**The two positioning rows are measured and both fail on the code they were
+written against**: the list opened 138px from the caret line in the post box
+(the bound is 73) and 730px down in the article editor (the bound is 531). The
+two width rows pass either way — the old list spanned the field, so it never
+overflowed — and lock the intent rather than catching that regression.
 
 **The centring row measures the columns, not the container, and that distinction
 is the test.** The dead space sat _inside_ the container: at 1200 the container
