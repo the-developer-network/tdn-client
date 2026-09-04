@@ -1998,6 +1998,7 @@ await page.route("**/api/v1/**", async (route, request) => {
 | `mentions.spec`       | The composer refuses an eleventh distinct handle                                                        |
 | `mentions.spec`       | Typing `@ad` suggests accounts, and picking one completes the handle                                    |
 | `mentions.spec`       | Enter belongs to the open list rather than to the newline                                               |
+| `mentions.spec`       | Suggestions from the **first** character after the `@`                                                  |
 | `mentions.spec`       | No suggestions inside an email address                                                                  |
 | `mentions.spec`       | The list opens on the caret's line, not under the composer                                              |
 | `mentions.spec`       | It follows the caret down a long article body                                                           |
