@@ -116,6 +116,39 @@ describe("CommentCard", () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
+    // Mutually exclusive, as on `PostCard`: you delete what is yours and
+    // report what is not, and the API refuses a report of your own content.
+    describe("delete and report are exclusive", () => {
+        it("offers a report on somebody else's comment", () => {
+            render(<CommentCard comment={mockComment} />);
+
+            expect(
+                screen.getByRole("button", { name: "Report" }),
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByRole("button", { name: /delete comment/i }),
+            ).not.toBeInTheDocument();
+        });
+
+        it("offers deletion, and no report, on your own", () => {
+            render(
+                <CommentCard
+                    comment={{
+                        ...mockComment,
+                        author: { ...mockComment.author, isMe: true },
+                    }}
+                />,
+            );
+
+            expect(
+                screen.getByRole("button", { name: /delete comment/i }),
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByRole("button", { name: "Report" }),
+            ).not.toBeInTheDocument();
+        });
+    });
+
     it("opens the delete confirmation modal when the delete button is clicked", () => {
         render(
             <CommentCard

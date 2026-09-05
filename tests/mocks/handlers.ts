@@ -494,6 +494,15 @@ export const handlers = [
         HttpResponse.json({ data: { isBlocked: false } }),
     ),
 
+    /*
+     * The report control sits on every card that is not yours, so any test
+     * that drives one reaches this. `received: true` is the whole answer the
+     * endpoint gives — to a first report and to a repeat alike.
+     */
+    http.post(`${BASE}/reports`, () =>
+        HttpResponse.json({ data: { received: true } }),
+    ),
+
     http.get(`${BASE}/users/:username/posts`, () =>
         HttpResponse.json({ data: [mockPost] }),
     ),

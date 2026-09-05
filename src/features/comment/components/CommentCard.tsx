@@ -9,6 +9,7 @@ import { hasTextSelection } from "../../../shared/utils/text-selection";
 import { useI18n } from "../../../shared/hooks/useI18n";
 import { SensitiveMedia } from "../../../shared/components/ui/SensitiveMedia";
 import { PendingMedia } from "../../../shared/components/ui/PendingMedia";
+import { ReportButton } from "../../report/components/ReportButton";
 
 interface CommentCardProps {
     comment: Comment;
@@ -313,6 +314,16 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                                     />
                                 </svg>
                             </button>
+
+                            {/* You delete what is yours and report what is
+                                not — the API answers a report of your own
+                                content with a 400. */}
+                            {!author.isMe && (
+                                <ReportButton
+                                    targetKind="COMMENT"
+                                    targetId={comment.id}
+                                />
+                            )}
 
                             {author.isMe && (
                                 <button
