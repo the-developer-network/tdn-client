@@ -20,6 +20,7 @@ import { useArticles } from "../features/article/hooks/useArticles";
 import { useMyArticles } from "../features/article/hooks/useMyArticles";
 import type { ArticleStatus } from "../features/article/api/article.types";
 import { useFollowAction } from "../features/profile/hooks/useFollowAction";
+import { BlockToggle } from "../features/block/components/BlockToggle";
 import { useOpenConversation } from "../features/messages/hooks/useOpenConversation";
 import { useAuthStore } from "../core/auth/auth.store";
 import { useAuthModalStore } from "../features/auth/store/auth-modal.store";
@@ -138,6 +139,18 @@ export default function ProfilePage() {
     const { open: openConversation, isOpening: isOpeningConversation } =
         useOpenConversation();
 
+    /**
+     * The two directions of a block, which render differently: `isBlocked`
+     * offers the way out, `isBlockedBy` is a wall. When both are set the
+     * unblock button is the useful one, so it wins — the server keeps the
+     * other side's row either way.
+     *
+     * A guest and your own profile get `false` for both.
+     */
+    const isBlocked = displayProfile?.isBlocked === true;
+    const isBlockedBy = displayProfile?.isBlockedBy === true && !isBlocked;
+    const hasBlockRelation = isBlocked || isBlockedBy;
+
     // Unfollowing from your own Following list moves a number this page is
     // already showing. Nobody else's `followingCount` changes when you follow
     // or unfollow, so the modal is only handed this on your own list.
@@ -210,6 +223,20 @@ export default function ProfilePage() {
     // The profile and its posts are two requests with one common cause of
     // failure, so a single retry has to restart both.
     const handleRetry = useCallback(() => {
+        retryProfile();
+        retryPosts();
+    }, [retryProfile, retryPosts]);
+
+    /**
+     * Blocking changes more than the flag it sets: both follows are gone, the
+     * counts are answered as zero and the timeline comes back empty. Rather
+     * than patch four fields from a response that carries one, the page drops
+     * its local copy and re-reads — `localProfile` wins over the fetched
+     * profile for the life of the page, so a hand-patched one would outlive
+     * the server's answer.
+     */
+    const handleBlockChange = useCallback(() => {
+        setLocalProfile(null);
         retryProfile();
         retryPosts();
     }, [retryProfile, retryPosts]);
@@ -324,7 +351,16 @@ export default function ProfilePage() {
                             >
                                 {t("profile.editProfile")}
                             </button>
-                        ) : (
+                        ) : isBlocked ? (
+                            <div className="mt-8 flex items-center gap-2 sm:mt-12">
+                                <BlockToggle
+                                    targetId={targetId}
+                                    username={displayProfile.username}
+                                    isBlocked
+                                    onChange={handleBlockChange}
+                                />
+                            </div>
+                        ) : isBlockedBy ? null : (
                             <div className="mt-8 flex items-center gap-2 sm:mt-12">
                                 {/*
                                  * Offered to everyone, not only to people this
@@ -363,6 +399,12 @@ export default function ProfilePage() {
                                           ? t("profile.following")
                                           : t("profile.follow")}
                                 </button>
+                                <BlockToggle
+                                    targetId={targetId}
+                                    username={displayProfile.username}
+                                    isBlocked={false}
+                                    onChange={handleBlockChange}
+                                />
                             </div>
                         )}
                     </div>
@@ -451,9 +493,36 @@ export default function ProfilePage() {
                 </>
             )}
 
+            {/*
+             * A block stands in for the whole content area rather than
+             * letting the tabs render an empty timeline. The server answers
+             * this profile's posts with an empty page either way, and an
+             * empty page reads as "this account has never written anything" —
+             * which is a different, wrong thing to tell a reader.
+             */}
+            {!hasProfileError && displayProfile && hasBlockRelation && (
+                <div className="flex flex-col items-center gap-2 px-8 py-12 text-center">
+                    <p className="text-sm font-semibold text-ink">
+                        {t(
+                            isBlocked
+                                ? "block.youBlockedTitle"
+                                : "block.blockedYouTitle",
+                            { username: displayProfile.username },
+                        )}
+                    </p>
+                    <p className="max-w-sm text-sm text-ink/40">
+                        {t(
+                            isBlocked
+                                ? "block.youBlockedBody"
+                                : "block.blockedYouBody",
+                        )}
+                    </p>
+                </div>
+            )}
+
             {/* Posts list — suppressed while the profile itself is failing, so
                 only the page-level error above is shown. */}
-            {!hasProfileError && (
+            {!hasProfileError && !hasBlockRelation && (
                 <>
                     <div className="flex w-full border-b border-ink/10">
                         {(["posts", "articles"] as const).map((value) => (
@@ -480,7 +549,7 @@ export default function ProfilePage() {
                 </>
             )}
 
-            {!hasProfileError && tab === "articles" && (
+            {!hasProfileError && !hasBlockRelation && tab === "articles" && (
                 <>
                     {/* Status filters are yours alone: a visitor has nothing
                         to filter, since the public list only ever returns
@@ -518,7 +587,7 @@ export default function ProfilePage() {
                 </>
             )}
 
-            {!hasProfileError && tab === "posts" && (
+            {!hasProfileError && !hasBlockRelation && tab === "posts" && (
                 <>
                     <PostList
                         posts={posts}

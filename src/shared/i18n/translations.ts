@@ -233,6 +233,28 @@ const en = {
     "profile.followerPlural": "followers",
     "profile.settings": "Settings",
 
+    "block.action": "Block",
+    "block.unblock": "Unblock",
+    "block.working": "Working...",
+    "block.confirmTitle": "Block @{{username}}?",
+    "block.confirmBody":
+        "You will not see each other's posts, profiles or messages, and neither of you can follow or write to the other. Nothing is deleted, and you can lift the block at any time from Settings.",
+    "block.confirmFollowNote":
+        "Blocking also removes the follow in both directions. Unblocking does not bring it back.",
+    "block.youBlockedTitle": "You blocked @{{username}}",
+    "block.youBlockedBody":
+        "Their posts and profile are hidden from you, and yours from them. Lifting the block brings everything back except the follows.",
+    "block.blockedYouTitle": "@{{username}} blocked you",
+    "block.blockedYouBody":
+        "You cannot follow or message this account, and its posts are hidden from you.",
+    "block.blockedAccounts": "Blocked accounts",
+    "block.blockedAccountsSubtitle":
+        "The accounts you have blocked. This list is the only way back to one, since a blocked account is invisible everywhere else.",
+    "block.empty": "You have not blocked anyone.",
+    "block.listError": "Blocked accounts could not be loaded.",
+    "block.blockedToast": "@{{username}} is blocked.",
+    "block.unblockedToast": "Block lifted.",
+
     "followList.noFollowers": "No followers yet.",
     "followList.noFollowing": "Not following anyone yet.",
 
@@ -917,6 +939,28 @@ const tr: Record<TranslationKey, string> = {
     "profile.follower": "takipçi",
     "profile.followerPlural": "takipçi",
     "profile.settings": "Ayarlar",
+
+    "block.action": "Engelle",
+    "block.unblock": "Engeli kaldır",
+    "block.working": "İşleniyor...",
+    "block.confirmTitle": "@{{username}} engellensin mi?",
+    "block.confirmBody":
+        "Birbirinizin gönderilerini, profillerini ve mesajlarını göremezsiniz; ikiniz de diğerini takip edemez ya da ona yazamazsınız. Hiçbir şey silinmez, engeli istediğiniz zaman Ayarlar'dan kaldırabilirsiniz.",
+    "block.confirmFollowNote":
+        "Engellemek iki yöndeki takibi de kaldırır. Engeli kaldırmak takipleri geri getirmez.",
+    "block.youBlockedTitle": "@{{username}} hesabını engellediniz",
+    "block.youBlockedBody":
+        "Onun gönderileri ve profili size, sizinkiler de ona kapalı. Engeli kaldırdığınızda takipler dışında her şey geri gelir.",
+    "block.blockedYouTitle": "@{{username}} sizi engelledi",
+    "block.blockedYouBody":
+        "Bu hesabı takip edemez, ona mesaj gönderemezsiniz; gönderileri size kapalıdır.",
+    "block.blockedAccounts": "Engellenen hesaplar",
+    "block.blockedAccountsSubtitle":
+        "Engellediğiniz hesaplar. Bir engeli kaldırmanın tek yolu bu liste; engellenen hesap başka her yerde görünmez.",
+    "block.empty": "Henüz kimseyi engellemediniz.",
+    "block.listError": "Engellenen hesaplar yüklenemedi.",
+    "block.blockedToast": "@{{username}} engellendi.",
+    "block.unblockedToast": "Engel kaldırıldı.",
 
     "followList.noFollowers": "Henüz takipçi yok.",
     "followList.noFollowing": "Henüz kimseyi takip etmiyor.",
