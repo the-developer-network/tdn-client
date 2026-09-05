@@ -221,7 +221,15 @@ export function CommentCard({ comment, onDeleted }: CommentCardProps) {
                             </SensitiveMedia>
                         )}
 
-                        <div className="mt-3 flex items-center gap-6 text-ink/30">
+                        {/*
+                         * Wraps below `sm`, exactly as `PostCard`'s row does
+                         * and for the reason `e2e/responsive.spec.ts` states:
+                         * on a 320px phone the row has to give way rather
+                         * than push the card wider than the screen. A fixed
+                         * `gap-6` was already at that limit with four
+                         * controls, and the report control is a fifth.
+                         */}
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-1 gap-y-2 text-ink/30 sm:flex-nowrap sm:justify-start sm:gap-6">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
