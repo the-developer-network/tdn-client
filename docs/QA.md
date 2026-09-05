@@ -77,6 +77,14 @@ src/
           RegisterView.test.tsx
           ResetPasswordView.test.tsx
           VerifyEmailView.test.tsx
+    block/
+      api/
+        block.api.test.ts
+      hooks/
+        useBlockAction.test.ts
+        useBlockedList.test.ts
+      components/
+        BlockedAccountsList.test.tsx
     feed/
       hooks/
         usePostActions.test.ts
@@ -517,6 +525,21 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 
 > Any spec that mocks a follower list must slice on `limit`/`offset`. A handler returning a fixed array answers a paginated and an unpaginated request identically, which is exactly the bug these tests were written for.
 
+#### `blockApi` (`src/features/block/api/block.api.test.ts`)
+
+7 tests, on the same reasoning as `profileApi`: a query string can be wrong without anything throwing.
+
+`GET /blocks` takes `limit`/`offset` (default 20, min 1, max 50, and a 400 outside that), so both ends are clamped and both clamps are tested. `DELETE /blocks` is the unusual one — it reads its target from a **body**, which `fetch` sends but does not encode, so the test asserts the `Content-Type` header alongside the payload. Without the header the API reads no body at all and answers 400.
+
+| Scenario                    | Assert                                         |
+| --------------------------- | ---------------------------------------------- |
+| `getBlocked()`              | `limit=20&offset=0` present                    |
+| `{ offset: 40 }`            | Carried through for the next page              |
+| `{ limit: 500 }` / `{ 0 }`  | Clamped to 50 / 1                              |
+| `{ data }` envelope         | Rows returned unwrapped                        |
+| `block("user-2")`           | Body is `{ targetId }`                         |
+| `unblock("user-2")`         | Same body on a `DELETE`, `Content-Type` set    |
+
 #### `api.getPage` — the cursor escape hatch
 
 4 tests in `client.test.ts`. `api.get` unwraps `ApiResponse.data` and drops
@@ -896,6 +919,38 @@ The handler must slice against the `limit`/`offset` it is given rather than retu
 | 5 followers                     | All 5; `hasMore` false without a second request |
 | Type switched to `following`    | List replaced, not appended                     |
 | 404                             | `detail` surfaced; `isLoading` false            |
+
+#### `useBlockAction` (`src/features/block/hooks/useBlockAction.test.ts`)
+
+6 tests. **Requires the `vi.hoisted` localStorage stub** (imports `useAuthStore`).
+
+The hook is deliberately **not** optimistic, and that is what its tests pin. A like flips one icon and a failed one flips it back; a block hides an account from a reader who then has no way of telling a block that worked from one that did not — the timeline is empty either way. So the request is awaited, the outcome is returned to the caller, and a failure is toasted rather than rolled back silently the way `useFollowAction` can afford to.
+
+`pendingId` names the account being worked on rather than being a bare boolean, because the settings list renders a row per blocked account and one shared flag would disable all of them at once. That test gates the MSW handler on a promise built **before** the handler, so releasing it cannot race the request meant to be waiting on it.
+
+| Scenario                 | Assert                                                        |
+| ------------------------ | ------------------------------------------------------------- |
+| Unauthenticated `block()`| Auth modal opened; no request sent; returns `false`           |
+| `block()` success        | Returns `true`; no toast                                      |
+| `unblock()` success      | Request goes out as `DELETE`                                  |
+| API error                | Returns `false`; one **error** toast carrying the server text |
+| Empty target id          | No request; `console.warn`; returns `false`                   |
+| While in flight          | `pendingId` is the target, then `null`                        |
+
+#### `useBlockedList` (`src/features/block/hooks/useBlockedList.test.ts`)
+
+7 tests. Modelled on `useFollowList` — offset paging, `hasMore` from a full page because `apiClient` unwraps `meta` away — with one thing of its own: `remove(userId)`, called only after the server has confirmed an unblock.
+
+That ordering is the point. This list is the **only** route back to a block, since the account is invisible in the feed, in search and on its own timeline. Dropping the row on a request that then fails would strand the block with nothing on screen pointing at it. Removal is also what keeps `users.length` a correct offset: the server's list shrinks by the same row, so both stay in step where a page counter would skip one.
+
+| Scenario                     | Assert                                             |
+| ---------------------------- | -------------------------------------------------- |
+| First page                   | Rows land; `isLoading` false; no error             |
+| Full page / short page       | `hasMore` true / false                             |
+| `loadMore()`                 | Offsets asked for are `0` then `20`                |
+| `enabled: false`             | Nothing fetched, and not stuck loading             |
+| 500 then `retry()`           | Error surfaced, then cleared with rows on screen   |
+| `remove("u-1")`              | That row alone is gone                             |
 
 #### `FollowListModal` (`src/features/profile/components/FollowListModal.test.tsx`)
 
@@ -1612,6 +1667,28 @@ withdraw) and from a `temp-` bubble (nothing to withdraw yet), and it confirms
 before firing. The watermark is per conversation, not per message: a sent message
 reads "Seen" once its `createdAt` precedes `otherLastReadAt`.
 
+#### `BlockedAccountsList` (`src/features/block/components/BlockedAccountsList.test.tsx`)
+
+5 tests, MSW-backed and wrapped in `MemoryRouter` (the rows link to profiles).
+**Requires the `vi.hoisted` localStorage stub** — the module graph reaches
+`useAuthStore`.
+
+This is the Settings section, and the only screen that can reach a block once
+it stands: the account is invisible in the feed, in search, on its own
+timeline and in the inbox. The rows still link to the profile, which is served
+to a blocked viewer for the same reason it is served at all.
+
+| Scenario           | Assert                                                     |
+| ------------------ | ---------------------------------------------------------- |
+| Empty list         | "You have not blocked anyone.", not a blank section        |
+| One row            | Name, `@handle`, and a link to `/profile/bob`              |
+| Unblock succeeds   | Row gone; one **success** toast                            |
+| Unblock fails      | Row **stays**; one **error** toast                         |
+| The list itself fails | Retry offered                                           |
+
+The failure row is the one that matters: dropping the row on a request that
+then failed would strand the block with nothing on screen pointing at it.
+
 ---
 
 ### Layer 6 — Page Integration Tests
@@ -1850,6 +1927,26 @@ Use `{ name: "Follow" }` — a string matches the whole accessible name, whereas
 `/follow/i` also matches the followers and following count buttons. (`getByRole`
 has no `exact` option; that one belongs to `getByText`.)
 
+#### `ProfilePage` — blocking
+
+5 tests. The API keeps serving a blocked account's profile rather than
+answering 404, so that a blocked reader can be told what happened instead of
+concluding the app is broken. The page therefore has to say the two directions
+apart: `isBlocked` offers the way out, `isBlockedBy` is a wall with nothing to
+act on — following it answers 403 and opening a conversation answers 400.
+
+| Scenario                       | Assert                                                    |
+| ------------------------------ | --------------------------------------------------------- |
+| Ordinary profile               | Block control offered; the post list renders              |
+| `isBlocked`                    | Unblock offered; "You blocked @bob"; no Follow, no Message |
+| `isBlockedBy`                  | "@bob blocked you"; no Follow, no Block, no Unblock       |
+| Both flags                     | Treated as your own block — Unblock wins                  |
+| Either flag                    | Tabs and timeline replaced by the notice                  |
+
+The last row is the product decision worth keeping: a blocked account's
+timeline comes back **empty**, and an empty tab reads as "this account has
+never written anything", which is a different and wrong statement.
+
 #### `MessagesPage` (`src/pages/MessagesPage.test.tsx`)
 
 5 tests. MSW-backed, so the listing goes through `api.getPage` for real — a
@@ -1896,6 +1993,10 @@ Five tests: the full flow out to `/`; an account at 4 follows still gated and as
 **`quotes.spec.ts`** — five tests over the quote flow end to end: the embedded card in the feed, a textless quote drawn as a repost, the badge routing to `/posts/:id/quotes`, that page's own empty state, and composing a quote. The last one is the one worth keeping: it asserts both the request body (`content` + `quotedPostId`) and that the new row appears **without a refetch**. The feed is cached for 60 s server-side, so a quote that only showed up after reloading would look, to the person who wrote it, exactly like one that failed to post.
 
 **The follow control in the follower/following list is measured, not asserted by class.** It sits inside a row that navigates to the profile, so every pixel the thumb misses opens the profile instead — which is indistinguishable, to the person holding the phone, from a button that does nothing. `profile.spec` sets a 390px viewport and reads `boundingBox().height`, because the number is the whole point: the pill shipped at 26px against a 44px minimum, and only a measurement catches it going back.
+
+**`block.spec.ts`** — three tests over blocking end to end. Blocking from a profile asserts the request body and then the **re-read**: the server also drops both follows and answers the counts as zero, so the page throws its local copy away and asks again rather than patching four fields out of a response that carries one. The route handler flips a `blocked` flag so the second `/profiles/bob` answers differently, which is the only way to prove the refetch happened at all. The third test is the settings list — the only route back to a block, and so the one screen the feature cannot ship without.
+
+> Every button assertion here passes `exact: true`. Playwright matches an accessible name as a substring by default, so a bare `"Follow"` also matches the "10 Followers" and "5 Following" count buttons — which is how the first draft of the blocked-by test reported two Follow buttons on a page that has none. Same trap as `onboarding.spec`.
 
 **`theme.spec.ts`** — six tests, and the only place the theme is proved to change anything. The unit tests can assert the attribute; only a browser resolves `--color-ground` through the cascade, so these read `getComputedStyle(document.body).backgroundColor` and expect literal `rgb(255, 255, 255)` / `rgb(0, 0, 0)`. Three cover the stored choice (light, dark, and an account that never picked one still getting dark), one uses `test.use({ colorScheme: "light" })` to prove `"system"` follows the desktop, and one switches in Settings and reloads.
 

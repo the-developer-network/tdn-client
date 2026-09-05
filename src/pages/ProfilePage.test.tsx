@@ -330,3 +330,92 @@ describe("ProfilePage — the id every write carries", () => {
         expect(openConversation).toHaveBeenCalledWith("legacy-2");
     });
 });
+
+/*
+ * The server keeps serving a blocked account's profile rather than answering
+ * 404, so that a blocked reader can be told what happened instead of assuming
+ * the app is broken. The page has to say the two directions apart: one offers
+ * the way out, the other is a wall.
+ */
+describe("ProfilePage blocking", () => {
+    const bob = {
+        id: "user-2",
+        username: "bob",
+        fullName: "Bob Builder",
+        isMe: false,
+        isFollowing: false,
+        followersCount: 0,
+    };
+
+    it("offers the block control on an ordinary profile", () => {
+        mockProfile({ profile: bob as never });
+
+        render(<ProfilePage />);
+
+        expect(screen.getByRole("button", { name: "Block" })).toBeEnabled();
+        expect(screen.getByTestId("post-list")).toBeInTheDocument();
+    });
+
+    it("offers the way out of a block you wrote", () => {
+        mockProfile({ profile: { ...bob, isBlocked: true } as never });
+
+        render(<ProfilePage />);
+
+        expect(screen.getByRole("button", { name: "Unblock" })).toBeEnabled();
+        expect(screen.getByText("You blocked @bob")).toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Follow" }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Message" }),
+        ).not.toBeInTheDocument();
+    });
+
+    // Nothing to act on from this side: the block is theirs, and offering to
+    // follow or write would offer something the API answers 403 and 400 to.
+    it("states the wall and offers nothing when they blocked you", () => {
+        mockProfile({ profile: { ...bob, isBlockedBy: true } as never });
+
+        render(<ProfilePage />);
+
+        expect(screen.getByText("@bob blocked you")).toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Follow" }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Block" }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Unblock" }),
+        ).not.toBeInTheDocument();
+    });
+
+    // Both rows exist independently; the unblock button is the only one of
+    // the two that does anything for this reader, so it wins.
+    it("treats a mutual block as your own", () => {
+        mockProfile({
+            profile: { ...bob, isBlocked: true, isBlockedBy: true } as never,
+        });
+
+        render(<ProfilePage />);
+
+        expect(screen.getByRole("button", { name: "Unblock" })).toBeEnabled();
+        expect(screen.getByText("You blocked @bob")).toBeInTheDocument();
+    });
+
+    /*
+     * The timeline of a blocked account comes back empty, and an empty tab
+     * reads as "this account has never written anything" — a different, wrong
+     * statement. The notice stands in for the whole content area instead.
+     */
+    it("replaces the tabs and the timeline while a block stands", () => {
+        mockProfile({ profile: { ...bob, isBlocked: true } as never });
+
+        render(<ProfilePage />);
+
+        expect(screen.queryByTestId("post-list")).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: "Posts" }),
+        ).not.toBeInTheDocument();
+    });
+});

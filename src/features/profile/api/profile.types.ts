@@ -28,6 +28,17 @@ export interface Profile {
     postCount: number;
     isMe: boolean;
     isFollowing: boolean;
+    /**
+     * You blocked this account. The profile is still served — answering 404
+     * would leave a blocked reader unable to tell a block from a deleted
+     * account, so they assume something is broken and keep trying.
+     *
+     * Optional because a guest and your own profile get `false`, and because
+     * every fixture written before blocking shipped omits both flags.
+     */
+    isBlocked?: boolean;
+    /** This account blocked you. See {@link Profile.isBlocked}. */
+    isBlockedBy?: boolean;
 }
 
 export interface UpdateProfileBody {

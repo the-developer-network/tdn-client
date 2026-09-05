@@ -11,6 +11,7 @@ import { useUpdateUsername } from "../features/settings/hooks/useUpdateUsername"
 import { useUpdateEmail } from "../features/settings/hooks/useUpdateEmail";
 import { useUpdatePassword } from "../features/settings/hooks/useUpdatePassword";
 import { useDeleteAccount } from "../features/settings/hooks/useDeleteAccount";
+import { BlockedAccountsList } from "../features/block/components/BlockedAccountsList";
 import { authApi } from "../features/auth/api/auth-api";
 import { getErrorMessage } from "../shared/utils/error-handler";
 import { useLanguageStore } from "../shared/store/language.store";
@@ -61,6 +62,7 @@ export default function SettingsPage() {
                 )}
                 <LanguageSection />
                 <ThemeSection />
+                <BlockedAccountsSection />
                 <ChangeUsernameSection />
                 <ChangeEmailSection />
                 <ChangePasswordSection />
@@ -164,6 +166,19 @@ function ThemeSection() {
                     </button>
                 ))}
             </div>
+        </SectionCard>
+    );
+}
+
+function BlockedAccountsSection() {
+    const { t } = useI18n();
+
+    return (
+        <SectionCard title={t("block.blockedAccounts")}>
+            <p className="text-sm text-ink/50 mb-4">
+                {t("block.blockedAccountsSubtitle")}
+            </p>
+            <BlockedAccountsList />
         </SectionCard>
     );
 }

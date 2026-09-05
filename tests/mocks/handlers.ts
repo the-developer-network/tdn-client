@@ -478,6 +478,22 @@ export const handlers = [
         () => new HttpResponse(null, { status: 204 }),
     ),
 
+    /*
+     * The blocked list is mounted by the Settings page, so every test that
+     * renders it reaches this endpoint whether or not blocking is its subject.
+     * Empty by default: a page whose own subject is something else should not
+     * have to explain rows it did not ask for.
+     */
+    http.get(`${BASE}/blocks`, () => HttpResponse.json({ data: [] })),
+
+    http.post(`${BASE}/blocks`, () =>
+        HttpResponse.json({ data: { isBlocked: true } }),
+    ),
+
+    http.delete(`${BASE}/blocks`, () =>
+        HttpResponse.json({ data: { isBlocked: false } }),
+    ),
+
     http.get(`${BASE}/users/:username/posts`, () =>
         HttpResponse.json({ data: [mockPost] }),
     ),

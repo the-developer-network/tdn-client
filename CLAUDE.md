@@ -133,7 +133,23 @@ The read watermark is shown under the **newest** outgoing message only. It is on
 
 **Writes are limited to five a minute.** Low enough that an ordinary exchange reaches it, which is why `TooManyRequestsError` is the second — and last — title `getErrorMessage` answers in its own words rather than showing the server English.
 
-Not supported by the API, and so not by the client: group threads, block lists (declining is the mechanism), editing, typing indicators.
+Not supported by the API, and so not by the client: group threads, editing, typing indicators. Declining is how a thread is refused; **blocking an account is a separate, platform-wide thing** (below) that messaging honours without ever naming.
+
+### Blocking
+
+`POST`/`DELETE`/`GET /blocks` in `src/features/block/`. One row hides two accounts from each other everywhere — feed, profile, timeline, comments, notifications, messages — and the server does all of it. There is **no client-side filtering to write**: a blocked author's posts never arrive, so anything filtering for them here would be dead code hiding a server bug.
+
+**Render from `isBlocked` and `isBlockedBy` on the profile, never from one flag.** The block is stored directionally because the two directions need different screens: `isBlocked` offers the way out, `isBlockedBy` is a wall with nothing to act on (following it answers 403, opening a conversation answers 400). Both set means treat it as your own — the unblock button is the only one of the two that does anything for this reader. The profile is still served to a blocked viewer on purpose: a 404 would leave them unable to tell a block from a deleted account, so they assume something is broken and keep trying.
+
+**A block replaces the tabs and the timeline, and this is a product decision.** A blocked account's posts come back as an empty page — identical to an account that has never written anything, which is a different and wrong thing to tell a reader. `ProfilePage` renders the notice instead of letting `PostList` draw its empty state.
+
+**`GET /blocks` is the only route back to a block**, which is why `BlockedAccountsList` sits in Settings and why its rows still link to the profile. Everywhere else the account is invisible, so an unblock button anywhere else would have nothing to sit on. There is deliberately no "who blocked me" endpoint.
+
+**Blocking is the one mutation that is not optimistic.** Everything else in the app flips first and rolls back in `catch`; a like that fails flips an icon back and the reader sees it. A block that fails leaves a screen indistinguishable from one where it worked — the timeline is empty either way — so `useBlockAction` awaits the server, hands the caller the outcome, and toasts a failure rather than rolling back silently the way `useFollowAction` can afford to. `useBlockedList.remove` is called only after that confirmation, for the same reason: dropping the row early strands the block with nothing pointing at it.
+
+**After a write the page re-reads rather than patches.** A block also tears down both follows and zeroes the counts, and `ProfilePage.localProfile` wins over the fetched copy for the life of the page — so a hand-patched profile would outlive the server's answer. `handleBlockChange` clears it and refetches.
+
+Messaging never announces a block (`400` on open, `404` on everything else, the thread simply absent from both inboxes), because those endpoints already fold every rejection into one shape so thread membership cannot be probed. Do not "improve" that into a specific error.
 
 Feature API modules (`*.api.ts`) are plain object literals of typed thunks that build query strings and call `api` — see `src/features/feed/api/feed.api.ts` for the canonical shape.
 
