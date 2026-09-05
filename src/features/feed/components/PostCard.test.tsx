@@ -189,6 +189,40 @@ describe("PostCard", () => {
         });
     });
 
+    /*
+     * The two controls are mutually exclusive by design: you delete what is
+     * yours and report what is not. Offering both would offer a report the
+     * API answers with a 400.
+     */
+    describe("delete and report are exclusive", () => {
+        it("offers a report on somebody else's post", () => {
+            render(<PostCard {...mockPost} />);
+
+            expect(
+                screen.getByRole("button", { name: "Report" }),
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByRole("button", { name: /delete post/i }),
+            ).not.toBeInTheDocument();
+        });
+
+        it("offers deletion, and no report, on your own", () => {
+            render(
+                <PostCard
+                    {...mockPost}
+                    author={{ ...mockPost.author, isMe: true }}
+                />,
+            );
+
+            expect(
+                screen.getByRole("button", { name: /delete post/i }),
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByRole("button", { name: "Report" }),
+            ).not.toBeInTheDocument();
+        });
+    });
+
     it("opens the delete confirmation modal when the delete button is clicked", () => {
         render(
             <PostCard

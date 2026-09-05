@@ -151,6 +151,28 @@ const en = {
         "This action cannot be undone. The comment will be permanently removed.",
     "comment.shareText": "Check out this comment!",
 
+    "report.action": "Report",
+    "report.titlePost": "Report this post",
+    "report.titleComment": "Report this comment",
+    "report.body":
+        "Reports go to a moderator, who reads them by hand. Nothing is hidden automatically, at any number of reports.",
+    "report.reasonLabel": "Why are you reporting this?",
+    "report.reason.SPAM": "Spam or a scam",
+    "report.reason.HARASSMENT": "Harassment or bullying",
+    "report.reason.HATE": "Hate speech",
+    "report.reason.SEXUAL": "Sexual content",
+    "report.reason.VIOLENCE": "Violence or threats",
+    "report.reason.SELF_HARM": "Self-harm or suicide",
+    "report.reason.MISINFORMATION": "Misinformation",
+    "report.reason.ILLEGAL": "Illegal content",
+    "report.reason.OTHER": "Something else",
+    "report.detailsLabel": "Anything to add? (optional)",
+    "report.detailsPlaceholder": "What should the moderator know?",
+    "report.privacyNote": "The account you report is not told who reported it.",
+    "report.submit": "Send report",
+    "report.submitting": "Sending...",
+    "report.successToast": "Your report has been received. Thank you.",
+
     "commentList.empty": "No comments yet. Be the first!",
     "commentList.tryAgain": "Try Again",
 
@@ -858,6 +880,29 @@ const tr: Record<TranslationKey, string> = {
     "comment.deleteBody":
         "Bu işlem geri alınamaz. Yorum kalıcı olarak kaldırılacak.",
     "comment.shareText": "Bu yoruma bir göz at!",
+
+    "report.action": "Şikayet et",
+    "report.titlePost": "Bu gönderiyi şikayet et",
+    "report.titleComment": "Bu yorumu şikayet et",
+    "report.body":
+        "Şikayetler bir moderatöre gider ve elle okunur. Hiçbir içerik, kaç şikayet alırsa alsın, kendiliğinden gizlenmez.",
+    "report.reasonLabel": "Neden şikayet ediyorsunuz?",
+    "report.reason.SPAM": "Spam veya dolandırıcılık",
+    "report.reason.HARASSMENT": "Taciz veya zorbalık",
+    "report.reason.HATE": "Nefret söylemi",
+    "report.reason.SEXUAL": "Cinsel içerik",
+    "report.reason.VIOLENCE": "Şiddet veya tehdit",
+    "report.reason.SELF_HARM": "Kendine zarar verme veya intihar",
+    "report.reason.MISINFORMATION": "Yanlış bilgi",
+    "report.reason.ILLEGAL": "Yasa dışı içerik",
+    "report.reason.OTHER": "Diğer",
+    "report.detailsLabel": "Eklemek istediğiniz bir şey var mı? (isteğe bağlı)",
+    "report.detailsPlaceholder": "Moderatörün bilmesi gereken nedir?",
+    "report.privacyNote":
+        "Şikayet ettiğiniz hesaba kimin şikayet ettiği bildirilmez.",
+    "report.submit": "Şikayeti gönder",
+    "report.submitting": "Gönderiliyor...",
+    "report.successToast": "Şikayetiniz alındı, teşekkürler.",
 
     "commentList.empty": "Henüz yorum yok. İlk siz olun!",
     "commentList.tryAgain": "Tekrar Dene",

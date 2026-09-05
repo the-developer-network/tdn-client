@@ -116,6 +116,14 @@ src/
         useSendMessage.test.ts
       components/
         MessageBubble.test.tsx
+    report/
+      api/
+        report.api.test.ts
+      hooks/
+        useReport.test.ts
+      components/
+        ReportButton.test.tsx
+        ReportModal.test.tsx
     notifications/
       store/
         notification.store.test.ts
@@ -540,6 +548,22 @@ The two follower endpoints take `limit`/`offset` (`PaginationQuerySchema`, defau
 | `block("user-2")`           | Body is `{ targetId }`                         |
 | `unblock("user-2")`         | Same body on a `DELETE`, `Content-Type` set    |
 
+#### `reportApi` (`src/features/report/api/report.api.test.ts`)
+
+4 tests. A small module with one endpoint, and the last test is the one that
+earns the file: **the API answers a repeat report exactly as it answers a
+first one**. That is deliberate — the endpoint must not be usable to find out
+whether an earlier report was acted on — so it is pinned here, because a
+client written against a different second answer would be reading a signal the
+API refuses to give.
+
+| Scenario                     | Assert                                        |
+| ---------------------------- | --------------------------------------------- |
+| A report with no free text   | Body is `{ targetKind, targetId, reason }`    |
+| A report with free text      | `details` carried through                     |
+| `{ data }` envelope          | `{ received: true }` unwrapped                |
+| The same report twice        | Both answers identical                        |
+
 #### `api.getPage` — the cursor escape hatch
 
 4 tests in `client.test.ts`. `api.get` unwraps `ApiResponse.data` and drops
@@ -951,6 +975,29 @@ That ordering is the point. This list is the **only** route back to a block, sin
 | `enabled: false`             | Nothing fetched, and not stuck loading             |
 | 500 then `retry()`           | Error surfaced, then cleared with rows on screen   |
 | `remove("u-1")`              | That row alone is gone                             |
+
+#### `useReport` (`src/features/report/hooks/useReport.test.ts`)
+
+6 tests. **Requires the `vi.hoisted` localStorage stub** (its module graph
+reaches `apiClient`).
+
+Two things here are not the house pattern, and both are tested rather than
+commented. **The error is returned, not toasted**: the dialog that produced it
+is still on screen holding the reason and the sentence somebody typed, and a
+toast over a form they now have to fill in again is the wrong place for it.
+And **empty free text is omitted from the body rather than sent as `""`** —
+the schema validates `details` as 1–500 characters *when present*, so an empty
+string is a 400 rather than "no comment", and an empty string is not dropped
+from a body the way `undefined` is.
+
+| Scenario                    | Assert                                         |
+| --------------------------- | ---------------------------------------------- |
+| A report the server takes   | Returns `true`; no error                       |
+| Whitespace-only free text   | No `details` key in the body at all            |
+| Padded free text            | Trimmed before it is sent                      |
+| 404                         | Returns `false`; `error` carries the detail    |
+| 429                         | `error` is **not** the server's English        |
+| `reset()`                   | A stale error is cleared                       |
 
 #### `FollowListModal` (`src/features/profile/components/FollowListModal.test.tsx`)
 
@@ -1689,6 +1736,38 @@ to a blocked viewer for the same reason it is served at all.
 The failure row is the one that matters: dropping the row on a request that
 then failed would strand the block with nothing on screen pointing at it.
 
+#### `ReportModal` (`src/features/report/components/ReportModal.test.tsx`)
+
+6 tests, MSW-backed. **Requires the `vi.hoisted` localStorage stub.**
+
+The form mirrors the endpoint's own validation so that its 400s stay
+unreachable: a reason is required, so the submit button is shut until one is
+picked, and the free text stops at the length the schema accepts rather than
+being sent and refused. The failure test is the one that matters — the dialog
+**stays open holding what was typed**, because closing it would ask somebody
+who did nothing wrong to pick the reason and write the sentence a second time.
+
+| Scenario              | Assert                                                     |
+| --------------------- | ---------------------------------------------------------- |
+| Opened                | Nine radios — the nine reasons the queue understands       |
+| No reason picked      | Submit disabled; enabled as soon as one is                 |
+| Sent                  | Body carries `reason` + `details`; closes; success toast   |
+| 404                   | Stays open, states it, and the picked reason is still set  |
+| Pasting 550 characters| Cut to 500, and the counter says so                        |
+| `targetKind`          | The heading names a post or a comment                      |
+
+#### `ReportButton` (`src/features/report/components/ReportButton.test.tsx`)
+
+3 tests. The trigger, and the three things it decides: a guest gets the auth
+modal instead of the form, a signed-in reader gets the form, and the click
+**does not reach the card underneath** — both cards this sits on navigate on
+click, so without the guard reporting a post would also open it, and the dialog
+would mount on a page that is already unmounting.
+
+The mutual exclusivity with the delete control is asserted where it is decided,
+in `PostCard.test.tsx` and `CommentCard.test.tsx`: two tests each, one for
+somebody else's content and one for your own.
+
 ---
 
 ### Layer 6 — Page Integration Tests
@@ -1997,6 +2076,8 @@ Five tests: the full flow out to `/`; an account at 4 follows still gated and as
 **`block.spec.ts`** — three tests over blocking end to end. Blocking from a profile asserts the request body and then the **re-read**: the server also drops both follows and answers the counts as zero, so the page throws its local copy away and asks again rather than patching four fields out of a response that carries one. The route handler flips a `blocked` flag so the second `/profiles/bob` answers differently, which is the only way to prove the refetch happened at all. The third test is the settings list — the only route back to a block, and so the one screen the feature cannot ship without.
 
 > Every button assertion here passes `exact: true`. Playwright matches an accessible name as a substring by default, so a bare `"Follow"` also matches the "10 Followers" and "5 Following" count buttons — which is how the first draft of the blocked-by test reported two Follow buttons on a page that has none. Same trap as `onboarding.spec`.
+
+**`report.spec.ts`** — four tests over reporting end to end: the whole flow with the request body asserted, the rate limit (the dialog survives it holding the picked reason, and the server's English is *not* what is shown), the absence of the control on your own post, and the guest guard. That last one imports `test as base` from Playwright directly rather than using the shared fixture — the guard is its whole subject, and an injected session would walk straight past it.
 
 **`theme.spec.ts`** — six tests, and the only place the theme is proved to change anything. The unit tests can assert the attribute; only a browser resolves `--color-ground` through the cascade, so these read `getComputedStyle(document.body).backgroundColor` and expect literal `rgb(255, 255, 255)` / `rgb(0, 0, 0)`. Three cover the stored choice (light, dark, and an account that never picked one still getting dark), one uses `test.use({ colorScheme: "light" })` to prove `"system"` follows the desktop, and one switches in Settings and reloads.
 

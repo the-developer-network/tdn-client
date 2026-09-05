@@ -83,6 +83,18 @@ Uploads are scanned. Four endpoints can now refuse one — `POST /media`, `POST 
 
 `usePendingMedia` polls **the one post**, never the feed — the list is cached 60 s server-side. It stops when `mediaPending` clears, after five minutes, and while the tab is hidden.
 
+### Content reporting
+
+`POST /reports` in `src/features/report/`, and that is the entire surface: **posts and comments only**, one endpoint, no read side. An account is dealt with by blocking it, and a direct message is not public content — reporting one would mean handing its plaintext to an operator, which is what the encryption at rest exists to prevent. Nothing is hidden automatically at any number of reports; a report informs a person.
+
+**The answer is always `{ received: true }`**, to a first report and to a repeat alike, so that the endpoint cannot be used to measure moderation from outside. There is therefore **no "already reported" state to keep** and no count to show — the dialog closes, a toast says it arrived, and the control stays where it was. Do not add local memory of what this session reported: it would state a fact the API deliberately refuses to give, and it would be wrong on the next device.
+
+**Report and delete are mutually exclusive on a card.** You delete what is yours and report what is not; the API answers a report of your own content with a 400, so `PostCard` and `CommentCard` decide it from `author.isMe` rather than offering it and being refused. `ReportButton` stops the click propagating — both cards are themselves clickable.
+
+`reason` is one of nine values sent verbatim (`REPORT_REASONS` in `report.types.ts` owns the order); the labels beside them are ours to translate, the values are not. `details` is optional and **1–500 characters when present**, so an empty box is omitted from the body rather than sent as `""`, which is a 400. The cap is mirrored in the composer, the same way the message composer mirrors its character cap.
+
+`useReport` returns its error instead of toasting it, the one place that differs from the rest of the app: the dialog that produced it is still on screen holding the reason and the text, and a toast over a form somebody now has to fill in again is the wrong place for it. Five writes a minute makes `TooManyRequestsError` the failure most likely to be read here — which is the second of the two sentences `getErrorMessage` answers in its own words.
+
 ### Mentions
 
 `@handle` in a post, comment or article body names an account (`docs/mentions.md` in the API repo). The API resolves them **at write time** and stores the relation by id, so a rename never breaks a historical mention — and the response carries the account's **current** handle.
